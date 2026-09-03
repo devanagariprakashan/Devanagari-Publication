@@ -500,10 +500,10 @@ function ShopContent() {
               </div>
             </div>
 
-            {/* Format Filter */}
+            {/* Category Filter */}
             <div className="space-y-2 pt-4 border-t border-gray-100">
               <label className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                Book Format
+                Category
               </label>
               <div className="space-y-1.5">
                 {SHOP_FORMATS.map((fmt) => {
@@ -1403,10 +1403,10 @@ function ShopContent() {
                 </div>
               </div>
 
-              {/* 5. Book Format */}
+              {/* 5. Category */}
               <div className="space-y-2 pt-4">
                 <label className="text-[11px] font-bold uppercase tracking-wider text-gray-500">
-                  Book Format
+                  Category
                 </label>
                 <div className="space-y-1.5">
                   {SHOP_FORMATS.map((fmt) => {

@@ -124,6 +124,9 @@ export default function Navbar({
   // Lock body scroll when mobile menu or categories modal is open
   useEffect(() => {
     if (isMobileMenuOpen || isMobileCategoriesOpen) {
+      if (typeof window !== "undefined" && (window as any).lenis) {
+        (window as any).lenis.stop();
+      }
       const originalOverflow = document.body.style.overflow;
       const originalTouchAction = document.body.style.touchAction;
       document.body.style.overflow = "hidden";
@@ -131,6 +134,9 @@ export default function Navbar({
       return () => {
         document.body.style.overflow = originalOverflow;
         document.body.style.touchAction = originalTouchAction;
+        if (typeof window !== "undefined" && (window as any).lenis) {
+          (window as any).lenis.start();
+        }
       };
     }
   }, [isMobileMenuOpen, isMobileCategoriesOpen]);
@@ -242,27 +248,19 @@ export default function Navbar({
 
   return (
     <>
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-xs transition-all relative">
+    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-xs transition-all">
       <div className="max-w-[1450px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20 gap-3 lg:gap-6">
           {/* ======================================================== */}
           {/* LEFT: BRAND LOGO */}
           {/* ======================================================== */}
           <div className="flex items-center shrink-0">
-            <Link href="/" className="flex items-center gap-2 sm:gap-2.5 group">
-              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#C61821] flex items-center justify-center text-white shadow-md shadow-red-600/20 group-hover:scale-105 group-hover:shadow-red-600/30 transition-all duration-200">
-                <span className="font-devanagariDisplay text-xl sm:text-2xl font-bold leading-none">
-                  दे
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <span className="font-devanagari font-bold text-xl sm:text-[28px] text-[#C61821] tracking-tight leading-tight">
-                  देवनागरी
-                </span>
-                <span className="text-[10px] font-semibold tracking-widest text-gray-400 uppercase leading-none hidden sm:block">
-                  Books &amp; Publications
-                </span>
-              </div>
+            <Link href="/" className="flex items-center group">
+              <img 
+                src="/logos.png" 
+                alt="Devanagari Books" 
+                className="h-10 sm:h-12 md:h-14 lg:h-16 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
+              />
             </Link>
           </div>
 
@@ -748,6 +746,7 @@ export default function Navbar({
 
             {/* Scrollable Category Groups - Compact 2-Column Grid */}
             <div
+              data-lenis-prevent
               className="p-3 overflow-y-auto space-y-3 flex-1 min-h-0 overscroll-contain"
               style={{ WebkitOverflowScrolling: "touch" }}
             >
@@ -834,6 +833,7 @@ export default function Navbar({
             onClick={(e) => e.stopPropagation()}
           >
             <div
+              data-lenis-prevent
               className="flex-1 overflow-y-auto overscroll-contain p-5 pb-36 space-y-6"
               style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
             >

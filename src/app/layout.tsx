@@ -52,6 +52,9 @@ export const metadata: Metadata = {
     "IPC Books",
     "Competitive Exam Books",
   ],
+  icons: {
+    icon: "/logos.png",
+  },
 };
 
 export default function RootLayout({
