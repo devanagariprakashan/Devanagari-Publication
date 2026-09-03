@@ -1,0 +1,65 @@
+<svg width="600" height="850" viewBox="0 0 600 850" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="600" height="850" rx="8" fill="#FDFCF7"/>
+  <rect x="25" y="25" width="550" height="800" rx="4" fill="#FFFFFF" stroke="#EAE6DF" stroke-width="1.5"/>
+  
+  <!-- Book Header -->
+  <line x1="60" y1="70" x2="540" y2="70" stroke="#C61821" stroke-width="2"/>
+  <text x="60" y="60" font-family="'Noto Sans Devanagari', sans-serif" font-size="13" font-weight="bold" fill="#C61821">अभ्यास प्रश्नमाला : विगत 10 वर्षों के प्रश्न</text>
+  <text x="540" y="60" text-anchor="end" font-family="sans-serif" font-size="12" fill="#78716C">MPPSC Mains Practice</text>
+
+  <!-- Title -->
+  <text x="60" y="115" font-family="'Noto Sans Devanagari', sans-serif" font-size="16" font-weight="800" fill="#1C1917">विगत वर्षों के मुख्य परीक्षा निबंध प्रश्न (PYQs Analysis)</text>
+  <text x="60" y="135" font-family="'Noto Sans Devanagari', sans-serif" font-size="11.5" fill="#78716C">आयोग द्वारा 2014 से 2024 तक पूछे गए 1000 शब्दों एवं 500 शब्दों के निबंधों का संकलन</text>
+
+  <!-- Question 1 -->
+  <rect x="60" y="155" width="480" height="125" rx="6" fill="#F8FAFC" stroke="#E2E8F0"/>
+  <rect x="75" y="170" width="80" height="22" rx="3" fill="#C61821"/>
+  <text x="115" y="185" text-anchor="middle" font-family="sans-serif" font-size="10" font-weight="bold" fill="#FFFFFF">MPPSC 2023</text>
+  <text x="165" y="185" font-family="'Noto Sans Devanagari', sans-serif" font-size="12" font-weight="bold" fill="#0F172A">प्रश्न : भारतीय संस्कृति में वसुधैव कुटुम्बकम् की प्रासंगिकता (1000 शब्द)</text>
+  
+  <text x="75" y="215" font-family="'Noto Sans Devanagari', sans-serif" font-size="11" fill="#475569">
+    <tspan x="75" dy="0">• दृष्टिकोण: जी-20 अध्यक्षता का थीम (One Earth, One Family, One Future)।</tspan>
+    <tspan x="75" dy="18">• उपनिषदिक उद्घोष से लेकर वर्तमान भू-राजनीतिक संघर्षों में शांतिदूत भारत की भूमिका।</tspan>
+    <tspan x="75" dy="18">• मॉडल उत्तर पृष्ठ संख्या 142 पर देखें।</tspan>
+  </text>
+
+  <!-- Question 2 -->
+  <rect x="60" y="295" width="480" height="125" rx="6" fill="#F8FAFC" stroke="#E2E8F0"/>
+  <rect x="75" y="310" width="80" height="22" rx="3" fill="#C61821"/>
+  <text x="115" y="325" text-anchor="middle" font-family="sans-serif" font-size="10" font-weight="bold" fill="#FFFFFF">MPPSC 2022</text>
+  <text x="165" y="325" font-family="'Noto Sans Devanagari', sans-serif" font-size="12" font-weight="bold" fill="#0F172A">प्रश्न : पर्यावरण संरक्षण एवं सतत विकास: संतुलन की राह (1000 शब्द)</text>
+  
+  <text x="75" y="355" font-family="'Noto Sans Devanagari', sans-serif" font-size="11" fill="#475569">
+    <tspan x="75" dy="0">• दृष्टिकोण: मिशन LiFE (Lifestyle for Environment), COP28 लक्ष्य व पंचामृत घोषणा।</tspan>
+    <tspan x="75" dy="18">• वनीकरण, केन-बेतवा लिंक परियोजना का पर्यावरण प्रभाव और ईको-टूरिज्म।</tspan>
+    <tspan x="75" dy="18">• मॉडल उत्तर पृष्ठ संख्या 168 पर देखें।</tspan>
+  </text>
+
+  <!-- Question 3 -->
+  <rect x="60" y="435" width="480" height="125" rx="6" fill="#F8FAFC" stroke="#E2E8F0"/>
+  <rect x="75" y="450" width="80" height="22" rx="3" fill="#C61821"/>
+  <text x="115" y="465" text-anchor="middle" font-family="sans-serif" font-size="10" font-weight="bold" fill="#FFFFFF">MPPSC 2021</text>
+  <text x="165" y="465" font-family="'Noto Sans Devanagari', sans-serif" font-size="12" font-weight="bold" fill="#0F172A">प्रश्न : आत्मनिर्भर भारत में स्वदेशी उद्योगों की भूमिका (500 शब्द)</text>
+  
+  <text x="75" y="495" font-family="'Noto Sans Devanagari', sans-serif" font-size="11" fill="#475569">
+    <tspan x="75" dy="0">• दृष्टिकोण: वोकल फॉर लोकल, खादी ग्रामोद्योग, एक जिला एक उत्पाद (ODOP)।</tspan>
+    <tspan x="75" dy="18">• कुटीर उद्योग, एमएसएमई नीति एवं क्लस्टर विकास।</tspan>
+    <tspan x="75" dy="18">• मॉडल उत्तर पृष्ठ संख्या 192 पर देखें।</tspan>
+  </text>
+
+  <!-- Scoring Table -->
+  <rect x="60" y="580" width="480" height="180" rx="6" fill="#FEF2F2" stroke="#FEE2E2"/>
+  <text x="80" y="610" font-family="'Noto Sans Devanagari', sans-serif" font-size="13" font-weight="bold" fill="#991B1B">आयोग की अंकन योजना (Paper 6 Marking Scheme)</text>
+  
+  <g font-family="'Noto Sans Devanagari', sans-serif" font-size="11.5" fill="#7F1D1D">
+    <text x="80" y="640">1. प्रथम निबंध (समसामयिक/राष्ट्रीय विषय) : 1000 शब्द — 50 अंक</text>
+    <text x="80" y="665">2. द्वितीय निबंध (पारंपरिक/सांस्कृतिक विषय) : 500 शब्द — 25 अंक</text>
+    <text x="80" y="690">3. प्रारूप लेखन (शासकीय/अर्धशासकीय पत्र/परिपत्र) : 25 अंक</text>
+    <line x1="80" y1="710" x2="520" y2="710" stroke="#FCA5A5"/>
+    <text x="80" y="735" font-weight="bold">कुल पूर्णांक : 100 अंक | समयावधि : 2 घंटे</text>
+  </g>
+
+  <!-- Page Footer -->
+  <line x1="60" y1="795" x2="540" y2="795" stroke="#E7E5E4" stroke-width="1"/>
+  <text x="300" y="815" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="bold" fill="#78716C">141</text>
+</svg>

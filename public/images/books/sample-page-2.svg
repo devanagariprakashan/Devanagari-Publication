@@ -1,0 +1,71 @@
+<svg width="600" height="850" viewBox="0 0 600 850" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="600" height="850" rx="8" fill="#FDFCF7"/>
+  <rect x="25" y="25" width="550" height="800" rx="4" fill="#FFFFFF" stroke="#EAE6DF" stroke-width="1.5"/>
+  
+  <!-- Book Header -->
+  <line x1="60" y1="70" x2="540" y2="70" stroke="#C61821" stroke-width="2"/>
+  <text x="60" y="60" font-family="'Noto Sans Devanagari', sans-serif" font-size="13" font-weight="bold" fill="#C61821">निबंध 14 : आधुनिक भारत में नारी सशक्तिकरण</text>
+  <text x="540" y="60" text-anchor="end" font-family="sans-serif" font-size="12" fill="#78716C">MPPSC Mains Paper VI</text>
+
+  <!-- Title & Quote Box -->
+  <rect x="60" y="95" width="480" height="75" rx="6" fill="#FBF3F3" stroke="#F1D5D5"/>
+  <text x="300" y="125" text-anchor="middle" font-family="'Noto Sans Devanagari', sans-serif" font-size="16" font-weight="bold" fill="#8F0E15">"यत्र नार्यस्तु पूज्यन्ते रमन्ते तत्र देवताः"</text>
+  <text x="300" y="148" text-anchor="middle" font-family="'Noto Sans Devanagari', sans-serif" font-size="12" fill="#57534E">— वैदिक सूक्ति से लेकर आधुनिक संवैधानिक अधिकारों तक नारी का सफर</text>
+
+  <!-- Section: प्रस्तावना -->
+  <text x="60" y="200" font-family="'Noto Sans Devanagari', sans-serif" font-size="14" font-weight="800" fill="#C61821">■ प्रस्तावना (Introduction)</text>
+  
+  <text x="60" y="225" font-family="'Noto Sans Devanagari', sans-serif" font-size="11.5" fill="#292524">
+    <tspan x="60" dy="0">नारी सशक्तिकरण केवल एक सामाजिक अथवा राजनीतिक नारा नहीं है, अपितु यह किसी भी राष्ट्र के</tspan>
+    <tspan x="60" dy="20">समग्र विकास, आर्थिक आत्मनिर्भरता एवं मानवीय गरिमा की अनिवार्य आधारशिला है। 21वीं सदी का</tspan>
+    <tspan x="60" dy="20">भारत 'महिला विकास' (Women Development) से आगे बढ़कर 'महिला-नेतृत्व विकास'</tspan>
+    <tspan x="60" dy="20">(Women-led Development) के युग में प्रवेश कर चुका है।</tspan>
+  </text>
+
+  <!-- Section: मुख्य आयाम Chart Box -->
+  <rect x="60" y="315" width="480" height="150" rx="6" fill="#FAFAF9" stroke="#E7E5E4"/>
+  <text x="80" y="340" font-family="'Noto Sans Devanagari', sans-serif" font-size="13" font-weight="bold" fill="#1C1917">प्रमुख तथ्यात्मक आँकड़े (Key 2025 Data):</text>
+  
+  <rect x="80" y="355" width="135" height="45" rx="4" fill="#FFFFFF" stroke="#E7E5E4"/>
+  <text x="147" y="375" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="bold" fill="#C61821">33%</text>
+  <text x="147" y="392" text-anchor="middle" font-family="'Noto Sans Devanagari', sans-serif" font-size="10" fill="#78716C">संसद में आरक्षण (106वां संशो.)</text>
+
+  <rect x="232" y="355" width="135" height="45" rx="4" fill="#FFFFFF" stroke="#E7E5E4"/>
+  <text x="300" y="375" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="bold" fill="#C61821">1.25 Cr+</text>
+  <text x="300" y="392" text-anchor="middle" font-family="'Noto Sans Devanagari', sans-serif" font-size="10" fill="#78716C">लाड़ली बहना म.प्र. लाभार्थी</text>
+
+  <rect x="385" y="355" width="135" height="45" rx="4" fill="#FFFFFF" stroke="#E7E5E4"/>
+  <text x="452" y="375" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="bold" fill="#C61821">43%</text>
+  <text x="452" y="392" text-anchor="middle" font-family="'Noto Sans Devanagari', sans-serif" font-size="10" fill="#78716C">STEM स्नातक में महिला हिस्सेदारी</text>
+
+  <text x="80" y="425" font-family="'Noto Sans Devanagari', sans-serif" font-size="11" fill="#44403C">
+    <tspan x="80" dy="0">• वैश्विक लैंगिक अंतराल सूचकांक (WEF Global Gender Gap Index) में सुधार।</tspan>
+    <tspan x="80" dy="18">• प्रधानमंत्री मुद्रा योजना में 68% से अधिक ऋण महिला उद्यमियों को स्वीकृत।</tspan>
+  </text>
+
+  <!-- Section: मुख्य मुद्दे -->
+  <text x="60" y="495" font-family="'Noto Sans Devanagari', sans-serif" font-size="14" font-weight="800" fill="#C61821">■ बहुआयामी चुनौतियां एवं समाधान</text>
+  <text x="60" y="520" font-family="'Noto Sans Devanagari', sans-serif" font-size="11.5" fill="#292524">
+    <tspan x="60" dy="0">1. सामाजिक पूर्वाग्रह एवं पितृसत्तात्मक मानसिकता का उन्मूलन।</tspan>
+    <tspan x="60" dy="20">2. औपचारिक श्रमबल सहभागिता दर (LFPR) में वृद्धि हेतु सुरक्षित कार्यस्थलों का निर्माण।</tspan>
+    <tspan x="60" dy="20">3. डिजिटल साक्षरता: ग्रामीण महिलाओं को वित्तीय तकनीक (FinTech) से जोड़ना।</tspan>
+    <tspan x="60" dy="20">4. स्वास्थ्य एवं पोषण: एनीमिया मुक्त भारत अभियान के प्रभावी परिणाम।</tspan>
+  </text>
+
+  <!-- Section: निष्कर्ष -->
+  <text x="60" y="630" font-family="'Noto Sans Devanagari', sans-serif" font-size="14" font-weight="800" fill="#C61821">■ निष्कर्ष (Conclusion)</text>
+  <text x="60" y="655" font-family="'Noto Sans Devanagari', sans-serif" font-size="11.5" fill="#292524">
+    <tspan x="60" dy="0">जब एक महिला आगे बढ़ती है, तो परिवार बढ़ता है, समाज आगे बढ़ता है और समूचा राष्ट्र गति</tspan>
+    <tspan x="60" dy="20">प्राप्त करता है। अमृत काल में भारत को 5 ट्रिलियन डॉलर अर्थव्यवस्था बनने के लिए आधी आबादी की</tspan>
+    <tspan x="60" dy="20">पूर्ण सहभागिता ही निर्णायक सिद्ध होगी।</tspan>
+  </text>
+
+  <!-- Model Score Box -->
+  <rect x="60" y="720" width="480" height="50" rx="6" fill="#F0FDF4" stroke="#DCFCE7"/>
+  <text x="75" y="745" font-family="'Noto Sans Devanagari', sans-serif" font-size="12" font-weight="bold" fill="#15803D">✓ परीक्षक टिप्पणी (Examiner's Note):</text>
+  <text x="75" y="760" font-family="'Noto Sans Devanagari', sans-serif" font-size="11" fill="#166534">प्रस्तुत निबंध में डेटा, संवैधानिक प्रावधान और म.प्र. राज्य की योजनाओं का सटीक संतुलन है। (अंक 44/50)</text>
+
+  <!-- Page Footer -->
+  <line x1="60" y1="795" x2="540" y2="795" stroke="#E7E5E4" stroke-width="1"/>
+  <text x="300" y="815" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="bold" fill="#78716C">76</text>
+</svg>
