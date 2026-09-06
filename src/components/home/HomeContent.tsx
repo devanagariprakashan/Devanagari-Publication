@@ -2,20 +2,31 @@
 
 import React, { useState } from "react";
 import HeroSection from "@/components/home/HeroSection";
-import FeaturedCategories from "@/components/home/FeaturedCategories";
-import HandpickedSection from "@/components/home/HandpickedSection";
-import BestsellersSection from "@/components/home/BestsellersSection";
-import TopAuthorsSection from "@/components/home/TopAuthorsSection";
+import FeaturedCategories, { FeaturedCategory } from "@/components/home/FeaturedCategories";
+import HandpickedSection, { HandpickedBook } from "@/components/home/HandpickedSection";
+import BestsellersSection, { BestsellerBook } from "@/components/home/BestsellersSection";
+import TopAuthorsSection, { AuthorItem } from "@/components/home/TopAuthorsSection";
 import TestimonialsSection from "@/components/home/TestimonialsSection";
 import NewsletterSection from "@/components/home/NewsletterSection";
 import BookModal from "@/components/home/BookModal";
 import { BookData } from "@/components/home/HeroBook3D";
 import { useCartWishlist } from "@/components/providers/CartWishlistProvider";
 
-export default function Home() {
+interface HomeContentProps {
+  categories?: FeaturedCategory[];
+  bestsellers?: BestsellerBook[];
+  handpicked?: HandpickedBook[];
+  authors?: AuthorItem[];
+}
+
+export default function HomeContent({
+  categories,
+  bestsellers,
+  handpicked,
+  authors,
+}: HomeContentProps) {
   const [selectedBook, setSelectedBook] = useState<BookData | null>(null);
-  const { wishlist, addToCart, toggleWishlist, isInWishlist } =
-    useCartWishlist();
+  const { wishlist, addToCart, toggleWishlist } = useCartWishlist();
 
   const wishlistIds = wishlist.map((w) => w.id);
 
@@ -87,10 +98,11 @@ export default function Home() {
       />
 
       {/* 2. FEATURED EXAM CATEGORIES */}
-      <FeaturedCategories />
+      <FeaturedCategories categories={categories} />
 
       {/* 3. BESTSELLERS / WHAT INDIA IS READING SECTION */}
       <BestsellersSection
+        books={bestsellers}
         onAddToCart={handleAddToCart}
         onQuickView={(book) => setSelectedBook(book)}
         wishlistIds={wishlistIds}
@@ -99,6 +111,7 @@ export default function Home() {
 
       {/* 4. FEATURED / HANDPICKED FOR YOU BOOKS SECTION */}
       <HandpickedSection
+        books={handpicked}
         onAddToCart={handleAddToCart}
         onQuickView={(book) => setSelectedBook(book)}
         wishlistIds={wishlistIds}
@@ -107,6 +120,7 @@ export default function Home() {
 
       {/* 5. TOP AUTHORS / VOICES YOU CAN TRUST SECTION */}
       <TopAuthorsSection
+        authors={authors}
         onSelectBook={(book) => setSelectedBook(book)}
       />
 

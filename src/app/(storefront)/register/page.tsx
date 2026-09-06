@@ -86,6 +86,8 @@ export default function RegisterPage() {
           })
         );
         localStorage.removeItem("devanagari_logged_out");
+        // ponytail: wishlist is browser-global; reset it on new account so stale demo items don't carry over
+        localStorage.removeItem("devanagari_wishlist_v2");
         window.dispatchEvent(new Event("devanagari_user_updated"));
       }
 

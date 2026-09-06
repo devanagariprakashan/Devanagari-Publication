@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import {
   Star,
   ShoppingCart,
@@ -9,7 +10,9 @@ import {
   ChevronRight,
   ArrowRight,
   Check,
+  Sparkles,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { BookData } from "./HeroBook3D";
 import { useCartWishlist } from "@/components/providers/CartWishlistProvider";
 
@@ -197,8 +200,9 @@ export const BESTSELLER_BOOKS: BestsellerBook[] = [
 interface BestsellersSectionProps {
   onAddToCart?: (book: BookData) => void;
   onQuickView?: (book: BookData) => void;
-  wishlistIds?: number[];
+  wishlistIds?: Array<number | string>;
   onToggleWishlist?: (book: BookData) => void;
+  books?: BestsellerBook[];
 }
 
 export default function BestsellersSection({
@@ -206,13 +210,19 @@ export default function BestsellersSection({
   onQuickView,
   wishlistIds = [],
   onToggleWishlist,
+  books,
 }: BestsellersSectionProps) {
+  const router = useRouter();
   const { isInCart, isInWishlist, addToCart, toggleWishlist } =
     useCartWishlist();
 
+  const list = books ?? BESTSELLER_BOOKS;
+  const BESTSELLER_LIMIT = 10;
+  const hasTooManyBooks = list.length > BESTSELLER_LIMIT;
+
   const [currentPage, setCurrentPage] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(5);
-  const [addedIds, setAddedIds] = useState<number[]>([]);
+  const [addedIds, setAddedIds] = useState<Array<number | string>>([]);
 
   // Update items per page based on window width for responsive calculation
   useEffect(() => {
@@ -233,14 +243,9 @@ export default function BestsellersSection({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const totalPages = Math.max(1, Math.ceil(BESTSELLER_BOOKS.length / itemsPerPage));
+  const totalPages = Math.max(1, Math.ceil(list.length / itemsPerPage));
 
-  // Keep currentPage within bounds if resize changes totalPages
-  useEffect(() => {
-    if (currentPage >= totalPages && totalPages > 0) {
-      setCurrentPage(totalPages - 1);
-    }
-  }, [totalPages, currentPage]);
+  const safeCurrentPage = Math.min(currentPage, totalPages - 1);
 
   const handlePrev = () => {
     setCurrentPage((prev) => (prev > 0 ? prev - 1 : totalPages - 1));
@@ -248,6 +253,10 @@ export default function BestsellersSection({
 
   const handleNext = () => {
     setCurrentPage((prev) => (prev < totalPages - 1 ? prev + 1 : 0));
+  };
+
+  const handleBrowseAll = () => {
+    router.push("/shop?filter=bestsellers");
   };
 
   const convertToBookData = (book: BestsellerBook): BookData => ({
@@ -322,9 +331,9 @@ export default function BestsellersSection({
     }
   };
 
-  const visibleBooks = BESTSELLER_BOOKS.slice(
-    currentPage * itemsPerPage,
-    currentPage * itemsPerPage + itemsPerPage
+  const visibleBooks = list.slice(
+    safeCurrentPage * itemsPerPage,
+    safeCurrentPage * itemsPerPage + itemsPerPage
   );
 
   return (
@@ -361,10 +370,7 @@ export default function BestsellersSection({
           {/* Right Action Button */}
           <div className="self-start sm:self-auto shrink-0">
             <button
-              onClick={() => {
-                const el = document.getElementById("handpicked");
-                el?.scrollIntoView({ behavior: "smooth" });
-              }}
+              onClick={handleBrowseAll}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-red-200/90 hover:border-[#C61821] bg-white hover:bg-red-50/50 text-[#C61821] font-bold text-xs sm:text-[13.5px] transition-all hover:scale-[1.02] active:scale-95 shadow-sm cursor-pointer group"
             >
               <span>See all bestsellers</span>
@@ -372,6 +378,13 @@ export default function BestsellersSection({
             </button>
           </div>
         </div>
+
+        {hasTooManyBooks && (
+          <div className="mb-4 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
+            <Sparkles className="h-4 w-4 shrink-0" />
+            Bestsellers limit is 10 books at a time. Remove extra items or keep only the first 10 visible.
+          </div>
+        )}
 
         {/* ================= CAROUSEL WITH LEFT/RIGHT BUTTONS ================= */}
         <div className="relative">
@@ -436,9 +449,11 @@ export default function BestsellersSection({
                   {/* --- Center: Book 3D Realistic Cover Image --- */}
                   <div className="relative z-10 w-full h-44 sm:h-48 lg:h-52 flex items-center justify-center my-2 sm:my-3 px-2">
                     <div className="relative w-full h-full flex items-center justify-center">
-                      <img
+                      <Image
                         src={book.image}
                         alt={book.title}
+                        width={360}
+                        height={520}
                         className="max-h-full max-w-full object-contain filter drop-shadow-[0_12px_18px_rgba(0,0,0,0.14)] group-hover:drop-shadow-[0_18px_24px_rgba(198,24,33,0.20)] group-hover:scale-105 transition-all duration-300"
                       />
                     </div>

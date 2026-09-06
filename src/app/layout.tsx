@@ -1,13 +1,5 @@
 import type { Metadata } from "next";
 import { Montserrat, Playfair_Display, Rozha_One, Noto_Sans_Devanagari } from "next/font/google";
-import TopBanner from "@/components/layout/TopBanner";
-import Navbar from "@/components/layout/Navbar";
-import MobileBottomNav from "@/components/layout/MobileBottomNav";
-import Footer from "@/components/layout/Footer";
-import SmoothScrollProvider from "@/components/providers/SmoothScrollProvider";
-import { CartWishlistProvider } from "@/components/providers/CartWishlistProvider";
-import WishlistDrawer from "@/components/layout/WishlistDrawer";
-import GlobalToast from "@/components/layout/GlobalToast";
 import "./globals.css";
 
 const montserrat = Montserrat({
@@ -68,30 +60,7 @@ export default function RootLayout({
       className={`${montserrat.variable} ${playfair.variable} ${rozha.variable} ${notoDevanagari.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans bg-[#FBFBFC] text-[#1D2129]">
-        <SmoothScrollProvider>
-          <CartWishlistProvider>
-            {/* Top announcement bar */}
-            <TopBanner />
-
-            {/* Main Navbar */}
-            <Navbar />
-
-            {/* Page Content */}
-            <div className="flex-1 pb-6 md:pb-0">
-              {children}
-            </div>
-
-            {/* Global Footer */}
-            <Footer />
-
-            {/* Mobile Bottom Navigation (Visible only on mobile screens) */}
-            <MobileBottomNav />
-
-            {/* Slide-over Wishlist Drawer & Global Toast */}
-            <WishlistDrawer />
-            <GlobalToast />
-          </CartWishlistProvider>
-        </SmoothScrollProvider>
+        {children}
       </body>
     </html>
   );

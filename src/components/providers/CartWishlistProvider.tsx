@@ -10,7 +10,7 @@ import React, {
 } from "react";
 
 export interface CartItem {
-  id: number;
+  id: number | string;
   title: string;
   hindiTitle?: string;
   subtitle?: string;
@@ -25,7 +25,7 @@ export interface CartItem {
 }
 
 export interface WishlistItem {
-  id: number;
+  id: number | string;
   title: string;
   hindiTitle?: string;
   subtitle?: string;
@@ -60,7 +60,7 @@ interface CartWishlistContextType {
   freeDeliveryThreshold: number;
   addToCart: (
     item: {
-      id: number;
+      id: number | string;
       title: string;
       hindiTitle?: string;
       subtitle?: string;
@@ -75,16 +75,16 @@ interface CartWishlistContextType {
     quantity?: number,
     openDrawer?: boolean
   ) => void;
-  removeFromCart: (id: number) => void;
-  updateQuantity: (id: number, delta: number) => void;
-  setQuantity: (id: number, quantity: number) => void;
+  removeFromCart: (id: number | string) => void;
+  updateQuantity: (id: number | string, delta: number) => void;
+  setQuantity: (id: number | string, quantity: number) => void;
   clearCart: () => void;
   clearWishlist: () => void;
   clearAll: () => void;
-  isInCart: (id: number) => boolean;
-  getCartQuantity: (id: number) => number;
+  isInCart: (id: number | string) => boolean;
+  getCartQuantity: (id: number | string) => number;
   toggleWishlist: (item: {
-    id: number;
+    id: number | string;
     title: string;
     hindiTitle?: string;
     subtitle?: string;
@@ -98,9 +98,9 @@ interface CartWishlistContextType {
     reviewsCount?: number;
     coverType?: string;
   }) => void;
-  isInWishlist: (id: number) => boolean;
-  removeFromWishlist: (id: number) => void;
-  moveToCart: (id: number) => void;
+  isInWishlist: (id: number | string) => boolean;
+  removeFromWishlist: (id: number | string) => void;
+  moveToCart: (id: number | string) => void;
   isCartDrawerOpen: boolean;
   setIsCartDrawerOpen: (open: boolean) => void;
   isWishlistDrawerOpen: boolean;
@@ -156,7 +156,14 @@ export function CartWishlistProvider({
           try {
             const parsed = JSON.parse(savedWishlist);
             if (Array.isArray(parsed)) {
-              setWishlist(parsed);
+              // ponytail: drop old demo-seeded books (ids 101/102/105) from browser storage; remove once real per-user wishlist exists
+              const filtered = parsed.filter(
+                (w) => ![101, 102, 105].includes(Number(w.id))
+              );
+              setWishlist(filtered);
+              if (filtered.length !== parsed.length) {
+                localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify(filtered));
+              }
             }
           } catch (e) {
             console.error("Wishlist parse error", e);
@@ -242,14 +249,14 @@ export function CartWishlistProvider({
   }, [cartOriginalTotal, cartTotal]);
 
   const isInCart = useCallback(
-    (id: number) => {
+    (id: number | string) => {
       return cart.some((item) => item.id === id);
     },
     [cart]
   );
 
   const getCartQuantity = useCallback(
-    (id: number) => {
+    (id: number | string) => {
       const item = cart.find((item) => item.id === id);
       return item ? item.quantity : 0;
     },
@@ -259,7 +266,7 @@ export function CartWishlistProvider({
   const addToCart = useCallback(
     (
       item: {
-        id: number;
+        id: number | string;
         title: string;
         hindiTitle?: string;
         subtitle?: string;
@@ -320,7 +327,7 @@ export function CartWishlistProvider({
   );
 
   const removeFromCart = useCallback(
-    (id: number) => {
+    (id: number | string) => {
       setCart((prev) => {
         const item = prev.find((i) => i.id === id);
         if (item) {
@@ -337,7 +344,7 @@ export function CartWishlistProvider({
   );
 
   const updateQuantity = useCallback(
-    (id: number, delta: number) => {
+    (id: number | string, delta: number) => {
       setCart((prev) => {
         return prev
           .map((item) => {
@@ -354,7 +361,7 @@ export function CartWishlistProvider({
   );
 
   const setQuantity = useCallback(
-    (id: number, quantity: number) => {
+    (id: number | string, quantity: number) => {
       if (quantity <= 0) {
         removeFromCart(id);
         return;
@@ -395,7 +402,7 @@ export function CartWishlistProvider({
   }, [showToast]);
 
   const isInWishlist = useCallback(
-    (id: number) => {
+    (id: number | string) => {
       return wishlist.some((item) => item.id === id);
     },
     [wishlist]
@@ -403,7 +410,7 @@ export function CartWishlistProvider({
 
   const toggleWishlist = useCallback(
     (item: {
-      id: number;
+      id: number | string;
       title: string;
       hindiTitle?: string;
       subtitle?: string;
@@ -459,7 +466,7 @@ export function CartWishlistProvider({
   );
 
   const removeFromWishlist = useCallback(
-    (id: number) => {
+    (id: number | string) => {
       setWishlist((prev) => {
         const item = prev.find((i) => i.id === id);
         if (item) {
@@ -476,7 +483,7 @@ export function CartWishlistProvider({
   );
 
   const moveToCart = useCallback(
-    (id: number) => {
+    (id: number | string) => {
       const item = wishlist.find((w) => w.id === id);
       if (item) {
         addToCart(item, 1, false);

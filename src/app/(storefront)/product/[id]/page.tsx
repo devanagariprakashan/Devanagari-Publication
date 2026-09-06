@@ -1,6 +1,6 @@
 import ProductDetailClient from "@/components/product/ProductDetailClient";
 import { Metadata } from "next";
-import { ALL_BOOKS } from "@/data/booksData";
+import { fetchCatalogBooks } from "@/lib/catalog";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -8,10 +8,10 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const numericId = parseInt(id, 10);
-  const book = !isNaN(numericId)
-    ? ALL_BOOKS.find((b) => b.id === numericId)
-    : ALL_BOOKS.find((b) => b.title.toLowerCase().includes(id.toLowerCase()));
+  const books = await fetchCatalogBooks();
+  const book =
+    books.find((b) => String(b.id) === String(id)) ||
+    books.find((b) => b.title.toLowerCase().includes(id.toLowerCase()));
 
   if (!book) {
     return {
@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function ShopProductDetailPage({ params }: Props) {
+export default async function ProductDetailPage({ params }: Props) {
   const { id } = await params;
   return <ProductDetailClient id={id} />;
 }

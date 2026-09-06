@@ -73,131 +73,6 @@ interface UserReview {
   helpful: number;
 }
 
-// Initial Mock Orders
-const INITIAL_ORDERS: AccountOrder[] = [
-  {
-    id: "ord-1",
-    orderNumber: "DN123456",
-    title: "NIBANDH SANHITA",
-    hindiTitle: "निबंध संहिता एवं प्रारूप लेखन",
-    date: "12 May 2025",
-    rawDate: "2025-05-12",
-    price: 249,
-    originalPrice: 349,
-    status: "Delivered",
-    image: "/images/books/image-3.png",
-    author: "Mr. Mayank Jagdish Sharma",
-    pages: 456,
-    itemsCount: 1,
-    trackingNumber: "TRK-DN-994821",
-    courier: "BlueDart Express",
-    deliveredDate: "12 May 2025, 02:45 PM",
-  },
-  {
-    id: "ord-2",
-    orderNumber: "DN123455",
-    title: "GENERAL STUDIES PAPER 1",
-    hindiTitle: "MPPSC प्रारंभिक परीक्षा GS Paper 1",
-    date: "10 May 2025",
-    rawDate: "2025-05-10",
-    price: 499,
-    originalPrice: 799,
-    status: "Delivered",
-    image: "/images/books/image-10.png",
-    author: "Mr. Shubham Gupta",
-    pages: 720,
-    itemsCount: 1,
-    trackingNumber: "TRK-DN-994110",
-    courier: "Delhivery Surface",
-    deliveredDate: "10 May 2025, 11:30 AM",
-  },
-  {
-    id: "ord-3",
-    orderNumber: "DN123454",
-    title: "INDIAN POLITY",
-    hindiTitle: "भारतीय न्याय व राजव्यवस्था संहिता (BNS)",
-    date: "08 May 2025",
-    rawDate: "2025-05-08",
-    price: 299,
-    originalPrice: 450,
-    status: "Shipped",
-    image: "/images/books/image-5.png",
-    author: "Devanagari Law Faculty",
-    pages: 420,
-    itemsCount: 1,
-    trackingNumber: "TRK-DN-993708",
-    courier: "DTDC Priority",
-    estimatedDelivery: "Expected by tomorrow, 14 May",
-  },
-  {
-    id: "ord-4",
-    orderNumber: "DN123453",
-    title: "ENVIRONMENT NOTEBOOK",
-    hindiTitle: "पर्यावरण एवं पारिस्थितिकी हस्तलिखित नोट्स",
-    date: "05 May 2025",
-    rawDate: "2025-05-05",
-    price: 199,
-    originalPrice: 280,
-    status: "Processing",
-    image: "/images/books/image-4.png",
-    author: "Devanagari Editorial Board",
-    pages: 280,
-    itemsCount: 1,
-    trackingNumber: "TRK-DN-992514",
-    courier: "Devanagari Logistics",
-    estimatedDelivery: "Dispatching soon",
-  },
-];
-
-// Initial 3 Saved Addresses
-const INITIAL_ADDRESSES: UserAddress[] = [
-  {
-    id: "addr-1",
-    tag: "Home",
-    name: "Rahul Sharma",
-    phone: "+91 98765 43210",
-    street: "12, Shivaji Nagar",
-    area: "Near ICICI Bank",
-    city: "Pune",
-    state: "Maharashtra",
-    pincode: "411005",
-    isDefault: true,
-  },
-];
-
-// Exactly 24 Initial User Reviews matching the 24 badge
-const INITIAL_REVIEWS: UserReview[] = [
-  {
-    id: "rev-1",
-    bookTitle: "NIBANDH SANHITA",
-    bookImage: "/images/books/image-3.png",
-    rating: 5,
-    date: "14 May 2025",
-    title: "Must buy for MPPSC Mains Essay Paper!",
-    content: "All recent 2025 topics and statistical figures are covered in immense depth. The structure given for model essays helped me boost my score.",
-    helpful: 38,
-  },
-  {
-    id: "rev-2",
-    bookTitle: "GENERAL STUDIES PAPER 1",
-    bookImage: "/images/books/image-10.png",
-    rating: 5,
-    date: "05 April 2025",
-    title: "Complete coverage of all 10 units of MPPSC Prelims",
-    content: "The history of MP and tribal heritage section is exceptionally curated. Flowcharts and maps made revision super fast.",
-    helpful: 41,
-  },
-  {
-    id: "rev-3",
-    bookTitle: "ENVIRONMENT NOTEBOOK",
-    bookImage: "/images/books/image-4.png",
-    rating: 4,
-    date: "22 March 2025",
-    title: "Clean diagrams and crisp handwritten notes",
-    content: "Very concise, exam-oriented notes for environmental ecology and climate conventions.",
-    helpful: 19,
-  },
-];
 
 function AccountPageContent() {
   const router = useRouter();
@@ -220,9 +95,9 @@ function AccountPageContent() {
   });
 
   // State for addresses, orders, and reviews
-  const [addresses, setAddresses] = useState<UserAddress[]>(INITIAL_ADDRESSES);
-  const [orders, setOrders] = useState<AccountOrder[]>(INITIAL_ORDERS);
-  const [reviews, setReviews] = useState<UserReview[]>(INITIAL_REVIEWS);
+  const [addresses, setAddresses] = useState<UserAddress[]>([]);
+  const [orders, setOrders] = useState<AccountOrder[]>([]);
+  const [reviews, setReviews] = useState<UserReview[]>([]);
   const [orderFilter, setOrderFilter] = useState<string>("all");
   const [orderSearch, setOrderSearch] = useState<string>("");
 
@@ -314,45 +189,7 @@ function AccountPageContent() {
         }
       }
 
-      // 5. Wishlist: Seed 3 real items if currently empty so user can experience real-time removal
-      const wishlistKey = "devanagari_wishlist_v2";
-      const existingWishlist = localStorage.getItem(wishlistKey);
-      if (!existingWishlist || JSON.parse(existingWishlist).length === 0) {
-        const seedWishlist = [
-          {
-            id: 102,
-            title: "NIBANDH SANHITA",
-            hindiTitle: "निबंध संहिता एवं प्रारूप लेखन",
-            price: 249,
-            originalPrice: 349,
-            image: "/images/books/image-3.png",
-            author: "Mr. Mayank Jagdish Sharma",
-            rating: 4.9,
-          },
-          {
-            id: 105,
-            title: "MADHYA PRADESH SAMANYA GYAN",
-            hindiTitle: "मध्य प्रदेश सामान्य ज्ञान मानचित्र",
-            price: 389,
-            originalPrice: 550,
-            image: "/images/books/image-4.png",
-            author: "Mr. Mayank Jagdish Sharma",
-            rating: 4.9,
-          },
-          {
-            id: 101,
-            title: "SAMANYA HINDI EVAM VYAKARAN",
-            hindiTitle: "सामान्य हिन्दी एवं व्याकरण",
-            price: 900,
-            originalPrice: 1000,
-            image: "/images/books/image-2.png",
-            author: "Mr. Mayank Jagdish Sharma",
-            rating: 4.9,
-          },
-        ];
-        localStorage.setItem(wishlistKey, JSON.stringify(seedWishlist));
-        window.dispatchEvent(new Event("storage"));
-      }
+      // 5. Wishlist: loaded from provider (no seeding)
     }
   }, []);
 
@@ -363,8 +200,7 @@ function AccountPageContent() {
   };
 
   // Default address finder
-  const defaultAddress =
-    addresses.find((a) => a.isDefault) || addresses[0] || INITIAL_ADDRESSES[0];
+  const defaultAddress = addresses.find((a) => a.isDefault) || addresses[0];
 
   // Save/Update Address
   const handleSaveAddress = (e: React.FormEvent<HTMLFormElement>) => {
@@ -487,7 +323,7 @@ function AccountPageContent() {
   };
 
   // Fast Wishlist Removal with Real-time Count Update
-  const handleRemoveWishlist = (id: number, title?: string) => {
+  const handleRemoveWishlist = (id: number | string, title?: string) => {
     removeFromWishlist(id);
     triggerToast(`Removed ${title ? `"${title}"` : "item"} from wishlist!`);
   };

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import {
   Star,
@@ -11,7 +11,9 @@ import {
   BookOpen,
   ArrowRight,
   Check,
+  Sparkles,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { BookData } from "./HeroBook3D";
 import { useCartWishlist } from "@/components/providers/CartWishlistProvider";
 
@@ -176,8 +178,9 @@ export const HANDPICKED_BOOKS: HandpickedBook[] = [
 interface HandpickedSectionProps {
   onAddToCart?: (book: BookData) => void;
   onQuickView?: (book: BookData) => void;
-  wishlistIds?: number[];
+  wishlistIds?: Array<number | string>;
   onToggleWishlist?: (book: BookData) => void;
+  books?: HandpickedBook[];
 }
 
 export default function HandpickedSection({
@@ -185,14 +188,20 @@ export default function HandpickedSection({
   onQuickView,
   wishlistIds = [],
   onToggleWishlist,
+  books,
 }: HandpickedSectionProps) {
+  const router = useRouter();
   const { isInCart, isInWishlist, addToCart, toggleWishlist } =
     useCartWishlist();
 
+  const list = books ?? HANDPICKED_BOOKS;
+  const FEATURED_LIMIT = 8;
+  const hasTooManyBooks = list.length > FEATURED_LIMIT;
+
   const [currentPage, setCurrentPage] = useState(0);
-  const [addedIds, setAddedIds] = useState<number[]>([]);
+  const [addedIds, setAddedIds] = useState<Array<number | string>>([]);
   const itemsPerPage = 4;
-  const totalPages = Math.ceil(HANDPICKED_BOOKS.length / itemsPerPage);
+  const totalPages = Math.ceil(list.length / itemsPerPage);
 
   const handlePrev = () => {
     setCurrentPage((prev) => (prev > 0 ? prev - 1 : totalPages - 1));
@@ -275,13 +284,10 @@ export default function HandpickedSection({
   };
 
   const handleBrowseAll = () => {
-    const el = document.getElementById("bestsellers");
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth" });
-    }
+    router.push("/shop");
   };
 
-  const visibleBooks = HANDPICKED_BOOKS.slice(
+  const visibleBooks = list.slice(
     currentPage * itemsPerPage,
     (currentPage + 1) * itemsPerPage,
   );
@@ -317,7 +323,7 @@ export default function HandpickedSection({
 
             {/* Subtitle */}
             <p className="text-sm sm:text-[15px] text-gray-500 mt-2.5 max-w-xl font-normal leading-relaxed">
-              Editorial selections from the Devanagari team — the books we'd put
+              Editorial selections from the Devanagari team — the books we&apos;d put
               on our own shelves.
             </p>
           </div>
@@ -341,6 +347,13 @@ export default function HandpickedSection({
             </button>
           </div>
         </div>
+
+        {hasTooManyBooks && (
+          <div className="mb-4 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
+            <Sparkles className="h-4 w-4 shrink-0" />
+            Featured section limit is 8 books at a time. Remove extra items or keep only the first 8 visible.
+          </div>
+        )}
 
         {/* ================= PRODUCT CARDS GRID ================= */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 lg:gap-5 items-stretch">
@@ -390,9 +403,11 @@ export default function HandpickedSection({
                 {/* --- Center: Book 3D Mockup Image --- */}
                 <div className="relative z-10 w-full h-36 sm:h-40 lg:h-44 flex items-center justify-center my-1 sm:my-2 px-2">
                   <div className="relative w-full h-full flex items-center justify-center">
-                    <img
+                    <Image
                       src={book.image}
                       alt={book.title}
+                      width={320}
+                      height={460}
                       className="max-h-full max-w-full object-contain filter drop-shadow-[0_10px_16px_rgba(0,0,0,0.13)] group-hover:drop-shadow-[0_16px_22px_rgba(198,24,33,0.18)] group-hover:scale-105 transition-all duration-300"
                     />
                   </div>

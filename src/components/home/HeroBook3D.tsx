@@ -16,7 +16,7 @@ export type BookCoverType =
   | "geography";
 
 export interface BookData {
-  id: number;
+  id: number | string;
   title: string;
   subtitle?: string;
   subject: string;

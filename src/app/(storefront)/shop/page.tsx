@@ -35,6 +35,7 @@ import {
   SHOP_LANGUAGES,
   SHOP_AUTHORS,
 } from "@/data/booksData";
+import { fetchCatalogBooks } from "@/lib/catalog";
 import BookModal from "@/components/home/BookModal";
 import { BookData } from "@/components/home/HeroBook3D";
 import { useCartWishlist } from "@/components/providers/CartWishlistProvider";
@@ -52,6 +53,24 @@ function ShopContent() {
     setIsCartDrawerOpen,
     setIsWishlistDrawerOpen,
   } = useCartWishlist();
+
+  const [catalogBooks, setCatalogBooks] = useState<BookItem[]>(ALL_BOOKS);
+
+  useEffect(() => {
+    let active = true;
+    fetchCatalogBooks()
+      .then((books) => {
+        if (!active) return;
+        setCatalogBooks(books.length > 0 ? books : ALL_BOOKS);
+      })
+      .catch(() => {
+        if (active) setCatalogBooks(ALL_BOOKS);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // URL query params
   const paramCategory = searchParams.get("category") || "all";
@@ -197,9 +216,9 @@ function ShopContent() {
 
   // Filter & Sort Logic
   const filteredBooks = useMemo(() => {
-    return ALL_BOOKS.filter((book) => {
+    return catalogBooks.filter((book) => {
       // Wishlist only filter
-      if (wishlistOnly && !wishlist.some((w) => w.id === book.id)) {
+      if (wishlistOnly && !wishlist.some((w) => String(w.id) === String(book.id))) {
         return false;
       }
 
@@ -259,36 +278,27 @@ function ShopContent() {
         return false;
       }
 
-      // Offers only (discount > 20%)
-      if (offersOnly && book.discountPercent < 20) {
+      // Offers only
+      if (offersOnly && book.discountPercent <= 0) {
         return false;
       }
 
       return true;
     }).sort((a, b) => {
-      if (sortBy === "price-low") return a.price - b.price;
-      if (sortBy === "price-high") return b.price - a.price;
-      if (sortBy === "rating") return b.rating - a.rating;
-      if (sortBy === "discount") return b.discountPercent - a.discountPercent;
-      if (sortBy === "newest") return b.id - a.id;
-      // Default: featured / popularity
-      return b.rating * b.reviewsCount - a.rating * a.reviewsCount;
+      switch (sortBy) {
+        case "price-low":
+          return a.price - b.price;
+        case "price-high":
+          return b.price - a.price;
+        case "rating":
+          return b.rating - a.rating;
+        case "newest":
+          return Number(String(b.id).replace(/\D/g, "")) - Number(String(a.id).replace(/\D/g, ""));
+        default:
+          return (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0) || b.rating - a.rating;
+      }
     });
-  }, [
-    wishlistOnly,
-    wishlist,
-    selectedCategory,
-    searchQuery,
-    selectedFormats,
-    selectedLanguages,
-    selectedAuthors,
-    maxPrice,
-    inStockOnly,
-    bestsellerOnly,
-    newReleaseOnly,
-    offersOnly,
-    sortBy,
-  ]);
+  }, [catalogBooks, wishlist, wishlistOnly, selectedCategory, searchQuery, selectedFormats, selectedLanguages, selectedAuthors, maxPrice, minPrice, inStockOnly, bestsellerOnly, newReleaseOnly, offersOnly, sortBy]);
 
   // Active filters count
   const activeFiltersCount =
@@ -529,7 +539,7 @@ function ShopContent() {
                         <span>{fmt}</span>
                       </div>
                       <span className="text-[10px] text-gray-400">
-                        {ALL_BOOKS.filter((b) => b.format === fmt).length}
+                        {catalogBooks.filter((b) => b.format === fmt).length}
                       </span>
                     </label>
                   );
@@ -566,7 +576,7 @@ function ShopContent() {
                         <span>{lang}</span>
                       </div>
                       <span className="text-[10px] text-gray-400">
-                        {ALL_BOOKS.filter((b) => b.language === lang).length}
+                        {catalogBooks.filter((b) => b.language === lang).length}
                       </span>
                     </label>
                   );
@@ -635,7 +645,7 @@ function ShopContent() {
                 <p className="text-[11px] sm:text-xs text-gray-500 font-medium whitespace-nowrap">
                   <span className="hidden xs:inline">Showing </span>
                   <span className="font-bold text-gray-900">{filteredBooks.length}</span>
-                  <span className="text-gray-400">/{ALL_BOOKS.length}</span>
+                  <span className="text-gray-400">/{catalogBooks.length}</span>
                   <span className="hidden sm:inline"> books</span>
                 </p>
               </div>
@@ -1432,7 +1442,7 @@ function ShopContent() {
                           <span>{fmt}</span>
                         </div>
                         <span className="text-[10px] text-gray-400 font-medium">
-                          {ALL_BOOKS.filter((b) => b.format === fmt).length}
+                          {catalogBooks.filter((b) => b.format === fmt).length}
                         </span>
                       </label>
                     );
@@ -1469,7 +1479,7 @@ function ShopContent() {
                           <span>{lang}</span>
                         </div>
                         <span className="text-[10px] text-gray-400 font-medium">
-                          {ALL_BOOKS.filter((b) => b.language === lang).length}
+                          {catalogBooks.filter((b) => b.language === lang).length}
                         </span>
                       </label>
                     );

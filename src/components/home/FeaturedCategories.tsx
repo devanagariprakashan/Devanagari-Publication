@@ -23,6 +23,26 @@ export interface CategoryItem {
   filterKey?: string;
 }
 
+export interface FeaturedCategory {
+  id: string;
+  name: string;
+  count: number;
+  slug?: string;
+  isNew?: boolean;
+}
+
+const ICON_MAP: Record<string, React.ElementType> = {
+  "current-affairs": FileText,
+  "civil-judge": Landmark,
+  judiciary: Landmark,
+  gk: Globe,
+  "general-knowledge": Globe,
+  mppsc: GraduationCap,
+  upsc: Trophy,
+  literature: Feather,
+  hindi: Feather,
+};
+
 const CATEGORIES: CategoryItem[] = [
   {
     id: "current-affairs",
@@ -78,12 +98,27 @@ const CATEGORIES: CategoryItem[] = [
 
 interface FeaturedCategoriesProps {
   onSelectCategory?: (categoryId: string) => void;
+  categories?: FeaturedCategory[];
 }
 
 export default function FeaturedCategories({
   onSelectCategory,
+  categories,
 }: FeaturedCategoriesProps) {
-  const [selectedId, setSelectedId] = useState<string>("current-affairs");
+  const [selectedId, setSelectedId] = useState<string>(
+    categories?.[0]?.id ?? "current-affairs",
+  );
+
+  const list: CategoryItem[] = categories
+    ? categories.map((c) => ({
+        id: c.id,
+        title: c.name,
+        count: c.count,
+        icon: ICON_MAP[c.slug ?? ""] ?? LayoutGrid,
+        isNew: c.isNew,
+        filterKey: c.slug ?? "all",
+      }))
+    : CATEGORIES;
 
 
 
@@ -151,7 +186,7 @@ export default function FeaturedCategories({
 
         {/* CATEGORIES GRID / HORIZONTAL ROW */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2.5 sm:gap-3 lg:gap-3.5 mt-3">
-          {CATEGORIES.map((cat) => {
+          {list.map((cat) => {
             const Icon = cat.icon;
             const isSelected = selectedId === cat.id;
 

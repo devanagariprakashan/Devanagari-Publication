@@ -188,13 +188,17 @@ export const TOP_AUTHORS: AuthorItem[] = [
 
 interface TopAuthorsSectionProps {
   onSelectBook?: (book: BookData) => void;
+  authors?: AuthorItem[];
 }
 
 export default function TopAuthorsSection({
   onSelectBook,
+  authors,
 }: TopAuthorsSectionProps) {
   const [selectedAuthor, setSelectedAuthor] = useState<AuthorItem | null>(null);
   const [imageErrorMap, setImageErrorMap] = useState<Record<string, boolean>>({});
+
+  const list = authors ?? TOP_AUTHORS;
 
   const handleImageError = (authorId: string) => {
     setImageErrorMap((prev) => ({ ...prev, [authorId]: true }));
@@ -247,7 +251,7 @@ export default function TopAuthorsSection({
 
         {/* RESPONSIVE & COMPACT AUTHORS GRID */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-3.5 sm:gap-4 md:gap-5">
-          {TOP_AUTHORS.map((author) => {
+          {list.map((author) => {
             const hasImgError = imageErrorMap[author.id];
 
             return (

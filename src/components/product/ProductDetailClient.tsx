@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -34,6 +34,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { ALL_BOOKS, BookItem } from "@/data/booksData";
+import { fetchCatalogBooks } from "@/lib/catalog";
 import { useCartWishlist } from "@/components/providers/CartWishlistProvider";
 import SampleReaderModal from "@/components/product/SampleReaderModal";
 
@@ -51,21 +52,36 @@ export default function ProductDetailClient({ id }: ProductDetailClientProps) {
     setIsCartDrawerOpen,
   } = useCartWishlist();
 
+  const [catalogBooks, setCatalogBooks] = useState<BookItem[]>(ALL_BOOKS);
+
+  useEffect(() => {
+    let active = true;
+    fetchCatalogBooks()
+      .then((books) => {
+        if (!active) return;
+        setCatalogBooks(books.length > 0 ? books : ALL_BOOKS);
+      })
+      .catch(() => {
+        if (active) setCatalogBooks(ALL_BOOKS);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const activeBooks = catalogBooks.length > 0 ? catalogBooks : ALL_BOOKS;
+
   // Find book by id or fallback to Nibandh Sanhita (id: 102)
   const book: BookItem = useMemo(() => {
     if (!id) {
-      return ALL_BOOKS.find((b) => b.id === 102) || ALL_BOOKS[0];
+      return activeBooks.find((b) => String(b.id) === String(102)) || activeBooks[0];
     }
-    const numericId = parseInt(id, 10);
-    const found = !isNaN(numericId)
-      ? ALL_BOOKS.find((b) => b.id === numericId)
-      : ALL_BOOKS.find(
-          (b) =>
-            b.title.toLowerCase().includes(id.toLowerCase()) ||
-            b.categorySlug === id,
-        );
-    return found || ALL_BOOKS.find((b) => b.id === 102) || ALL_BOOKS[0];
-  }, [id]);
+    const found = activeBooks.find(
+      (b) => String(b.id) === String(id) || b.title.toLowerCase().includes(id.toLowerCase()) || b.categorySlug === id,
+    );
+    return found || activeBooks.find((b) => String(b.id) === String(102)) || activeBooks[0];
+  }, [activeBooks, id]);
 
   // Gallery items
   const galleryItems = useMemo(() => {
@@ -105,17 +121,17 @@ export default function ProductDetailClient({ id }: ProductDetailClientProps) {
 
   // Related books from same category/exam (up to 4 items)
   const relatedBooks = useMemo(() => {
-    const primary = ALL_BOOKS.filter(
+    const primary = activeBooks.filter(
       (b) =>
-        b.id !== book.id &&
+        String(b.id) !== String(book.id) &&
         (b.category === book.category || b.exam === book.exam),
     );
     if (primary.length >= 4) return primary.slice(0, 4);
-    const fallback = ALL_BOOKS.filter(
-      (b) => b.id !== book.id && !primary.some((p) => p.id === b.id),
+    const fallback = activeBooks.filter(
+      (b) => String(b.id) !== String(book.id) && !primary.some((p) => String(p.id) === String(b.id)),
     );
     return [...primary, ...fallback].slice(0, 4);
-  }, [book]);
+  }, [activeBooks, book]);
 
   const handlePrevImage = () => {
     setActiveImageIndex((prev) => (prev > 0 ? prev - 1 : galleryItems.length - 1));

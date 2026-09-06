@@ -1,5 +1,5 @@
 export interface BookItem {
-  id: number;
+  id: number | string;
   title: string;
   hindiTitle?: string;
   subtitle?: string;
