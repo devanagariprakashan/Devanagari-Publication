@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Phone,
@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   Building,
 } from "lucide-react";
+import { getSiteSettings, firstPhone, SITE_DEFAULTS, type SiteSettings } from "@/lib/site-settings";
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -23,6 +24,10 @@ export default function ContactPage() {
     message: "",
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [site, setSite] = useState<SiteSettings>(SITE_DEFAULTS);
+
+  // ponytail: same single-row read as Footer, no server prefetch until SEO needs it
+  useEffect(() => { getSiteSettings().then(setSite); }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,8 +89,8 @@ export default function ContactPage() {
             </div>
             <div>
               <h3 className="font-bold text-gray-900 text-sm">Helpline</h3>
-              <a href="tel:+919876543210" className="text-xs font-semibold text-[#C61821] hover:underline block mt-0.5">
-                +91 98765 43210
+              <a href={`tel:+${firstPhone(site.phones).replace(/\D/g, "")}`} className="text-xs font-semibold text-[#C61821] hover:underline block mt-0.5">
+                {site.phones}
               </a>
             </div>
           </div>
@@ -96,7 +101,7 @@ export default function ContactPage() {
             </div>
             <div>
               <h3 className="font-bold text-gray-900 text-sm">WhatsApp</h3>
-              <a href="https://wa.me/919876543210" target="_blank" rel="noreferrer" className="text-xs font-semibold text-emerald-600 hover:underline block mt-0.5">
+              <a href={site.whatsapp_url} target="_blank" rel="noreferrer" className="text-xs font-semibold text-emerald-600 hover:underline block mt-0.5">
                 Chat Now →
               </a>
             </div>
@@ -108,8 +113,8 @@ export default function ContactPage() {
             </div>
             <div>
               <h3 className="font-bold text-gray-900 text-sm">Email</h3>
-              <a href="mailto:support@devanagaribooks.com" className="text-xs font-semibold text-blue-600 hover:underline block mt-0.5 truncate w-32 sm:w-full">
-                support@devanagaribooks.com
+              <a href={`mailto:${site.email}`} className="text-xs font-semibold text-blue-600 hover:underline block mt-0.5 truncate w-32 sm:w-full">
+                {site.email}
               </a>
             </div>
           </div>
@@ -121,7 +126,7 @@ export default function ContactPage() {
             <div>
               <h3 className="font-bold text-gray-900 text-sm">Head Office</h3>
               <p className="text-[10px] text-gray-500 mt-0.5 leading-tight">
-                Educational Press Complex, Bhopal / Indore, MP
+                {site.address}
               </p>
             </div>
           </div>

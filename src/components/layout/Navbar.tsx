@@ -11,6 +11,7 @@ import {
   User,
   Heart,
   ShoppingCart,
+  Bell,
   Phone,
   ArrowRight,
   BookOpen,
@@ -35,6 +36,7 @@ import BooksMegaMenu, {
   PRICE_LINKS,
 } from "@/components/layout/BooksMegaMenu";
 import { useCartWishlist } from "@/components/providers/CartWishlistProvider";
+import { createClient } from "@/lib/supabase/client";
 
 interface NavbarProps {
   onSearch?: (query: string) => void;
@@ -70,6 +72,9 @@ export default function Navbar({
   const [isMobileCategoriesAccordionOpen, setIsMobileCategoriesAccordionOpen] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false); // Account Dropdown
+  // ponytail: no read-state persistence, bell just shows latest 2; add read tracking when needed
+  const [isBellOpen, setIsBellOpen] = useState(false);
+  const [announcements, setAnnouncements] = useState<{ id: string; text: string }[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false); // Login state
   const [userProfile, setUserProfile] = useState({
     name: "User",
@@ -144,6 +149,19 @@ export default function Navbar({
   const categoriesBtnRef = useRef<HTMLButtonElement>(null);
   const booksBtnRef = useRef<HTMLDivElement>(null);
   const accountBtnRef = useRef<HTMLDivElement>(null);
+  const bellBtnRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    createClient()
+      .from("announcements")
+      .select("id,text")
+      .eq("is_active", true)
+      .order("created_at", { ascending: false })
+      .limit(2)
+      .then(({ data }) => {
+        if (data) setAnnouncements(data);
+      });
+  }, [pathname]);
 
   const handleLogout = () => {
     if (typeof window !== "undefined") {
@@ -168,6 +186,7 @@ export default function Navbar({
     setIsMobileMenuOpen(false);
     setIsMobileSearchOpen(false);
     setIsAccountMenuOpen(false);
+    setIsBellOpen(false);
   }
 
   // Close dropdowns on outside click or Escape key
@@ -199,6 +218,13 @@ export default function Navbar({
       ) {
         setIsAccountMenuOpen(false);
       }
+
+      if (
+        bellBtnRef.current &&
+        !bellBtnRef.current.contains(event.target as Node)
+      ) {
+        setIsBellOpen(false);
+      }
     }
 
     function handleKeyDown(event: KeyboardEvent) {
@@ -210,6 +236,7 @@ export default function Navbar({
         setIsMobileMenuOpen(false);
         setIsMobileSearchOpen(false);
         setIsAccountMenuOpen(false);
+        setIsBellOpen(false);
       }
     }
 
@@ -423,6 +450,50 @@ export default function Navbar({
           {/* RIGHT: ACTION ICONS */}
           {/* ======================================================== */}
           <div className="flex items-center gap-1 sm:gap-2.5 lg:gap-3 text-gray-700 shrink-0">
+            {/* Announcements bell */}
+            <div ref={bellBtnRef} className="relative hidden md:block">
+              <button
+                type="button"
+                onClick={() => setIsBellOpen((prev) => !prev)}
+                aria-label="Announcements"
+                aria-expanded={isBellOpen}
+                className="flex p-2 rounded-[5px] transition-colors cursor-pointer text-gray-700 hover:text-[#C61821] hover:bg-red-50"
+                title="Announcements"
+              >
+                <Bell className="w-6 h-6" strokeWidth={1.8} />
+                {announcements.length > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#C61821]" />
+                )}
+              </button>
+              {isBellOpen && (
+                <div className="absolute top-full right-0 pt-2 w-72 z-50">
+                  <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                    <div className="p-2 space-y-1">
+                      {announcements.length === 0 && (
+                        <p className="px-3 py-2.5 text-sm text-gray-500">
+                          No announcements.
+                        </p>
+                      )}
+                      {announcements.map((a) => (
+                        <p
+                          key={a.id}
+                          className="px-3 py-2.5 text-sm text-gray-700"
+                        >
+                          {a.text}
+                        </p>
+                      ))}
+                      <Link
+                        href="/announcements"
+                        onClick={() => setIsBellOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-[#C61821] bg-red-50 rounded-xl transition-colors hover:bg-red-100/70"
+                      >
+                        Show all
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
             {/* Separator between Menu & Actions */}
             <div className="hidden lg:block h-6 w-px bg-gray-200 mr-1" />
             {/* Profile - Desktop only */}

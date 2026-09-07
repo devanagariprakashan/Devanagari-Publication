@@ -109,6 +109,20 @@ create table if not exists public.announcements (
   created_at timestamptz default timezone('utc'::text, now()) not null
 );
 
+-- ponytail: single-row table (id=1), add columns when admin truly needs new fields
+create table if not exists public.site_settings (
+  id integer primary key,
+  full_name text,
+  email text,
+  phones text,
+  address text,
+  youtube_url text,
+  whatsapp_url text,
+  instagram_url text,
+  telegram_url text,
+  updated_at timestamptz default timezone('utc'::text, now()) not null
+);
+
 -- Grant access to Supabase roles (RLS is off, so explicit grants are required)
 grant usage on schema public to anon, authenticated, service_role;
 grant all on all tables in schema public to anon, authenticated, service_role;

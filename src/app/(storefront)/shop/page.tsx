@@ -935,7 +935,7 @@ function ShopContent() {
                         {/* Book Cover Image */}
                         <Link
                           href={`/product/${book.id}`}
-                          className="w-28 sm:w-32 aspect-[1/1.4] relative flex items-center justify-center cursor-pointer group-hover:scale-105 transition-transform duration-200"
+                          className="w-full aspect-square flex items-center justify-center relative cursor-pointer group-hover:scale-105 transition-transform duration-200"
                         >
                           <img
                             src={book.image}

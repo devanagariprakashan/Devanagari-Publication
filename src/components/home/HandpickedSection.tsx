@@ -195,12 +195,12 @@ export default function HandpickedSection({
     useCartWishlist();
 
   const list = books ?? HANDPICKED_BOOKS;
-  const FEATURED_LIMIT = 8;
+  const FEATURED_LIMIT = 10;
   const hasTooManyBooks = list.length > FEATURED_LIMIT;
 
   const [currentPage, setCurrentPage] = useState(0);
   const [addedIds, setAddedIds] = useState<Array<number | string>>([]);
-  const itemsPerPage = 4;
+  const itemsPerPage = 5;
   const totalPages = Math.ceil(list.length / itemsPerPage);
 
   const handlePrev = () => {
@@ -351,12 +351,12 @@ export default function HandpickedSection({
         {hasTooManyBooks && (
           <div className="mb-4 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
             <Sparkles className="h-4 w-4 shrink-0" />
-            Featured section limit is 8 books at a time. Remove extra items or keep only the first 8 visible.
+            Featured section limit is 10 books at a time. Remove extra items or keep only the first 10 visible.
           </div>
         )}
 
         {/* ================= PRODUCT CARDS GRID ================= */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 lg:gap-5 items-stretch">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4 lg:gap-5 items-stretch">
           {visibleBooks.map((book) => {
             const isWishlisted =
               wishlistIds.includes(book.id) || isInWishlist(book.id);
@@ -422,7 +422,7 @@ export default function HandpickedSection({
                     </div>
 
                     {/* Book Title */}
-                    <h3 className="text-[13.5px] sm:text-[14.5px] font-bold text-gray-900 group-hover:text-[#C61821] transition-colors line-clamp-1 mt-0.5 font-sans h-5 flex items-center">
+                    <h3 className="text-[14.5px] sm:text-[15.5px] font-bold text-gray-900 group-hover:text-[#C61821] transition-colors line-clamp-1 mt-0.5 min-h-[18px] font-sans flex items-center">
                       {book.title}
                     </h3>
 

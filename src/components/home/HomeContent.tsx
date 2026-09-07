@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
+import { useRouter } from "next/navigation";
 import HeroSection from "@/components/home/HeroSection";
 import FeaturedCategories, { FeaturedCategory } from "@/components/home/FeaturedCategories";
 import HandpickedSection, { HandpickedBook } from "@/components/home/HandpickedSection";
@@ -8,7 +9,6 @@ import BestsellersSection, { BestsellerBook } from "@/components/home/Bestseller
 import TopAuthorsSection, { AuthorItem } from "@/components/home/TopAuthorsSection";
 import TestimonialsSection from "@/components/home/TestimonialsSection";
 import NewsletterSection from "@/components/home/NewsletterSection";
-import BookModal from "@/components/home/BookModal";
 import { BookData } from "@/components/home/HeroBook3D";
 import { useCartWishlist } from "@/components/providers/CartWishlistProvider";
 
@@ -25,8 +25,9 @@ export default function HomeContent({
   handpicked,
   authors,
 }: HomeContentProps) {
-  const [selectedBook, setSelectedBook] = useState<BookData | null>(null);
+  const router = useRouter();
   const { wishlist, addToCart, toggleWishlist } = useCartWishlist();
+  const goToProduct = (book: BookData) => router.push(`/product/${book.id}`);
 
   const wishlistIds = wishlist.map((w) => w.id);
 
@@ -43,26 +44,6 @@ export default function HomeContent({
       edition: book.edition,
       coverType: book.coverType,
     });
-  };
-
-  const handleBuyNow = (book: BookData) => {
-    addToCart(
-      {
-        id: book.id,
-        title: book.title,
-        subtitle: book.subtitle,
-        author: book.author || "Devanagari Publications",
-        category: book.category,
-        price: book.price,
-        originalPrice: book.originalPrice,
-        image: book.image || "/images/books/image-2.png",
-        edition: book.edition,
-        coverType: book.coverType,
-      },
-      1,
-      true
-    );
-    setSelectedBook(null);
   };
 
   const handleToggleWishlist = (book: BookData) => {
@@ -86,7 +67,7 @@ export default function HomeContent({
     <>
       {/* 1. HERO SECTION WITH 3D CURVED CAROUSEL & FLOATING STATS */}
       <HeroSection
-        onSelectBook={(book) => setSelectedBook(book)}
+        onSelectBook={goToProduct}
         onExploreBooks={() => {
           const el = document.getElementById("bestsellers");
           el?.scrollIntoView({ behavior: "smooth" });
@@ -104,7 +85,7 @@ export default function HomeContent({
       <BestsellersSection
         books={bestsellers}
         onAddToCart={handleAddToCart}
-        onQuickView={(book) => setSelectedBook(book)}
+        onQuickView={goToProduct}
         wishlistIds={wishlistIds}
         onToggleWishlist={handleToggleWishlist}
       />
@@ -113,7 +94,7 @@ export default function HomeContent({
       <HandpickedSection
         books={handpicked}
         onAddToCart={handleAddToCart}
-        onQuickView={(book) => setSelectedBook(book)}
+        onQuickView={goToProduct}
         wishlistIds={wishlistIds}
         onToggleWishlist={handleToggleWishlist}
       />
@@ -121,7 +102,7 @@ export default function HomeContent({
       {/* 5. TOP AUTHORS / VOICES YOU CAN TRUST SECTION */}
       <TopAuthorsSection
         authors={authors}
-        onSelectBook={(book) => setSelectedBook(book)}
+        onSelectBook={goToProduct}
       />
 
       {/* 6. TESTIMONIALS / LOVED BY READERS ACROSS INDIA */}
@@ -129,16 +110,6 @@ export default function HomeContent({
 
       {/* 7. NEWSLETTER SUBSCRIPTION SECTION */}
       <NewsletterSection />
-
-      {/* QUICK VIEW / PURCHASE MODAL */}
-      <BookModal
-        book={selectedBook}
-        onClose={() => setSelectedBook(null)}
-        onAddToCart={handleAddToCart}
-        onBuyNow={handleBuyNow}
-        isWishlisted={selectedBook ? wishlistIds.includes(selectedBook.id) : false}
-        onToggleWishlist={handleToggleWishlist}
-      />
     </>
   );
 }

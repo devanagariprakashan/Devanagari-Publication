@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import { deleteAuthor } from "@/actions/authors";
+import Link from "next/link";
+import { createAuthor, deleteAuthor } from "@/actions/authors";
 import { AuthorForm } from "@/components/admin/AuthorForm";
 import { DeleteButton } from "@/components/admin/DeleteButton";
 import { card, pageTitle, tableTd, tableTh } from "@/components/admin/ui";
@@ -17,7 +18,7 @@ export default async function AuthorsPage() {
 
       <div className={card + " p-6"}>
         <h2 className="mb-4 text-lg font-semibold text-gray-900">Add Author</h2>
-        <AuthorForm />
+        <AuthorForm action={createAuthor} />
       </div>
 
       <div className={card}>
@@ -44,7 +45,15 @@ export default async function AuthorsPage() {
                     </span>
                   </td>
                   <td className={tableTd}>
-                    <DeleteButton action={deleteAuthor} id={a.id} />
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/admin/authors/${a.id}/edit`}
+                        className="text-sm font-medium text-brand-600 hover:underline"
+                      >
+                        Edit
+                      </Link>
+                      <DeleteButton action={deleteAuthor} id={a.id} />
+                    </div>
                   </td>
                 </tr>
               ))}

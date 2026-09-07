@@ -279,3 +279,6 @@ insert into public.inquiries (id, name, email, phone, message, status) values ('
 -- announcements
 insert into public.announcements (id, text, is_active) values ('ann-1', 'Free shipping on orders above ₹499', true) on conflict (id) do nothing;
 insert into public.announcements (id, text, is_active) values ('ann-2', 'New 2025-26 editions of MPPSC books now available', true) on conflict (id) do nothing;
+
+-- site profile (single row, id=1)
+insert into public.site_settings (id, full_name, email, phones, address, youtube_url, whatsapp_url, instagram_url, telegram_url) values (1, 'Devanagari Books & Publications', 'support@devanagaribooks.com', '+91 98765 43210 / (0755) 244-8900', 'Devanagari Publication House, Press Complex, Zone-I, Bhopal, Madhya Pradesh - 462011', 'https://youtube.com', 'https://wa.me/919876543210', 'https://instagram.com', 'https://telegram.org') on conflict (id) do nothing;

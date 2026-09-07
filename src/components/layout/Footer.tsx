@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Phone,
@@ -18,9 +18,22 @@ import {
   Check,
 } from "lucide-react";
 
+import { createClient } from "@/lib/supabase/client";
+import { SITE_DEFAULTS, type SiteSettings } from "@/lib/site-settings";
+
 export default function Footer() {
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [site, setSite] = useState<SiteSettings>(SITE_DEFAULTS);
+
+  // ponytail: client fetch like TopBanner, no context/store until >2 consumers need sync
+  useEffect(() => {
+    let cancelled = false;
+    createClient().from("site_settings").select("*").eq("id", 1).maybeSingle().then(({ data }) => {
+      if (!cancelled && data) setSite({ ...SITE_DEFAULTS, ...data });
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   const handleNewsletterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,25 +163,25 @@ export default function Footer() {
               <div className="flex items-start gap-3 text-gray-300">
                 <MapPin className="w-4 h-4 text-[#EF4444] shrink-0 mt-0.5" />
                 <span className="leading-snug">
-                  Devanagari Publication House, Press Complex, Zone-I, Bhopal, Madhya Pradesh - 462011
+                  {site.address}
                 </span>
               </div>
               <div className="flex items-center gap-3 text-gray-300">
                 <Mail className="w-4 h-4 text-[#EF4444] shrink-0" />
                 <a
-                  href="mailto:support@devanagaribooks.com"
+                  href={`mailto:${site.email}`}
                   className="hover:text-white transition-colors truncate"
                 >
-                  support@devanagaribooks.com
+                  {site.email}
                 </a>
               </div>
               <div className="flex items-center gap-3 text-gray-300">
                 <Phone className="w-4 h-4 text-[#EF4444] shrink-0" />
                 <a
-                  href="tel:+919876543210"
+                  href={`tel:+${site.phones.replace(/\D/g, "").slice(-12) || "919876543210"}`}
                   className="hover:text-white transition-colors"
                 >
-                  +91 98765 43210 / (0755) 244-8900
+                  {site.phones}
                 </a>
               </div>
             </div>
@@ -181,7 +194,7 @@ export default function Footer() {
               <div className="flex items-center gap-2">
                 {/* Telegram */}
                 <a
-                  href="https://telegram.org"
+                  href={site.telegram_url}
                   target="_blank"
                   rel="noreferrer"
                   aria-label="Telegram Channel"
@@ -194,7 +207,7 @@ export default function Footer() {
 
                 {/* YouTube */}
                 <a
-                  href="https://youtube.com"
+                  href={site.youtube_url}
                   target="_blank"
                   rel="noreferrer"
                   aria-label="YouTube Channel"
@@ -207,7 +220,7 @@ export default function Footer() {
 
                 {/* WhatsApp */}
                 <a
-                  href="https://wa.me/919876543210"
+                  href={site.whatsapp_url}
                   target="_blank"
                   rel="noreferrer"
                   aria-label="WhatsApp Support"
@@ -220,7 +233,7 @@ export default function Footer() {
 
                 {/* Instagram */}
                 <a
-                  href="https://instagram.com"
+                  href={site.instagram_url}
                   target="_blank"
                   rel="noreferrer"
                   aria-label="Instagram Profile"

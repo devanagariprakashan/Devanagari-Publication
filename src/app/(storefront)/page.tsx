@@ -86,7 +86,7 @@ export default async function Home() {
         .eq("is_featured", true)
         .eq("is_active", true)
         .order("id")
-        .limit(8),
+        .limit(10),
       supabase.from("authors").select("*").eq("is_active", true),
     ]);
 
