@@ -6,9 +6,11 @@ import HeroSection from "@/components/home/HeroSection";
 import FeaturedCategories, { FeaturedCategory } from "@/components/home/FeaturedCategories";
 import HandpickedSection, { HandpickedBook } from "@/components/home/HandpickedSection";
 import BestsellersSection, { BestsellerBook } from "@/components/home/BestsellersSection";
-import TopAuthorsSection, { AuthorItem } from "@/components/home/TopAuthorsSection";
 import TestimonialsSection from "@/components/home/TestimonialsSection";
 import NewsletterSection from "@/components/home/NewsletterSection";
+import WhatsNewSection from "@/components/home/WhatsNewSection";
+import SeeReadBeforeBuySection from "@/components/home/SeeReadBeforeBuySection";
+import BookRatingsReviewsSection from "@/components/home/BookRatingsReviewsSection";
 import { BookData } from "@/components/home/HeroBook3D";
 import { useCartWishlist } from "@/components/providers/CartWishlistProvider";
 
@@ -16,14 +18,12 @@ interface HomeContentProps {
   categories?: FeaturedCategory[];
   bestsellers?: BestsellerBook[];
   handpicked?: HandpickedBook[];
-  authors?: AuthorItem[];
 }
 
 export default function HomeContent({
   categories,
   bestsellers,
   handpicked,
-  authors,
 }: HomeContentProps) {
   const router = useRouter();
   const { wishlist, addToCart, toggleWishlist } = useCartWishlist();
@@ -72,16 +72,18 @@ export default function HomeContent({
           const el = document.getElementById("bestsellers");
           el?.scrollIntoView({ behavior: "smooth" });
         }}
-        onViewAuthors={() => {
-          const el = document.getElementById("authors");
-          el?.scrollIntoView({ behavior: "smooth" });
-        }}
       />
 
       {/* 2. FEATURED EXAM CATEGORIES */}
       <FeaturedCategories categories={categories} />
 
-      {/* 3. BESTSELLERS / WHAT INDIA IS READING SECTION */}
+      {/* 3. WHAT'S NEW */}
+      <WhatsNewSection />
+
+      {/* 4. SEE / READ BEFORE YOU BUY */}
+      <SeeReadBeforeBuySection />
+
+      {/* 5. ASPIRANTS' MOST LOVED BOOKS (reuses Bestsellers) */}
       <BestsellersSection
         books={bestsellers}
         onAddToCart={handleAddToCart}
@@ -90,7 +92,10 @@ export default function HomeContent({
         onToggleWishlist={handleToggleWishlist}
       />
 
-      {/* 4. FEATURED / HANDPICKED FOR YOU BOOKS SECTION */}
+      {/* 6. BOOK RATINGS & REVIEWS */}
+      <BookRatingsReviewsSection />
+
+      {/* 7. EXISTING HANDPICKED — kept as remaining content */}
       <HandpickedSection
         books={handpicked}
         onAddToCart={handleAddToCart}
@@ -99,16 +104,10 @@ export default function HomeContent({
         onToggleWishlist={handleToggleWishlist}
       />
 
-      {/* 5. TOP AUTHORS / VOICES YOU CAN TRUST SECTION */}
-      <TopAuthorsSection
-        authors={authors}
-        onSelectBook={goToProduct}
-      />
-
-      {/* 6. TESTIMONIALS / LOVED BY READERS ACROSS INDIA */}
+      {/* 8. TESTIMONIALS (legacy) */}
       <TestimonialsSection />
 
-      {/* 7. NEWSLETTER SUBSCRIPTION SECTION */}
+      {/* 9. NEWSLETTER */}
       <NewsletterSection />
     </>
   );

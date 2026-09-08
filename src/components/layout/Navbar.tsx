@@ -359,8 +359,8 @@ export default function Navbar({
 
             {/* 3. Authors */}
             <Link
-              href="/#authors"
-              className="hover:text-[#C61821] transition-colors whitespace-nowrap py-1 px-1 text-gray-700 font-semibold"
+              href="/authors"
+              className={`hover:text-[#C61821] transition-colors whitespace-nowrap py-1 px-1 ${pathname === "/authors" ? "text-[#C61821] font-bold" : "text-gray-700 font-semibold"}`}
             >
               Authors
             </Link>
@@ -1085,7 +1085,7 @@ export default function Navbar({
 
                   {/* 3. Authors */}
                   <Link
-                    href="/#authors"
+                    href="/authors"
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="p-3 rounded-xl hover:bg-red-50 hover:text-[#C61821] flex items-center gap-3 font-semibold text-gray-800 border border-gray-50"
                   >

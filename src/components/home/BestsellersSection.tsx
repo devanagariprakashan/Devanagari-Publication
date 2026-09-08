@@ -346,37 +346,16 @@ export default function BestsellersSection({
 
       <div className="max-w-[1450px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* ================= SECTION HEADER ================= */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 sm:mb-10">
-          <div>
-            {/* Top Red Tag with Dash */}
-            <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
-              <span className="text-xs sm:text-[13px] font-extrabold tracking-widest text-[#C61821] uppercase font-sans">
-                BESTSELLERS
-              </span>
-              <span className="w-6 h-[2px] bg-[#C61821] rounded-full inline-block" />
-            </div>
-
-            {/* Main Title */}
-            <h2 className="font-serif text-2xl sm:text-3xl md:text-[36px] font-bold text-gray-900 tracking-tight leading-tight flex items-center flex-wrap">
-              What India is reading
-            </h2>
-
-            {/* Subtitle */}
-            <p className="text-sm sm:text-base text-gray-500 font-normal mt-1 sm:mt-1.5 leading-relaxed">
-              Titles flying off our warehouse shelves this month.
-            </p>
-          </div>
-
-          {/* Right Action Button */}
-          <div className="self-start sm:self-auto shrink-0">
-            <button
-              onClick={handleBrowseAll}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-red-200/90 hover:border-[#C61821] bg-white hover:bg-red-50/50 text-[#C61821] font-bold text-xs sm:text-[13.5px] transition-all hover:scale-[1.02] active:scale-95 shadow-sm cursor-pointer group"
-            >
-              <span>See all bestsellers</span>
-              <ArrowRight className="w-4 h-4 stroke-[2.2] group-hover:translate-x-1 transition-transform" />
-            </button>
-          </div>
+        <div className="flex items-center justify-between gap-4 mb-6 sm:mb-8">
+          <h2 className="font-serif text-2xl sm:text-3xl md:text-[30px] font-bold tracking-tight">
+            <span className="text-[#C61821]">Aspirants&apos;</span> <span className="text-gray-900">Most Loved Books</span>
+          </h2>
+          <button
+            onClick={handleBrowseAll}
+            className="shrink-0 text-sm font-bold text-[#C61821] inline-flex items-center gap-1 hover:gap-1.5 transition-all cursor-pointer"
+          >
+            View All <ArrowRight className="w-4 h-4" />
+          </button>
         </div>
 
         {hasTooManyBooks && (
@@ -447,13 +426,13 @@ export default function BestsellersSection({
                   </div>
 
                   {/* --- Center: Book 3D Realistic Cover Image --- */}
-                  <div className="relative z-10 w-full h-44 sm:h-48 lg:h-52 flex items-center justify-center my-2 sm:my-3 px-2">
+                  <div className="relative z-10 w-full h-[192px] sm:h-[216px] lg:h-[238px] flex items-center justify-center my-2 sm:my-3 px-1">
                     <div className="relative w-full h-full flex items-center justify-center">
                       <Image
                         src={book.image}
                         alt={book.title}
-                        width={360}
-                        height={520}
+                        width={420}
+                        height={600}
                         className="max-h-full max-w-full object-contain filter drop-shadow-[0_12px_18px_rgba(0,0,0,0.14)] group-hover:drop-shadow-[0_18px_24px_rgba(198,24,33,0.20)] group-hover:scale-105 transition-all duration-300"
                       />
                     </div>
@@ -506,7 +485,7 @@ export default function BestsellersSection({
 
                         {/* Save Tag */}
                         <span className="text-[11px] font-bold text-[#C61821] block -mt-0.5">
-                          Save {book.discountPercent}%
+                          {book.discountPercent}% OFF
                         </span>
                       </div>
 

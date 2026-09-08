@@ -8,8 +8,6 @@ import {
   BookOpen,
   Sparkles,
   CheckCircle2,
-  Users,
-  ArrowRight,
 } from "lucide-react";
 
 interface TeamMember {
@@ -148,17 +146,10 @@ export default function TeamPage() {
                   {member.bio}
                 </p>
 
-                <div className="pt-3 border-t border-gray-50 flex items-center justify-between text-[11px] text-gray-500 mt-auto">
+                <div className="pt-3 border-t border-gray-50 flex items-center text-[11px] text-gray-500 mt-auto">
                   <span className="font-semibold text-gray-700">
                     {member.experience}
                   </span>
-                  <Link
-                    href="/shop"
-                    className="font-bold text-[#C61821] hover:underline flex items-center gap-1"
-                  >
-                    <span>Books</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </Link>
                 </div>
               </div>
             </div>
