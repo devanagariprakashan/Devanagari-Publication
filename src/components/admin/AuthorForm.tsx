@@ -77,6 +77,23 @@ export function AuthorForm({
         <textarea name="bio" rows={3} defaultValue={author?.bio ?? ""} className={inputCls} placeholder="Short biography" />
       </div>
       <div className="md:col-span-2">
+        <label className={labelCls}>Social Links (optional)</label>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <input name="youtube_url" defaultValue={author?.youtube_url ?? ""} className={inputCls} placeholder="YouTube URL" />
+          </div>
+          <div>
+            <input name="linkedin_url" defaultValue={author?.linkedin_url ?? ""} className={inputCls} placeholder="LinkedIn URL" />
+          </div>
+          <div>
+            <input name="twitter_url" defaultValue={author?.twitter_url ?? ""} className={inputCls} placeholder="X/Twitter URL" />
+          </div>
+          <div>
+            <input name="instagram_url" defaultValue={author?.instagram_url ?? ""} className={inputCls} placeholder="Instagram URL" />
+          </div>
+        </div>
+      </div>
+      <div className="md:col-span-2">
         <button type="submit" disabled={isPending} className={btnPrimary}>
           {isPending ? "Saving..." : author ? "Update Author" : "Add Author"}
         </button>

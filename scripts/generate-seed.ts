@@ -75,6 +75,24 @@ for (const b of ALL_BOOKS) {
   is_featured = excluded.is_featured, show_in_hero = excluded.show_in_hero, is_active = excluded.is_active;\n`;
 }
 
+sql += "\n-- reviews (2 seeded per book; alter is idempotent for existing DBs)\n";
+sql += `alter table public.reviews add column if not exists reviewer_name text;\n`;
+{
+  const seenBookIds = new Set<string>();
+  for (const b of ALL_BOOKS) {
+    const id = String(b.id);
+    if (seenBookIds.has(id)) continue;
+    seenBookIds.add(id);
+    const seeded = [
+      { n: 1, rating: 5, name: "राहुल शर्मा", comment: `${b.title} की भाषा बहुत सरल और परीक्षा-उपयोगी है। पूरा सिलेबस समय पर कवर हो जाता है।` },
+      { n: 2, rating: 4, name: "प्रिया वर्मा", comment: "सामग्री अच्छी है और प्रश्न विगत वर्षों पर आधारित हैं। पैकेजिंग व डिलीवरी भी बढ़िया।" },
+    ];
+    for (const r of seeded) {
+      sql += `insert into public.reviews (id, book_id, rating, comment, reviewer_name, is_approved) values (${esc(`rev-${id}-${r.n}`)}, ${esc(id)}, ${r.rating}, ${esc(r.comment)}, ${esc(r.name)}, true) on conflict (id) do nothing;\n`;
+    }
+  }
+}
+
 sql += "\n-- inquiries\n";
 for (const q of INQUIRIES) {
   sql += `insert into public.inquiries (id, name, email, phone, message, status) values (${esc(q.id)}, ${esc(q.name)}, ${esc(q.email)}, ${esc(q.phone)}, ${esc(q.message)}, ${esc(q.status)}) on conflict (id) do nothing;\n`;

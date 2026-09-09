@@ -236,3 +236,30 @@ h1, h2, h3, .font-serif, .font-heading {
   }
 }
 
+/* Latest Updates feed: one row fades out, new row fades in */
+@keyframes rowFadeOut {
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes rowFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.row-feed-out {
+  animation: rowFadeOut 0.65s ease forwards;
+}
+
+.row-feed-in {
+  animation: rowFadeIn 0.65s ease both;
+}
+

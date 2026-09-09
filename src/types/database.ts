@@ -19,8 +19,8 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['books']['Insert']>
       }
       authors: {
-        Row: { id: string; name: string; role: string | null; short_role: string | null; bio: string | null; image_url: string | null; is_active: boolean; created_at: string }
-        Insert: { id: string; name: string; role?: string | null; short_role?: string | null; bio?: string | null; image_url?: string | null; is_active?: boolean; created_at?: string }
+        Row: { id: string; name: string; role: string | null; short_role: string | null; bio: string | null; image_url: string | null; youtube_url: string | null; linkedin_url: string | null; twitter_url: string | null; instagram_url: string | null; is_active: boolean; created_at: string }
+        Insert: { id: string; name: string; role?: string | null; short_role?: string | null; bio?: string | null; image_url?: string | null; youtube_url?: string | null; linkedin_url?: string | null; twitter_url?: string | null; instagram_url?: string | null; is_active?: boolean; created_at?: string }
         Update: Partial<Database['public']['Tables']['authors']['Insert']>
       }
       orders: {
@@ -29,8 +29,8 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['orders']['Insert']>
       }
       reviews: {
-        Row: { id: string; book_id: string | null; user_id: string | null; rating: number | null; comment: string | null; is_approved: boolean; created_at: string }
-        Insert: { id: string; book_id?: string | null; user_id?: string | null; rating?: number | null; comment?: string | null; is_approved?: boolean; created_at?: string }
+        Row: { id: string; book_id: string | null; user_id: string | null; rating: number | null; comment: string | null; reviewer_name: string | null; is_approved: boolean; created_at: string }
+        Insert: { id: string; book_id?: string | null; user_id?: string | null; rating?: number | null; comment?: string | null; reviewer_name?: string | null; is_approved?: boolean; created_at?: string }
         Update: Partial<Database['public']['Tables']['reviews']['Insert']>
       }
       inquiries: {
@@ -42,6 +42,16 @@ export type Database = {
         Row: { id: string; text: string; is_active: boolean; created_at: string }
         Insert: { id: string; text: string; is_active?: boolean; created_at?: string }
         Update: Partial<Database['public']['Tables']['announcements']['Insert']>
+      }
+      whats_new_slides: {
+        Row: { id: string; badge: string | null; kicker: string | null; title: string; subtitle: string | null; cta: string | null; href: string | null; cover: string | null; sort: number; is_active: boolean; created_at: string }
+        Insert: { id: string; badge?: string | null; kicker?: string | null; title: string; subtitle?: string | null; cta?: string | null; href?: string | null; cover?: string | null; sort?: number; is_active?: boolean; created_at?: string }
+        Update: Partial<Database['public']['Tables']['whats_new_slides']['Insert']>
+      }
+      latest_updates: {
+        Row: { id: string; title: string; note: string | null; date_text: string | null; image: string | null; href: string | null; sort: number; is_active: boolean; created_at: string }
+        Insert: { id: string; title: string; note?: string | null; date_text?: string | null; image?: string | null; href?: string | null; sort?: number; is_active?: boolean; created_at?: string }
+        Update: Partial<Database['public']['Tables']['latest_updates']['Insert']>
       }
     }
     Views: {}

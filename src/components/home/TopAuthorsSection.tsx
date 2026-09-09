@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Search, BookOpen, ChevronDown } from "lucide-react";
 import { BookData } from "./HeroBook3D";
 
@@ -16,6 +17,10 @@ export interface AuthorItem {
   fallbackGradient: string;
   experience: string;
   bio: string;
+  youtubeUrl: string;
+  linkedinUrl: string;
+  twitterUrl: string;
+  instagramUrl: string;
   books: { id: number; title: string; category: string; price: number; image: string }[];
 }
 
@@ -31,6 +36,7 @@ export const TOP_AUTHORS: AuthorItem[] = [
     fallbackGradient: "from-red-500 to-amber-600",
     experience: "12+ Years Experience",
     bio: "Expert in Hindi language, grammar and literature. Known for simplified explanations and student-friendly approach.",
+    youtubeUrl: "", linkedinUrl: "", twitterUrl: "", instagramUrl: "",
     books: [
       { id: 201, title: "Samanya Hindi Exam Vyakaran", category: "Hindi Grammar", price: 900, image: "/images/books/image-2.png" },
       { id: 202, title: "Nibandh Sanhita", category: "Essay Writing", price: 850, image: "/images/books/image-3.png" },
@@ -47,6 +53,7 @@ export const TOP_AUTHORS: AuthorItem[] = [
     fallbackGradient: "from-blue-600 to-cyan-600",
     experience: "8+ Years Experience",
     bio: "Renowned for his structured approach to General Studies and Prelims preparation.",
+    youtubeUrl: "", linkedinUrl: "", twitterUrl: "", instagramUrl: "",
     books: [{ id: 205, title: "Madhya Pradesh Samanya Gyan", category: "State GS", price: 750, image: "/images/books/image-8.png" }],
   },
   {
@@ -60,6 +67,7 @@ export const TOP_AUTHORS: AuthorItem[] = [
     fallbackGradient: "from-emerald-600 to-teal-700",
     experience: "15+ Years Experience",
     bio: "Specializes in Ethics, Integrity and Aptitude with real-world examples and case studies.",
+    youtubeUrl: "", linkedinUrl: "", twitterUrl: "", instagramUrl: "",
     books: [
       { id: 203, title: "Darshan, Manovigyan evam Lok Prashasan", category: "Ethics Paper-4", price: 899, image: "/images/books/image-4.png" },
       { id: 204, title: "Bhartiya Samaj evam Mudde", category: "Sociology Paper-2", price: 799, image: "/images/books/image-5.png" },
@@ -76,6 +84,7 @@ export const TOP_AUTHORS: AuthorItem[] = [
     fallbackGradient: "from-purple-600 to-indigo-700",
     experience: "14+ Years Legal Academics",
     bio: "Expert in Law, Polity and Judicial Exams with years of teaching experience.",
+    youtubeUrl: "", linkedinUrl: "", twitterUrl: "", instagramUrl: "",
     books: [{ id: 206, title: "Judiciary Civil Procedure & Evidence", category: "Civil Judge", price: 950, image: "/images/books/image-9.png" }],
   },
   {
@@ -89,6 +98,7 @@ export const TOP_AUTHORS: AuthorItem[] = [
     fallbackGradient: "from-amber-600 to-orange-700",
     experience: "22+ Years Research",
     bio: "A well-known historian and academician with deep knowledge of Madhya Pradesh's history and culture.",
+    youtubeUrl: "", linkedinUrl: "", twitterUrl: "", instagramUrl: "",
     books: [{ id: 208, title: "MP Itihas, Kala evam Janjatiya Sanskriti", category: "History Paper-1", price: 820, image: "/images/books/image-11.png" }],
   },
   {
@@ -102,6 +112,7 @@ export const TOP_AUTHORS: AuthorItem[] = [
     fallbackGradient: "from-slate-700 to-slate-900",
     experience: "10+ Years Practice",
     bio: "Specializes in Constitutional Law, Polity and current legal developments.",
+    youtubeUrl: "", linkedinUrl: "", twitterUrl: "", instagramUrl: "",
     books: [{ id: 209, title: "Bhartiya Samvidhan evam Rajvyavastha", category: "Polity Paper-2", price: 880, image: "/images/books/image-12.png" }],
   },
 ];
@@ -115,6 +126,7 @@ export default function TopAuthorsSection({ authors }: Props) {
   const [q, setQ] = useState("");
   const [subject, setSubject] = useState("All Subjects");
   const [sort, setSort] = useState("Featured");
+  const [openId, setOpenId] = useState<string | null>(null);
 
   const list = authors ?? TOP_AUTHORS;
 
@@ -132,7 +144,7 @@ export default function TopAuthorsSection({ authors }: Props) {
 
   return (
     <section id="authors" className="py-6 sm:py-8 bg-[#FCFCFC] border-t border-gray-100">
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-[1450px] mx-auto px-4 sm:px-6 lg:px-8">
         {/* Controls row — matches reference spacing */}
         <div className="flex flex-col lg:flex-row gap-3 mb-6">
           {/* Search */}
@@ -177,9 +189,9 @@ export default function TopAuthorsSection({ authors }: Props) {
             <div key={a.id} className="bg-white rounded-lg border border-gray-200 shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-4 flex gap-3.5 relative">
               {/* Avatar */}
               <div className="shrink-0">
-                <div className="w-[72px] h-[72px] sm:w-[80px] sm:h-[80px] rounded-full overflow-hidden bg-gray-100">
+                <div className="w-[96px] h-[96px] sm:w-[110px] sm:h-[110px] rounded-full overflow-hidden bg-gray-100">
                   {!imgErr[a.id] ? (
-                    <Image src={a.image} alt={a.name} width={80} height={80} className="w-full h-full object-cover" onError={() => setImgErr((p) => ({ ...p, [a.id]: true }))} />
+                    <Image src={a.image} alt={a.name} width={110} height={110} className="w-full h-full object-cover" onError={() => setImgErr((p) => ({ ...p, [a.id]: true }))} />
                   ) : (
                     <div className={`w-full h-full bg-gradient-to-br ${a.fallbackGradient} flex items-center justify-center text-white text-sm font-bold`}>
                       {a.name.split(" ").slice(-2).map((n) => n[0]).join("")}
@@ -192,25 +204,70 @@ export default function TopAuthorsSection({ authors }: Props) {
               <div className="flex-1 min-w-0 flex flex-col">
                 <div className="flex items-start justify-between gap-2 pr-1">
                   <div className="min-w-0">
-                    <h3 className="text-[13px] font-bold text-gray-900 leading-tight truncate">{a.name}</h3>
-                    <p className="text-[11px] text-gray-500 leading-snug mt-0.5 line-clamp-2">{a.role}</p>
+                    <h3 className="text-[15px] sm:text-base font-bold text-gray-900 leading-tight truncate">{a.name}</h3>
+                    <p className="text-xs sm:text-[13px] text-gray-500 leading-snug mt-0.5 line-clamp-2">{a.role}</p>
                   </div>
-                  <span className="inline-flex items-center gap-1 shrink-0 bg-[#FFF1F2] text-[#E11D48] text-[11px] font-semibold px-2 py-1 rounded-md">
-                    <BookOpen className="w-3 h-3" /> {a.booksCount} Book{a.booksCount !== 1 ? "s" : ""}
+                  <span className="inline-flex items-center gap-1 shrink-0 bg-[#FFF1F2] text-[#E11D48] text-xs font-semibold px-2 py-1 rounded-md">
+                    <BookOpen className="w-3.5 h-3.5" /> {a.booksCount} Book{a.booksCount !== 1 ? "s" : ""}
                   </span>
                 </div>
 
-                <p className="text-[11.5px] text-gray-500 leading-[1.5] mt-2 line-clamp-3 flex-1">{a.bio}</p>
+                <p className="text-[13px] sm:text-sm text-gray-500 leading-[1.55] mt-2 line-clamp-3 flex-1">{a.bio}</p>
 
-                <div className="flex items-center mt-3">
-                  {/* Social icons — compact, per reference; no fake URLs */}
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-6 h-6 rounded-[4px] bg-[#FF0000] flex items-center justify-center"><span className="w-2.5 h-2.5 bg-white rounded-[1px] flex items-center justify-center text-[7px] font-bold text-[#FF0000]">▶</span></span>
-                    <span className="w-6 h-6 rounded-[4px] bg-[#0A66C2] text-white flex items-center justify-center text-[10px] font-bold">in</span>
-                    <span className="w-6 h-6 rounded-[4px] bg-black text-white flex items-center justify-center text-[10px] font-bold">𝕏</span>
-                    <span className="w-6 h-6 rounded-[4px] bg-gradient-to-br from-[#FEDA77] via-[#D62976] to-[#4F5BD5] flex items-center justify-center text-white text-[10px]">◎</span>
-                  </div>
+                <div className="flex items-center justify-between mt-3">
+                  {/* Social icons — only render when the author has a URL */}
+                  {(() => {
+                    const socials = [
+                      { url: a.youtubeUrl, label: "YouTube", node: <span className="w-6 h-6 rounded-[4px] bg-[#FF0000] flex items-center justify-center"><span className="w-2.5 h-2.5 bg-white rounded-[1px] flex items-center justify-center text-[7px] font-bold text-[#FF0000]">▶</span></span> },
+                      { url: a.linkedinUrl, label: "LinkedIn", node: <span className="w-6 h-6 rounded-[4px] bg-[#0A66C2] text-white flex items-center justify-center text-[10px] font-bold">in</span> },
+                      { url: a.twitterUrl, label: "X (Twitter)", node: <span className="w-6 h-6 rounded-[4px] bg-black text-white flex items-center justify-center text-[10px] font-bold">𝕏</span> },
+                      { url: a.instagramUrl, label: "Instagram", node: <span className="w-6 h-6 rounded-[4px] bg-gradient-to-br from-[#FEDA77] via-[#D62976] to-[#4F5BD5] flex items-center justify-center text-white text-[10px]">◎</span> },
+                    ];
+                    const visible = socials.filter((s) => s.url);
+                    if (visible.length === 0) return null;
+                    return (
+                      <div className="flex items-center gap-1.5">
+                        {visible.map((s) => (
+                          <a key={s.label} href={s.url} target="_blank" rel="noreferrer" aria-label={s.label} className="transition-opacity hover:opacity-80">
+                            {s.node}
+                          </a>
+                        ))}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Description toggle */}
+                  <button
+                    onClick={() => setOpenId((cur) => (cur === a.id ? null : a.id))}
+                    className="inline-flex items-center gap-1 text-xs sm:text-[13px] font-bold text-[#C61821] hover:text-[#A8131B] transition-colors cursor-pointer"
+                    aria-expanded={openId === a.id}
+                  >
+                    Description
+                    <ChevronDown className={`w-4 h-4 transition-transform ${openId === a.id ? "rotate-180" : ""}`} />
+                  </button>
                 </div>
+
+                {/* Expandable description + books by author (overlaps the card below) */}
+                {openId === a.id && (
+                  <div className="absolute inset-x-0 top-full z-30 mt-1 rounded-lg border border-gray-200 bg-white shadow-[0_12px_28px_rgba(0,0,0,0.12)] p-4">
+                    <p className="text-[13px] sm:text-sm text-gray-600 leading-relaxed mb-3">{a.bio}</p>
+                    {a.books.length > 0 ? (
+                      <ul className="space-y-1.5">
+                        {a.books.map((b) => (
+                          <li key={b.id}>
+                            <Link href={`/product/${b.id}`} className="group flex items-center gap-2 text-[13px] sm:text-sm text-gray-700 hover:text-[#C61821] transition-colors">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#C61821] shrink-0" />
+                              <span className="truncate font-medium">{b.title}</span>
+                              <span className="ml-auto shrink-0 text-gray-400 group-hover:text-[#C61821]">→</span>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-xs sm:text-sm text-gray-400">No books listed for this author yet.</p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           ))}

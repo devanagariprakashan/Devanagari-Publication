@@ -347,9 +347,21 @@ export default function BestsellersSection({
       <div className="max-w-[1450px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* ================= SECTION HEADER ================= */}
         <div className="flex items-center justify-between gap-4 mb-6 sm:mb-8">
-          <h2 className="font-serif text-2xl sm:text-3xl md:text-[30px] font-bold tracking-tight">
-            <span className="text-[#C61821]">Aspirants&apos;</span> <span className="text-gray-900">Most Loved Books</span>
-          </h2>
+          <div>
+            {/* Eyebrow label */}
+            <div className="flex items-center gap-2 mb-2">
+              <span className="w-5 h-[2.5px] bg-[#C61821] rounded-full" />
+              <span className="text-xs font-extrabold tracking-[0.18em] text-[#C61821] uppercase">
+                Best Sellers
+              </span>
+            </div>
+
+            {/* Main heading */}
+            <h2 className="font-serif text-2xl sm:text-3xl md:text-[34px] font-bold text-gray-900 tracking-tight leading-tight">
+              Aspirants&apos;{" "}
+              <span className="font-serif italic text-[#C61821]">Most Loved Books</span>
+            </h2>
+          </div>
           <button
             onClick={handleBrowseAll}
             className="shrink-0 text-sm font-bold text-[#C61821] inline-flex items-center gap-1 hover:gap-1.5 transition-all cursor-pointer"

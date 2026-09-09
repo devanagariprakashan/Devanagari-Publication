@@ -7,9 +7,7 @@ import FeaturedCategories, { FeaturedCategory } from "@/components/home/Featured
 import HandpickedSection, { HandpickedBook } from "@/components/home/HandpickedSection";
 import BestsellersSection, { BestsellerBook } from "@/components/home/BestsellersSection";
 import TestimonialsSection from "@/components/home/TestimonialsSection";
-import NewsletterSection from "@/components/home/NewsletterSection";
 import WhatsNewSection from "@/components/home/WhatsNewSection";
-import SeeReadBeforeBuySection from "@/components/home/SeeReadBeforeBuySection";
 import BookRatingsReviewsSection from "@/components/home/BookRatingsReviewsSection";
 import { BookData } from "@/components/home/HeroBook3D";
 import { useCartWishlist } from "@/components/providers/CartWishlistProvider";
@@ -80,10 +78,7 @@ export default function HomeContent({
       {/* 3. WHAT'S NEW */}
       <WhatsNewSection />
 
-      {/* 4. SEE / READ BEFORE YOU BUY */}
-      <SeeReadBeforeBuySection />
-
-      {/* 5. ASPIRANTS' MOST LOVED BOOKS (reuses Bestsellers) */}
+      {/* 4. ASPIRANTS' MOST LOVED BOOKS (reuses Bestsellers) */}
       <BestsellersSection
         books={bestsellers}
         onAddToCart={handleAddToCart}
@@ -92,7 +87,7 @@ export default function HomeContent({
         onToggleWishlist={handleToggleWishlist}
       />
 
-      {/* 6. BOOK RATINGS & REVIEWS */}
+      {/* 5. BOOK RATINGS & REVIEWS */}
       <BookRatingsReviewsSection />
 
       {/* 7. EXISTING HANDPICKED — kept as remaining content */}
@@ -106,9 +101,6 @@ export default function HomeContent({
 
       {/* 8. TESTIMONIALS (legacy) */}
       <TestimonialsSection />
-
-      {/* 9. NEWSLETTER */}
-      <NewsletterSection />
     </>
   );
 }

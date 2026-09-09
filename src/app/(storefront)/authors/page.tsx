@@ -21,6 +21,7 @@ export default async function AuthorsPage() {
       category: "all", booksCount: (books ?? []).length,
       image: a.image_url ?? "/images/authors/default-author.jpg",
       fallbackGradient: FALLBACKS[i % FALLBACKS.length], experience: "", bio: a.bio ?? "",
+      youtubeUrl: a.youtube_url ?? "", linkedinUrl: a.linkedin_url ?? "", twitterUrl: a.twitter_url ?? "", instagramUrl: a.instagram_url ?? "",
       books: (books ?? []).map((b: BookRow) => ({ id: Number(b.id), title: b.title, category: b.exam ?? b.category_id ?? "", price: b.price ?? 0, image: b.image_url ?? "/images/books/image-2.png" })),
     });
   }

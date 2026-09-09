@@ -37,6 +37,8 @@ import { ALL_BOOKS, BookItem } from "@/data/booksData";
 import { fetchCatalogBooks } from "@/lib/catalog";
 import { useCartWishlist } from "@/components/providers/CartWishlistProvider";
 import SampleReaderModal from "@/components/product/SampleReaderModal";
+import BookReviews from "@/components/product/BookReviews";
+import SeeReadBeforeBuySection from "@/components/home/SeeReadBeforeBuySection";
 
 interface ProductDetailClientProps {
   id?: string;
@@ -848,6 +850,11 @@ export default function ProductDetailClient({ id }: ProductDetailClientProps) {
         </div>
 
         {/* ============================================================ */}
+        {/* SEE / READ BEFORE YOU BUY                                    */}
+        {/* ============================================================ */}
+        <SeeReadBeforeBuySection />
+
+        {/* ============================================================ */}
         {/* RELATED BOOKS SECTION                                        */}
         {/* ============================================================ */}
         {relatedBooks.length > 0 && (
@@ -1004,6 +1011,11 @@ export default function ProductDetailClient({ id }: ProductDetailClientProps) {
             </div>
           </section>
         )}
+
+        {/* ============================================================ */}
+        {/* RATINGS & REVIEWS (individual book)                          */}
+        {/* ============================================================ */}
+        <BookReviews bookId={book.id} />
       </div>
 
       {/* ============================================================ */}

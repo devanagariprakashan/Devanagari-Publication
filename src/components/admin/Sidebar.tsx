@@ -10,7 +10,10 @@ import {
   ShoppingCart,
   MessageSquare,
   Megaphone,
+  Newspaper,
+  Star,
   Settings,
+  ExternalLink,
   X,
 } from "lucide-react";
 import { logout } from "@/actions/auth";
@@ -23,6 +26,8 @@ const navItems = [
   { href: "/admin/authors", label: "Authors", icon: Users },
   { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
   { href: "/admin/inquiries", label: "Inquiries", icon: MessageSquare },
+  { href: "/admin/whats-new", label: "What's New", icon: Newspaper },
+  { href: "/admin/reviews", label: "Ratings & Reviews", icon: Star },
   { href: "/admin/announcements", label: "Announcements", icon: Megaphone },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
@@ -67,6 +72,15 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
       </nav>
 
       <div className="p-4 border-t border-stone-200">
+        <a
+          href="/"
+          target="_blank"
+          rel="noreferrer"
+          className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-stone-600 hover:bg-stone-100 hover:text-stone-900 transition-colors"
+        >
+          <ExternalLink className="h-4 w-4" />
+          View Site
+        </a>
         <form action={logout}>
           <button className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-stone-600 hover:bg-stone-100 hover:text-stone-900 transition-colors">
             Logout

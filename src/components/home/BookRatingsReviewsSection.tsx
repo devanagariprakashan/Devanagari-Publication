@@ -1,21 +1,26 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Star, ChevronLeft, ChevronRight } from "lucide-react";
-
-const REVIEWS = [
-  { name: "Aman Verma", role: "MPPSC Aspirant", text: "Very helpful for MPPSC preparation. Content is precise and well structured.", verified: true },
-  { name: "Priya Singh", role: "State Service Aspirant", text: "Best book for Hindi grammar. Easy language and good examples.", verified: true },
-  { name: "Rohit Patidar", role: "MPPSC Aspirant", text: "Updated edition is really useful. Highly recommended!", verified: true },
-  { name: "Neha Agarwal", role: "UPSC Aspirant", text: "Clarity of writing is unmatched, highly recommended for prelims.", verified: true },
-  { name: "Sushma Tripathi", role: "Senior Teacher", text: "Rigorously edited and beautifully produced.", verified: true },
-];
+import { fetchHomeReviews, HomeReview } from "@/lib/reviews";
 
 export default function BookRatingsReviewsSection() {
+  const [reviews, setReviews] = useState<HomeReview[]>([]);
   const [page, setPage] = useState(0);
   const perPage = 3;
-  const total = Math.ceil(REVIEWS.length / perPage);
-  const visible = REVIEWS.slice(page * perPage, page * perPage + perPage);
+
+  useEffect(() => {
+    let active = true;
+    fetchHomeReviews(9).then((r) => {
+      if (active) setReviews(r);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const total = Math.max(1, Math.ceil(reviews.length / perPage));
+  const visible = reviews.slice(page * perPage, page * perPage + perPage);
   // ponytail: simple pagination, no infinite carousel lib; add swipe when needed
   return (
     <section className="py-8 sm:py-10 bg-white border-t border-gray-50">
@@ -29,24 +34,28 @@ export default function BookRatingsReviewsSection() {
           <Link href="/#testimonials" className="hidden sm:inline-flex text-sm font-bold text-[#C61821] gap-1 items-center shrink-0">View All Reviews <span>→</span></Link>
         </div>
         <div className="relative">
-          <button onClick={() => setPage((p) => (p > 0 ? p - 1 : total - 1))} aria-label="Prev" className="hidden sm:flex absolute -left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white border border-gray-200 shadow-md items-center justify-center z-10">
+          <button onClick={() => setPage((p) => (p > 0 ? p - 1 : total - 1))} aria-label="Prev" className="hidden sm:flex absolute -left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white border border-gray-200 shadow-md items-center justify-center z-10 cursor-pointer">
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <button onClick={() => setPage((p) => (p < total - 1 ? p + 1 : 0))} aria-label="Next" className="hidden sm:flex absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white border border-gray-200 shadow-md items-center justify-center z-10">
+          <button onClick={() => setPage((p) => (p < total - 1 ? p + 1 : 0))} aria-label="Next" className="hidden sm:flex absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white border border-gray-200 shadow-md items-center justify-center z-10 cursor-pointer">
             <ChevronRight className="w-4 h-4" />
           </button>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {visible.map((r) => (
-              <div key={r.name} className="bg-white rounded-xl border border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.04)] p-5">
+              <div key={r.id} className="bg-white rounded-xl border border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.04)] p-5 flex flex-col">
                 <div className="flex text-amber-400 mb-3">
-                  {[...Array(5)].map((_, i) => <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />)}
+                  {[...Array(5)].map((_, i) => <Star key={i} className={`w-4 h-4 ${i < Math.round(r.rating) ? "fill-amber-400 text-amber-400" : "text-gray-200"}`} />)}
                 </div>
-                <p className="text-sm text-gray-700 leading-relaxed mb-4">&ldquo;{r.text}&rdquo;</p>
+                <p className="text-sm text-gray-700 leading-relaxed mb-4 flex-1">&ldquo;{r.comment}&rdquo;</p>
                 <div className="flex items-center gap-3 pt-3 border-t border-gray-50">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 text-white flex items-center justify-center text-xs font-bold">{r.name.split(" ").map((n) => n[0]).join("").slice(0,2)}</div>
-                  <div>
-                    <div className="text-sm font-bold text-gray-900 flex items-center gap-1">{r.name} {r.verified && <span className="w-3.5 h-3.5 rounded-full bg-green-500 text-white flex items-center justify-center text-[8px]">✓</span>}</div>
-                    <div className="text-xs text-gray-500">{r.role}</div>
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 text-white flex items-center justify-center text-xs font-bold">{r.reviewer_name.slice(0, 2)}</div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-bold text-gray-900 flex items-center gap-1">{r.reviewer_name} <span className="w-3.5 h-3.5 rounded-full bg-green-500 text-white flex items-center justify-center text-[8px]">✓</span></div>
+                    {r.book_id && r.book_title ? (
+                      <Link href={`/product/${r.book_id}`} className="text-xs text-[#C61821] hover:underline truncate block">{r.book_title}</Link>
+                    ) : (
+                      <div className="text-xs text-gray-500">Verified Buyer</div>
+                    )}
                   </div>
                 </div>
               </div>

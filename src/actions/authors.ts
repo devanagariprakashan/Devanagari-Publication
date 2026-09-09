@@ -20,6 +20,10 @@ export async function createAuthor(_prevState: ActionResult, formData: FormData)
     short_role: (formData.get('short_role') as string) || null,
     bio: (formData.get('bio') as string) || null,
     image_url: (formData.get('image_url') as string) || null,
+    youtube_url: (formData.get('youtube_url') as string) || null,
+    linkedin_url: (formData.get('linkedin_url') as string) || null,
+    twitter_url: (formData.get('twitter_url') as string) || null,
+    instagram_url: (formData.get('instagram_url') as string) || null,
   })
 
   if (error) return { error: error.message }
@@ -41,6 +45,10 @@ export async function updateAuthor(_prevState: ActionResult, formData: FormData)
     short_role: (formData.get('short_role') as string) || null,
     bio: (formData.get('bio') as string) || null,
     image_url: (formData.get('image_url') as string) || null,
+    youtube_url: (formData.get('youtube_url') as string) || null,
+    linkedin_url: (formData.get('linkedin_url') as string) || null,
+    twitter_url: (formData.get('twitter_url') as string) || null,
+    instagram_url: (formData.get('instagram_url') as string) || null,
   }).eq('id', id)
 
   if (error) return { error: error.message }

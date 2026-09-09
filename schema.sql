@@ -88,6 +88,7 @@ create table if not exists public.reviews (
   user_id uuid references public.profiles(id),
   rating integer,
   comment text,
+  reviewer_name text,
   is_approved boolean default false,
   created_at timestamptz default timezone('utc'::text, now()) not null
 );
@@ -108,6 +109,40 @@ create table if not exists public.announcements (
   is_active boolean default true,
   created_at timestamptz default timezone('utc'::text, now()) not null
 );
+
+-- What's New featured slider slides (app enforces max 4 active)
+create table if not exists public.whats_new_slides (
+  id text primary key,
+  badge text,
+  kicker text,
+  title text not null,
+  subtitle text,
+  cta text,
+  href text,
+  cover text,
+  sort integer default 0,
+  is_active boolean default true,
+  created_at timestamptz default timezone('utc'::text, now()) not null
+);
+
+-- Latest Updates panel items (home shows first 4 active by sort)
+create table if not exists public.latest_updates (
+  id text primary key,
+  title text not null,
+  note text,
+  date_text text,
+  image text,
+  href text,
+  sort integer default 0,
+  is_active boolean default true,
+  created_at timestamptz default timezone('utc'::text, now()) not null
+);
+
+-- Author social links
+alter table public.authors add column if not exists youtube_url text;
+alter table public.authors add column if not exists linkedin_url text;
+alter table public.authors add column if not exists twitter_url text;
+alter table public.authors add column if not exists instagram_url text;
 
 -- ponytail: single-row table (id=1), add columns when admin truly needs new fields
 create table if not exists public.site_settings (

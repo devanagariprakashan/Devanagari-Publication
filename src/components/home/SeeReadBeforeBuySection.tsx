@@ -3,8 +3,7 @@ import Link from "next/link";
 
 export default function SeeReadBeforeBuySection() {
   return (
-    <section className="py-8 sm:py-10 bg-white border-t border-gray-50">
-      <div className="max-w-[1450px] mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="py-8 sm:py-10">
         <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight mb-6">
           <span className="text-[#C61821]">See / Read</span> <span className="text-gray-900">Before You Buy</span>
         </h2>
@@ -55,7 +54,6 @@ export default function SeeReadBeforeBuySection() {
             </a>
           </div>
         </div>
-      </div>
     </section>
   );
 }

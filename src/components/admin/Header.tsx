@@ -7,8 +7,11 @@ const titles: Record<string, string> = {
   "/admin": "Dashboard",
   "/admin/books": "Books",
   "/admin/categories": "Categories",
+  "/admin/authors": "Authors",
   "/admin/orders": "Orders",
   "/admin/inquiries": "Inquiries",
+  "/admin/whats-new": "What's New & Latest Updates",
+  "/admin/reviews": "Ratings & Reviews",
   "/admin/announcements": "Announcements",
   "/admin/settings": "Settings",
 };
