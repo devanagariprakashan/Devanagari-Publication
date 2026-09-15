@@ -1,0 +1,4 @@
+ITHINK_ACCESS_TOKEN=your_ithink_access_token
+ITHINK_SECRET_KEY=your_ithink_secret_key
+ITHINK_PICKUP_ADDRESS_ID=your_pickup_address_id
+ITHINK_API_URL=https://my.ithinklogistics.com/api_v3/order/add.json

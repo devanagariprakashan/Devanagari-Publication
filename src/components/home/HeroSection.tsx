@@ -1,236 +1,162 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import {
   ShieldCheck,
-  Truck,
-  Award,
   BookOpen,
-  Calendar,
-  Library,
   Users,
+  GraduationCap,
   ArrowRight,
   Sparkles,
 } from "lucide-react";
-import HeroBook3D, { HERO_BOOKS, BookData } from "./HeroBook3D";
+import type { BookData } from "@/data/heroContent";
 
 interface HeroSectionProps {
+  books?: BookData[];
   onSelectBook?: (book: BookData) => void;
   onExploreBooks?: () => void;
   onViewAuthors?: () => void;
 }
 
+const STATS = [
+  { icon: BookOpen, value: "500+", label: "Exam Oriented Titles" },
+  { icon: Users, value: "50K+", label: "Pan-India Readers" },
+  { icon: ShieldCheck, value: "27+ Years", label: "Trusted Publishing" },
+  { icon: GraduationCap, value: "Expert", label: "Educator Team" },
+];
+
 export default function HeroSection({
-  onSelectBook,
   onExploreBooks,
   onViewAuthors,
 }: HeroSectionProps) {
-  // Triple array for buttery seamless infinite continuous marquee loop
-  const displayBooks = [...HERO_BOOKS, ...HERO_BOOKS, ...HERO_BOOKS];
-
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-[#FFF5F5] via-[#FFF9F9] to-[#FFFFFF] pt-4 sm:pt-6 pb-0">
-      {/* Background Soft Glow Accents */}
-      <div className="absolute top-2 left-1/2 -translate-x-1/2 w-[750px] h-[280px] bg-red-100/50 blur-[120px] rounded-full pointer-events-none -z-10" />
-      <div className="absolute top-16 right-10 w-[280px] h-[280px] bg-orange-100/30 blur-[100px] rounded-full pointer-events-none -z-10" />
+    <section
+      aria-label="Hero"
+      className="relative overflow-hidden bg-[#FDF3F2] lg:flex lg:min-h-[760px] lg:items-center"
+    >
+      {/* Full-bleed background on desktop (books, emblem, category list, tricolor wave) */}
+      <div className="absolute inset-0 hidden lg:block">
+        <Image
+          src="/devanagari-hero-section.webp"
+          alt=""
+          aria-hidden="true"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-[center_38%]"
+        />
+      </div>
 
-      {/* TOP HERO HEADINGS & CTA (Centered within 1450px Container) */}
-      <div className="max-w-[1450px] mx-auto px-2 sm:px-4 lg:px-5 flex flex-col items-center">
-        {/* 1. TOP PILL BADGE */}
-        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/95 border border-red-100 shadow-2xs mb-2.5 sm:mb-3 text-xs sm:text-[13px] font-medium text-gray-700 backdrop-blur-2xs hover:border-red-200 transition-colors">
-          <div className="w-4 h-4 rounded-full bg-[#C61821] flex items-center justify-center text-white shrink-0 shadow-2xs">
-            <ShieldCheck className="w-2.5 h-2.5 stroke-[2.5]" />
+      {/* Left editorial copy */}
+      <div className="relative z-10 mx-auto w-full max-w-[1450px] px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-2xl py-10 sm:py-14 lg:max-w-[46%] lg:py-16">
+          {/* Trust badge */}
+          <div className="inline-flex items-center gap-2.5 rounded-full border border-red-100 bg-white/95 px-3.5 py-1.5 shadow-sm backdrop-blur-sm">
+            <ShieldCheck
+              className="h-4 w-4 shrink-0 text-[#C61821]"
+              strokeWidth={2.2}
+            />
+            <span className="text-xs font-medium text-gray-700 sm:text-[13px]">
+              India&apos;s Trusted Publication for Competitive Exams
+            </span>
+            <span className="hidden items-center gap-1 border-l border-red-100 pl-2.5 text-[11px] font-semibold text-[#C61821] sm:inline-flex">
+              <Sparkles className="h-3 w-3" /> 2025-26 Edition
+            </span>
           </div>
-          <span>India’s Trusted Publication for Competitive Exams</span>
-          <span className="hidden sm:inline-flex items-center gap-1 text-[11px] text-[#C61821] font-semibold bg-red-50 px-2 py-0.5 rounded-full">
-            <Sparkles className="w-3 h-3" /> 2025-26 Edition
-          </span>
-        </div>
 
-        {/* 2. MAIN HERO HEADINGS (Compact & Punchy) */}
-        <div className="text-center max-w-4xl mx-auto mb-2 sm:mb-2.5">
-          <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-[44px] text-[#111827] font-bold tracking-tight !leading-[1.25]">
-            India's Trusted
-            <span className="text-[#C61821] font-serif font-bold">
-              {" "}Publication{" "}
-            </span>{" "}
-            <br className="hidden sm:inline" />
+          {/* Heading */}
+          <h1 className="mt-5 font-serif text-[34px] font-bold leading-[1.08] tracking-tight text-[#101828] sm:text-5xl lg:text-[clamp(44px,4.3vw,64px)]">
+            India&apos;s Trusted
+            <br />
+            <span className="text-[#C61821]">Publication</span>
+            <br />
             for Competitive Exams
           </h1>
-        </div>
 
-        {/* 3. HERO SUBTITLE */}
-        <div className="text-center max-w-2xl mx-auto mb-4 sm:mb-5">
-          <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
-            High-quality standard study material for{" "}
+          {/* Description */}
+          <p className="mt-5 max-w-xl text-sm leading-relaxed text-gray-600 sm:text-base">
+            High-quality, exam-oriented study material for{" "}
             <strong className="font-semibold text-[#C61821]">MPPSC</strong>,{" "}
             <strong className="font-semibold text-[#C61821]">Judiciary</strong>,{" "}
             <strong className="font-semibold text-[#C61821]">SI</strong>,{" "}
             <strong className="font-semibold text-[#C61821]">
-              Hindi Grammar
+              Hindi Grammar &amp; Law
             </strong>{" "}
-            & <strong className="font-semibold text-[#C61821]">Law</strong> —
-            prepared by expert educators.
+            — prepared by expert educators.
           </p>
-        </div>
 
-        
+          {/* CTA buttons */}
+          <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <a
+              href="#bestsellers"
+              onClick={(e) => {
+                if (onExploreBooks) {
+                  e.preventDefault();
+                  onExploreBooks();
+                }
+              }}
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#C61821] px-6 py-3 text-sm font-bold text-white shadow-md shadow-red-600/20 transition-all duration-200 hover:bg-[#A81119] hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C61821] focus-visible:ring-offset-2 active:scale-[0.98]"
+            >
+              Explore All Books
+              <ArrowRight className="h-4 w-4" />
+            </a>
+            <a
+              href="#categories"
+              onClick={(e) => {
+                if (onViewAuthors) {
+                  e.preventDefault();
+                  onViewAuthors();
+                }
+              }}
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-[#C61821] bg-white px-6 py-3 text-sm font-bold text-[#C61821] transition-all duration-200 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C61821] focus-visible:ring-offset-2 active:scale-[0.98]"
+            >
+              View Categories
+            </a>
+          </div>
+
+          {/* Statistics */}
+          <dl className="mt-9 grid grid-cols-2 gap-x-4 gap-y-5 sm:flex sm:items-center sm:gap-0">
+            {STATS.map((stat, i) => {
+              const Icon = stat.icon;
+              return (
+                <div
+                  key={stat.label}
+                  className={`flex items-center gap-2.5 ${
+                    i > 0 ? "sm:border-l sm:border-gray-300/70 sm:pl-5" : "sm:pr-5"
+                  }`}
+                >
+                  <Icon
+                    className="h-6 w-6 shrink-0 text-[#C61821]"
+                    strokeWidth={1.8}
+                    aria-hidden="true"
+                  />
+                  <div>
+                    <dt className="text-base font-bold leading-tight text-[#101828] sm:text-lg">
+                      {stat.value}
+                    </dt>
+                    <dd className="text-[11px] font-medium leading-tight text-gray-500">
+                      {stat.label}
+                    </dd>
+                  </div>
+                </div>
+              );
+            })}
+          </dl>
+        </div>
       </div>
 
-      {/* 4. FULL-WIDTH MODERN 3D BOOKS AUTO-SCROLLING SHOWCASE (No Buttons, Clean, Edge-to-Edge) */}
-      <div className="w-full relative overflow-hidden pt-2 sm:pt-3 pb-3 sm:pb-3">
-        {/* Left & Right Soft Blur Edge Gradient Masks */}
-        <div className="absolute left-0 top-0 bottom-0 w-16 sm:w-28 md:w-40 bg-gradient-to-r from-[#FFF5F5] via-[#FFF5F5]/85 to-transparent z-30 pointer-events-none" />
-        <div className="absolute right-0 top-0 bottom-0 w-16 sm:w-28 md:w-40 bg-gradient-to-l from-[#FFFFFF] via-[#FFFFFF]/85 to-transparent z-30 pointer-events-none" />
-
-        {/* 3D Smooth Infinite Glide Track */}
-        <div className="w-full overflow-hidden flex items-center py-1 sm:py-2 sm:pt-3 sm:pb-5 group/track cursor-grab">
-          <div className="flex items-center gap-5 sm:gap-7 md:gap-8 animate-marquee-infinite group-hover/track:animate-marquee-paused">
-            {displayBooks.map((book, idx) => (
-              <div
-                key={`${book.id}-${idx}`}
-                className="shrink-0 transition-transform duration-300 transform-gpu py-2"
-              >
-                <HeroBook3D
-                  book={book}
-                  onClick={() => {
-                    if (onSelectBook) onSelectBook(book);
-                  }}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-
-      {/* 5. CTA ACTION BUTTONS */}
-        <div className="flex flex-wrap items-center justify-center gap-3 mb-5 sm:mb-6">
-          <a
-            href="#bestsellers"
-            onClick={(e) => {
-              if (onExploreBooks) {
-                e.preventDefault();
-                onExploreBooks();
-              }
-            }}
-            className="inline-flex items-center gap-2 bg-[#C61821] hover:bg-[#A81119] text-white px-5 sm:px-6 py-2 rounded-[5px] text-xs sm:text-sm shadow-md shadow-red-600/20 hover:shadow-lg hover:shadow-red-600/30 active:scale-95 transition-all duration-200 font-bold"
-          >
-            <span>Explore All Books</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </a>
-
-          <a
-            href="#categories"
-            onClick={(e) => {
-              if (onViewAuthors) {
-                e.preventDefault();
-                onViewAuthors();
-              }
-            }}
-            className="inline-flex items-center gap-2 bg-white hover:bg-red-50/60 text-[#C61821] border border-[#C61821]/75 px-5 sm:px-6 py-2 rounded-[5px] font-bold text-xs sm:text-sm hover:border-[#A81119] active:scale-95 transition-all duration-200 shadow-2xs font-650"
-          >
-            <span>View Categories</span>
-          </a>
-        </div>
-
-      {/* 6. SLIDING INFINITE TICKER STRIP (Modern, Unique & Infinite Scrolling) */}
-      <div className="sliding-text-one group-ticker w-full bg-gradient-to-r from-[#8B0F15] via-[#C61821] to-[#7A0D12] py-2.5 sm:py-3.5 overflow-hidden shadow-xl border-y border-[#C61821]/60 select-none relative z-10 mt-3 sm:mt-5">
-        {/* Left & Right Soft Fade Edge Overlays */}
-        <div className="absolute left-0 top-0 bottom-0 w-10 sm:w-20 bg-gradient-to-r from-[#8B0F15] to-transparent z-20 pointer-events-none" />
-        <div className="absolute right-0 top-0 bottom-0 w-10 sm:w-20 bg-gradient-to-l from-[#7A0D12] to-transparent z-20 pointer-events-none" />
-
-        <div className="sliding-text-one__wrap flex overflow-hidden">
-          <div className="flex animate-ticker whitespace-nowrap m-0 p-0 items-center">
-            {/* Track 1 */}
-            <div className="js-marquee flex items-center shrink-0">
-              {[
-                { title: "Fast Shipping", subtitle: "All India Delivery", icon: Truck },
-                { title: "100% Secure", subtitle: "Payment Protection", icon: ShieldCheck },
-                { title: "Original Books", subtitle: "Devanagari Publication", icon: Award },
-                { title: "High Quality", subtitle: "Premium Printing", icon: BookOpen },
-                { title: "27+ Years", subtitle: "Trusted Publishing", icon: Calendar },
-                { title: "500+ Titles", subtitle: "Exam Oriented Books", icon: Library },
-                { title: "50K+ Readers", subtitle: "Pan-India Aspirants", icon: Users },
-                { title: "2025-26 Edition", subtitle: "Updated Syllabus", icon: Sparkles },
-              ].map((item, idx) => {
-                const Icon = item.icon;
-                return (
-                  <div
-                    key={`ticker-1-${idx}`}
-                    className="inline-flex items-center mx-3 sm:mx-5 md:mx-7 group/item cursor-default transition-transform duration-300 hover:scale-105"
-                  >
-                    <div className="flex items-center gap-2.5 sm:gap-3">
-                      {/* Icon Bubble */}
-                      <div className="w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 rounded-lg sm:rounded-xl bg-white/15 backdrop-blur-xs border border-white/25 flex items-center justify-center text-white shadow-inner group-hover/item:bg-white group-hover/item:text-[#C61821] group-hover/item:rotate-6 transition-all duration-300 shrink-0">
-                        <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-4.5 md:h-4.5 stroke-[2]" />
-                      </div>
-
-                      {/* Text details */}
-                      <div className="flex flex-col">
-                        <span className="font-heading font-black text-xs sm:text-sm md:text-base lg:text-lg uppercase tracking-wider text-white group-hover/item:text-amber-300 transition-colors duration-300 drop-shadow-2xs">
-                          {item.title}
-                        </span>
-                        <span className="text-[9px] sm:text-[10px] md:text-[11px] font-semibold text-red-100/90 -mt-0.5 tracking-wide">
-                          {item.subtitle}
-                        </span>
-                      </div>
-
-                      {/* Sparkle separator */}
-                      <div className="ml-3 sm:ml-5 md:ml-7 text-amber-300/70 shrink-0">
-                        <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-pulse" />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Track 2 (Duplicate for Seamless Loop) */}
-            <div className="js-marquee flex items-center shrink-0" aria-hidden="true">
-              {[
-                { title: "Fast Shipping", subtitle: "All India Delivery", icon: Truck },
-                { title: "100% Secure", subtitle: "Payment Protection", icon: ShieldCheck },
-                { title: "Original Books", subtitle: "Devanagari Publication", icon: Award },
-                { title: "High Quality", subtitle: "Premium Printing", icon: BookOpen },
-                { title: "27+ Years", subtitle: "Trusted Publishing", icon: Calendar },
-                { title: "500+ Titles", subtitle: "Exam Oriented Books", icon: Library },
-                { title: "50K+ Readers", subtitle: "Pan-India Aspirants", icon: Users },
-                { title: "2025-26 Edition", subtitle: "Updated Syllabus", icon: Sparkles },
-              ].map((item, idx) => {
-                const Icon = item.icon;
-                return (
-                  <div
-                    key={`ticker-2-${idx}`}
-                    className="inline-flex items-center mx-3 sm:mx-5 md:mx-7 group/item cursor-default transition-transform duration-300 hover:scale-105"
-                  >
-                    <div className="flex items-center gap-2.5 sm:gap-3">
-                      {/* Icon Bubble */}
-                      <div className="w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 rounded-lg sm:rounded-xl bg-white/15 backdrop-blur-xs border border-white/25 flex items-center justify-center text-white shadow-inner group-hover/item:bg-white group-hover/item:text-[#C61821] group-hover/item:rotate-6 transition-all duration-300 shrink-0">
-                        <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-4.5 md:h-4.5 stroke-[2]" />
-                      </div>
-
-                      {/* Text details */}
-                      <div className="flex flex-col">
-                        <span className="font-heading font-black text-xs sm:text-sm md:text-base lg:text-lg uppercase tracking-wider text-white group-hover/item:text-amber-300 transition-colors duration-300 drop-shadow-2xs">
-                          {item.title}
-                        </span>
-                        <span className="text-[9px] sm:text-[10px] md:text-[11px] font-semibold text-red-100/90 -mt-0.5 tracking-wide">
-                          {item.subtitle}
-                        </span>
-                      </div>
-
-                      {/* Sparkle separator */}
-                      <div className="ml-3 sm:ml-5 md:ml-7 text-amber-300/70 shrink-0">
-                        <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-pulse" />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+      {/* Stacked background visual on mobile / tablet */}
+      <div className="relative h-[260px] w-full sm:h-[360px] lg:hidden">
+        <Image
+          src="/devanagari-hero-section.webp"
+          alt=""
+          aria-hidden="true"
+          fill
+          sizes="100vw"
+          className="object-cover object-[78%_center]"
+        />
+        <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-[#FDF3F2] to-transparent" />
       </div>
     </section>
   );

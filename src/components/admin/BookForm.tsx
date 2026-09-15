@@ -5,6 +5,7 @@ import { CldUploadWidget } from "next-cloudinary";
 import type { ActionResult } from "@/actions/books";
 import type { Database } from "@/types/database";
 import { createClient } from "@/lib/supabase/client";
+import MediaUploadField from "./MediaUploadField";
 import { btnPrimary, inputCls, labelCls } from "./ui";
 
 type Book = Database["public"]["Tables"]["books"]["Row"];
@@ -236,6 +237,15 @@ export function BookForm({
           <input type="hidden" name="highlights" value={highlightsJson} />
         </div>
       </div>
+
+      <section className="rounded-lg border border-gray-200 p-4 sm:p-5">
+        <h2 className="mb-4 text-lg font-semibold text-gray-900">Book demos</h2>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <MediaUploadField name="demo_file_url" label="Demo file (PDF)" kind="file" initialValue={book?.demo_file_url ?? ""} />
+          <MediaUploadField name="demo_video_url" label="Demo video" kind="video" initialValue={book?.demo_video_url ?? ""} />
+        </div>
+        <p className="mt-3 text-xs text-gray-500">Upload a file or paste a link. The video button becomes available on the product page when its link is saved.</p>
+      </section>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-6">
         <Checkbox name="in_stock" label="In Stock" defaultChecked={book?.in_stock ?? true} />

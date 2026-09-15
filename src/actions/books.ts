@@ -13,6 +13,16 @@ function boolFromForm(formData: FormData, key: string): boolean {
   return formData.get(key) === 'on'
 }
 
+function mediaFromForm(formData: FormData) {
+  const result: Record<string, string | null> = {};
+  for (const key of ['demo_file_url', 'demo_video_url']) {
+    const value = String(formData.get(key) || '').trim();
+    if (value && !/^\/(?!\/)/.test(value) && !/^https?:\/\//.test(value)) throw new Error('Demo links must use a site path or HTTP(S) URL');
+    result[key] = value || null;
+  }
+  return result;
+}
+
 export async function createBook(_prevState: ActionResult, formData: FormData): Promise<ActionResult> {
   const supabase = await createClient()
   const title = (formData.get('title') as string) || ''
@@ -25,7 +35,10 @@ export async function createBook(_prevState: ActionResult, formData: FormData): 
   const reviews_count = parseInt((formData.get('reviews_count') as string) || '0', 10) || 0
   const pages = (formData.get('pages') as string) || null
 
+  let media;
+  try { media = mediaFromForm(formData) } catch (error) { return { error: (error as Error).message } }
   const { error } = await supabase.from('books').insert({
+    ...media,
     id: crypto.randomUUID(),
     slug: slugify(title),
     title,
@@ -79,7 +92,10 @@ export async function updateBook(_prevState: ActionResult, formData: FormData): 
   const reviews_count = parseInt((formData.get('reviews_count') as string) || '0', 10) || 0
   const pages = (formData.get('pages') as string) || null
 
+  let media;
+  try { media = mediaFromForm(formData) } catch (error) { return { error: (error as Error).message } }
   const { error } = await supabase.from('books').update({
+    ...media,
     slug: slugify(title),
     title,
     hindi_title: (formData.get('hindi_title') as string) || null,

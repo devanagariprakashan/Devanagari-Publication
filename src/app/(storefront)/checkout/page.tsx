@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -84,6 +84,7 @@ export default function CheckoutPage() {
 
   // Form State
   const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [pincode, setPincode] = useState("");
   const [pincodeVerified, setPincodeVerified] = useState(false);
@@ -130,6 +131,24 @@ export default function CheckoutPage() {
   const [isOrderSuccess, setIsOrderSuccess] = useState(false);
   const [placedOrderId, setPlacedOrderId] = useState("");
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
+
+  useEffect(() => {
+    const syncPayuResult = () => {
+      const params = new URLSearchParams(window.location.search);
+      const payuStatus = params.get("payu");
+      if (payuStatus === "paid") {
+        setPlacedOrderId(params.get("order") || "");
+        setIsOrderSuccess(true);
+        clearCart();
+        window.history.replaceState({}, "", "/checkout");
+      } else if (payuStatus === "failed") {
+        setFormErrors({ payment: "Payment was not completed. You can try again." });
+        window.history.replaceState({}, "", "/checkout");
+      }
+    };
+    const timer = window.setTimeout(syncPayuResult, 0);
+    return () => window.clearTimeout(timer);
+  }, [clearCart]);
 
   // Financial calculations
   const totalItemCount = useMemo(() => {
@@ -235,7 +254,7 @@ export default function CheckoutPage() {
   };
 
   // Handle Place Order
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     if (activeItems.length === 0) {
       alert("Aapka cart empty hai! Please pehle books cart me add karein.");
       return;
@@ -243,6 +262,7 @@ export default function CheckoutPage() {
 
     const errors: { [key: string]: string } = {};
     if (!fullName.trim()) errors.fullName = "Full name is required";
+    if (!email.trim() || !/^\S+@\S+\.\S+$/.test(email.trim())) errors.email = "Enter a valid email address";
     if (!phoneNumber.trim() || phoneNumber.replace(/\D/g, "").length < 10) {
       errors.phoneNumber = "Enter a valid 10-digit mobile number";
     }
@@ -262,15 +282,54 @@ export default function CheckoutPage() {
     setFormErrors({});
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      const generatedId = "ORD-" + Math.floor(100000 + Math.random() * 900000);
-      setPlacedOrderId(generatedId);
+    if (selectedPayment !== "cod") {
+      try {
+        const response = await fetch("/api/payu/initiate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            items: activeItems.map((item) => ({ id: item.id, quantity: item.quantity || 1 })),
+            fullName, email, phone: phoneNumber, address, landmark, city, state, pincode,
+            shippingMethod, couponCode: appliedCoupon?.code,
+          }),
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Unable to start payment");
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = result.action;
+        Object.entries(result.fields as Record<string, string>).forEach(([name, value]) => {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = name;
+          input.value = value;
+          form.appendChild(input);
+        });
+        document.body.appendChild(form);
+        form.submit();
+      } catch (error) {
+        setIsSubmitting(false);
+        setFormErrors({ payment: error instanceof Error ? error.message : "Unable to start payment" });
+      }
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/orders/cod", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: activeItems.map((item) => ({ id: item.id, quantity: item.quantity || 1 })), fullName, email, phone: phoneNumber, address, landmark, city, state, pincode, shippingMethod }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Unable to create COD order");
+      setPlacedOrderId(result.orderNumber);
       setIsSubmitting(false);
       setIsOrderSuccess(true);
-      if (cart.length > 0) {
-        clearCart();
-      }
-    }, 1000);
+      clearCart();
+    } catch (error) {
+      setIsSubmitting(false);
+      setFormErrors({ payment: error instanceof Error ? error.message : "Unable to create COD order" });
+    }
   };
 
   return (
@@ -435,8 +494,8 @@ export default function CheckoutPage() {
 
               {/* Form Grid */}
               <div className="space-y-4 text-xs sm:text-sm">
-                {/* Row 1: Full Name & Phone Number */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Row 1: Contact details */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                       Full Name
@@ -476,6 +535,22 @@ export default function CheckoutPage() {
                     {formErrors.phoneNumber && (
                       <p className="text-[11px] text-red-600 mt-1">{formErrors.phoneNumber}</p>
                     )}
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                      Email Address
+                    </label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      className={`w-full px-3.5 py-2.5 rounded-lg border text-xs sm:text-sm transition-colors focus:outline-none focus:ring-1 focus:ring-[#C61821] ${
+                        formErrors.email ? "border-red-500 bg-red-50/20" : "border-gray-250 hover:border-gray-350 focus:border-[#C61821]"
+                      }`}
+                    />
+                    {formErrors.email && <p className="text-[11px] text-red-600 mt-1">{formErrors.email}</p>}
                   </div>
                 </div>
 
@@ -666,6 +741,9 @@ export default function CheckoutPage() {
                   </p>
                 </div>
               </div>
+              {formErrors.payment && (
+                <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{formErrors.payment}</p>
+              )}
 
               {/* 2-Column Responsive Layout for Payment Option Selection */}
               <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
@@ -1357,7 +1435,7 @@ export default function CheckoutPage() {
                 <span>Why shop with us?</span>
               </h3>
               <p className="text-xs text-gray-500 mt-0.5">
-                India's trusted publication for competitive examination books
+                India&apos;s trusted publication for competitive examination books
               </p>
             </div>
             <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-100/80 self-start sm:self-auto">

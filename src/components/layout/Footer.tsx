@@ -445,7 +445,7 @@ export default function Footer() {
         {/* ============================================================ */}
         <div className="mt-12 pt-8 border-t border-gray-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-400 pb-24 sm:pb-4">
           <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-center sm:text-left">
-            <p>© {new Date().getFullYear()} Devanagari Books &amp; Publications Pvt. Ltd. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} Devanagari Books &amp; Publications LLP. All rights reserved.</p>
             <span className="hidden sm:inline text-gray-600">•</span>
             <p className="text-gray-400">
               Empowering Civil Service Aspirants Across India

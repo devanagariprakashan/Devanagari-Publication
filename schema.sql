@@ -78,8 +78,33 @@ create table if not exists public.orders (
   total_amount numeric not null,
   order_status text default 'pending',
   payment_status text default 'pending',
+  payment_gateway text,
+  payment_method text,
+  gateway_order_id text,
+  payment_id text,
+  shipping_address text,
+  landmark text,
+  city text,
+  state text,
+  pincode text,
+  shipment_status text default 'pending',
+  shipment_id text,
+  awb_number text,
+  shipment_error text,
+  shipment_response jsonb,
   created_at timestamptz default timezone('utc'::text, now()) not null,
   cancelled_at timestamptz
+);
+
+create table if not exists public.order_items (
+  id text primary key,
+  order_id text not null references public.orders(id) on delete cascade,
+  book_id text references public.books(id),
+  product_name text not null,
+  product_sku text,
+  quantity integer not null check (quantity > 0),
+  unit_price numeric not null,
+  created_at timestamptz default timezone('utc'::text, now()) not null
 );
 
 create table if not exists public.reviews (
@@ -164,3 +189,21 @@ grant all on all tables in schema public to anon, authenticated, service_role;
 grant all on all sequences in schema public to anon, authenticated, service_role;
 alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
 alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
+-- Run in the Supabase SQL editor before using the Team and Blog admin editors.
+create table if not exists public.page_content (
+  slug text primary key check (slug in ('team', 'blog', 'hero')),
+  content jsonb not null
+);
+alter table public.page_content drop constraint if exists page_content_slug_check;
+alter table public.page_content add constraint page_content_slug_check check (slug in ('team', 'blog', 'hero'));
+alter table public.page_content enable row level security;
+drop policy if exists "Public can read page content" on public.page_content;
+drop policy if exists "Admins can manage page content" on public.page_content;
+create policy "Public can read page content" on public.page_content for select using (true);
+create policy "Admins can manage page content" on public.page_content for all to authenticated
+using (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'))
+with check (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
+
+-- Run in Supabase SQL editor to enable per-book demos.
+alter table public.books add column if not exists demo_file_url text;
+alter table public.books add column if not exists demo_video_url text;

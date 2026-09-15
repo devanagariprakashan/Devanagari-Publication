@@ -58,6 +58,8 @@ export function mapBookRowToItem(
     badge: book.badge ?? undefined,
     badgeColor: book.badge_color ?? undefined,
     image: book.image_url ?? "/images/books/image-2.png",
+    demoFileUrl: book.demo_file_url ?? undefined,
+    demoVideoUrl: book.demo_video_url ?? undefined,
     edition: book.edition ?? "Latest Edition",
     inStock: book.in_stock ?? true,
     pages: book.pages ?? undefined,

@@ -33,6 +33,8 @@ export default async function OrdersPage() {
                 <th className={tableTh}>Email</th>
                 <th className={tableTh}>Total</th>
                 <th className={tableTh}>Status</th>
+                <th className={tableTh}>Shipment</th>
+                <th className={tableTh}>AWB</th>
                 <th className={tableTh}>Created</th>
                 <th className={tableTh}>Actions</th>
               </tr>
@@ -52,6 +54,8 @@ export default async function OrdersPage() {
                       action={updateOrderStatus}
                     />
                   </td>
+                  <td className={tableTd}>{o.shipment_status ?? "pending"}</td>
+                  <td className={tableTd}>{o.awb_number ?? "—"}</td>
                   <td className={tableTd}>
                     {new Date(o.created_at).toLocaleDateString()}
                   </td>
@@ -62,7 +66,7 @@ export default async function OrdersPage() {
               ))}
               {(orders ?? []).length === 0 && (
                 <tr>
-                  <td className={tableTd} colSpan={7}>
+                  <td className={tableTd} colSpan={9}>
                     No orders yet.
                   </td>
                 </tr>

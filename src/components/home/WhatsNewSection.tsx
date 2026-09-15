@@ -114,6 +114,7 @@ const FALLBACK_UPDATES = [
 ];
 
 // ponytail: feed rotates one row at a time (30s), circular window over the pool.
+const SLIDE_STEP_MS = 3_000;
 const FEED_STEP_MS = 30_000;
 const FEED_FADE_MS = 650;
 const FEED_SIZE = 4;
@@ -128,10 +129,18 @@ export default function WhatsNewSection() {
   const [slides, setSlides] = useState<SlideView[]>(FALLBACK_SLIDES);
   const [updates, setUpdates] = useState<UpdateView[]>(FALLBACK_UPDATES);
   const [active, setActive] = useState(0);
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
   const [feedStart, setFeedStart] = useState(0);
   const [fadingOut, setFadingOut] = useState(false);
   const prev = () => setActive((a) => (a === 0 ? slides.length - 1 : a - 1));
   const next = () => setActive((a) => (a === slides.length - 1 ? 0 : a + 1));
+
+  useEffect(() => {
+    if (slides.length < 2 || hovered || focused) return;
+    const timer = setTimeout(() => setActive(index => (index + 1) % slides.length), SLIDE_STEP_MS);
+    return () => clearTimeout(timer);
+  }, [active, slides.length, hovered, focused]);
 
   const start = updates.length ? ((feedStart % updates.length) + updates.length) % updates.length : 0;
   const feedSize = Math.min(FEED_SIZE, updates.length);
@@ -216,13 +225,22 @@ export default function WhatsNewSection() {
         {/* ===== Two-column content ===== */}
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_440px] gap-6 lg:gap-8">
           {/* ---------- Left: featured release carousel ---------- */}
-          <div className="relative overflow-hidden rounded-2xl aspect-[4/3] sm:aspect-[16/10] lg:aspect-auto lg:h-[560px] xl:h-[620px] select-none">
+          <div
+            role="region"
+            aria-label="Featured releases"
+            aria-roledescription="carousel"
+            data-active-slide={active}
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+            onFocusCapture={() => setFocused(true)}
+            onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false); }}
+            className="relative overflow-hidden rounded-2xl aspect-[4/3] sm:aspect-[16/10] lg:aspect-auto lg:h-[560px] xl:h-[620px] select-none">
             <div
-              className="flex flex-col h-full transition-transform duration-500 ease-out"
+              className="flex flex-col h-full transition-transform duration-500 ease-out motion-reduce:transition-none"
               style={{ transform: `translateY(-${active * 100}%)` }}
             >
-              {slides.map((s) => (
-                <div key={s.id} className="relative w-full h-full shrink-0 overflow-hidden">
+              {slides.map((s, index) => (
+                <div aria-hidden={active !== index} key={s.id} className="relative w-full h-full shrink-0 overflow-hidden">
                   {/* Warm backdrop */}
                   <div className="absolute inset-0" style={{ background: s.bg }} />
                   <div className="absolute -top-16 -left-10 w-64 h-64 rounded-full opacity-40 blur-3xl" style={{ background: "rgba(198,24,33,0.12)" }} />
@@ -251,6 +269,7 @@ export default function WhatsNewSection() {
                       </p>
                       <Link
                         href={s.href}
+                        tabIndex={active === index ? 0 : -1}
                         className="group/cta mt-5 sm:mt-6 inline-flex items-center gap-2 text-white text-[13px] sm:text-sm font-bold px-5 sm:px-7 py-2.5 sm:py-3.5 rounded-full shadow-[0_10px_22px_-8px_rgba(198,24,33,0.55)] transition-all hover:shadow-[0_14px_26px_-8px_rgba(198,24,33,0.65)] hover:-translate-y-0.5"
                         style={{ background: RED }}
                       >
@@ -306,6 +325,7 @@ export default function WhatsNewSection() {
                   key={s.id}
                   onClick={() => setActive(i)}
                   aria-label={`Go to slide ${i + 1}`}
+                  aria-current={active === i ? "true" : undefined}
                   className={`rounded-full transition-all duration-300 ${
                     active === i ? "w-6 h-2.5" : "w-2.5 h-2.5 hover:scale-110"
                   }`}

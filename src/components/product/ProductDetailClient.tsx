@@ -15,6 +15,7 @@ import {
   ChevronUp,
   ChevronDown,
   BookOpen,
+  PlayCircle,
   Languages,
   FileText,
   Bookmark,
@@ -38,7 +39,6 @@ import { fetchCatalogBooks } from "@/lib/catalog";
 import { useCartWishlist } from "@/components/providers/CartWishlistProvider";
 import SampleReaderModal from "@/components/product/SampleReaderModal";
 import BookReviews from "@/components/product/BookReviews";
-import SeeReadBeforeBuySection from "@/components/home/SeeReadBeforeBuySection";
 
 interface ProductDetailClientProps {
   id?: string;
@@ -577,6 +577,10 @@ export default function ProductDetailClient({ id }: ProductDetailClientProps) {
                 </div>
               </div>
 
+              <div className="mt-3 flex flex-wrap items-center gap-2.5" aria-label="Book demos">
+                {book.demoFileUrl ? <a href={book.demoFileUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-[5px] border border-red-200 bg-red-50 px-4 py-2.5 text-xs sm:text-sm font-semibold text-[#C61821] hover:bg-red-100"><FileText size={16} />Demo File</a> : <button type="button" onClick={() => openSampleModal(1)} className="inline-flex items-center justify-center gap-2 rounded-[5px] border border-red-200 bg-red-50 px-4 py-2.5 text-xs sm:text-sm font-semibold text-[#C61821] hover:bg-red-100"><FileText size={16} />Demo File</button>}
+                {book.demoVideoUrl ? <a href={book.demoVideoUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-[5px] border border-stone-200 bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-stone-700 hover:border-red-200 hover:text-[#C61821]"><PlayCircle size={16} />Demo Video</a> : <button type="button" disabled title="Demo video is not available for this book yet" className="inline-flex items-center justify-center gap-2 rounded-[5px] border border-stone-200 px-4 py-2.5 text-xs sm:text-sm font-semibold text-stone-400 cursor-not-allowed"><PlayCircle size={16} />Demo Video</button>}
+              </div>
               {/* Bottom: Wishlist + Share Micro Actions */}
               <div className="flex items-center justify-between pt-4 mt-4 border-t border-stone-100 text-xs text-stone-500">
                 <button
@@ -850,11 +854,6 @@ export default function ProductDetailClient({ id }: ProductDetailClientProps) {
         </div>
 
         {/* ============================================================ */}
-        {/* SEE / READ BEFORE YOU BUY                                    */}
-        {/* ============================================================ */}
-        <SeeReadBeforeBuySection />
-
-        {/* ============================================================ */}
         {/* RELATED BOOKS SECTION                                        */}
         {/* ============================================================ */}
         {relatedBooks.length > 0 && (
@@ -1063,6 +1062,7 @@ export default function ProductDetailClient({ id }: ProductDetailClientProps) {
       {/* FULLSCREEN SAMPLE READER MODAL                               */}
       {/* ============================================================ */}
       <SampleReaderModal
+        key={`${book.id}-${isSampleModalOpen}-${sampleModalInitialPage}`}
         isOpen={isSampleModalOpen}
         onClose={() => setIsSampleModalOpen(false)}
         title={book.title}

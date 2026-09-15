@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
+import { useBookCarousel } from "./useBookCarousel";
 import {
   Star,
   ShoppingCart,
@@ -198,18 +199,8 @@ export default function HandpickedSection({
   const FEATURED_LIMIT = 10;
   const hasTooManyBooks = list.length > FEATURED_LIMIT;
 
-  const [currentPage, setCurrentPage] = useState(0);
   const [addedIds, setAddedIds] = useState<Array<number | string>>([]);
-  const itemsPerPage = 5;
-  const totalPages = Math.ceil(list.length / itemsPerPage);
-
-  const handlePrev = () => {
-    setCurrentPage((prev) => (prev > 0 ? prev - 1 : totalPages - 1));
-  };
-
-  const handleNext = () => {
-    setCurrentPage((prev) => (prev < totalPages - 1 ? prev + 1 : 0));
-  };
+  const { trackRef, itemsPerPage, totalPages, handlePrev, handleNext, interactionProps } = useBookCarousel(list.length);
 
   const convertToBookData = (book: HandpickedBook): BookData => ({
     id: book.id,
@@ -287,14 +278,10 @@ export default function HandpickedSection({
     router.push("/shop");
   };
 
-  const visibleBooks = list.slice(
-    currentPage * itemsPerPage,
-    (currentPage + 1) * itemsPerPage,
-  );
-
   return (
     <section
       id="handpicked"
+      {...interactionProps}
       className="relative py-10 sm:py-14 lg:py-16 bg-[#FAFAFC] overflow-hidden"
     >
       {/* Background Soft Glows */}
@@ -356,17 +343,22 @@ export default function HandpickedSection({
         )}
 
         {/* ================= PRODUCT CARDS GRID ================= */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4 lg:gap-5 items-stretch">
-          {visibleBooks.map((book) => {
+        <div className="overflow-hidden p-1 -m-1 [contain:layout_paint] [--book-gap:14px] sm:[--book-gap:16px] lg:[--book-gap:20px]">
+          <div ref={trackRef} className="flex items-stretch gap-[var(--book-gap)] transform-gpu will-change-transform">
+          {(list.length > 1 ? Array.from({ length: Math.max(2, Math.ceil(itemsPerPage / list.length) + 1) }, () => list).flat() : list).map((book, index) => {
             const isWishlisted =
               wishlistIds.includes(book.id) || isInWishlist(book.id);
             const isAdded = addedIds.includes(book.id) || isInCart(book.id);
 
             return (
               <div
-                key={book.id}
+                key={`${book.id}-${index}`}
+                  data-carousel-book-id={book.id}
+                  aria-hidden={index >= list.length ? true : undefined}
+                  data-carousel-copy={index >= list.length}
+                  style={{ width: `calc((100% - ${itemsPerPage - 1} * var(--book-gap)) / ${itemsPerPage})` }}
                 onClick={() => handleCardClick(book)}
-                className="group relative bg-white rounded-[5px] sm:rounded-[5px] p-3.5 sm:p-4 border border-gray-100/90 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.04)] hover:shadow-[0_14px_30px_-6px_rgba(198,24,33,0.12)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between cursor-pointer select-none h-full hover:border-[#C61821]/30"
+                className="group relative bg-white rounded-[5px] sm:rounded-[5px] p-3.5 sm:p-4 border border-gray-100/90 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.04)] hover:shadow-[0_14px_30px_-6px_rgba(198,24,33,0.12)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between cursor-pointer select-none shrink-0 hover:border-[#C61821]/30"
               >
                 {/* Subtle Card Background Curved Watermark */}
                 <div className="absolute inset-0 rounded-[5px] sm:rounded-[5px] overflow-hidden pointer-events-none -z-0">
@@ -408,7 +400,7 @@ export default function HandpickedSection({
                       alt={book.title}
                       width={320}
                       height={460}
-                      className="max-h-full max-w-full object-contain filter drop-shadow-[0_10px_16px_rgba(0,0,0,0.13)] group-hover:drop-shadow-[0_16px_22px_rgba(198,24,33,0.18)] group-hover:scale-105 transition-all duration-300"
+                      className="max-h-full max-w-full object-contain   group-hover:scale-105 transition-transform duration-300"
                     />
                   </div>
                 </div>
@@ -486,6 +478,7 @@ export default function HandpickedSection({
             );
           })}
         </div>
+        </div>
 
         {/* ================= BOTTOM PAGINATION / CAROUSEL CONTROLS ================= */}
         {totalPages > 1 && (
@@ -498,22 +491,6 @@ export default function HandpickedSection({
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-
-            {/* Dots */}
-            <div className="flex items-center gap-1.5 px-2">
-              {Array.from({ length: totalPages }).map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setCurrentPage(idx)}
-                  aria-label={`Go to page ${idx + 1}`}
-                  className={`transition-all duration-300 rounded-full ${
-                    currentPage === idx
-                      ? "w-2.5 h-2.5 bg-[#C61821] ring-3 ring-red-100"
-                      : "w-2 h-2 bg-red-200/80 hover:bg-red-300"
-                  }`}
-                />
-              ))}
-            </div>
 
             {/* Right Chevron */}
             <button

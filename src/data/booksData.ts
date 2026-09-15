@@ -40,6 +40,8 @@ export interface BookItem {
   shortSummary?: string;
   featureHighlights?: { title: string; subtitle: string; icon?: string }[];
   sampleImages?: string[];
+  demoFileUrl?: string;
+  demoVideoUrl?: string;
 }
 
 export const ALL_BOOKS: BookItem[] = [

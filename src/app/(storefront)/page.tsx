@@ -1,3 +1,5 @@
+import { getPageContent } from "@/lib/page-content";
+import type { BookData, BookCoverType } from "@/data/heroContent";
 import { createClient } from "@/lib/supabase/server";
 import HomeContent from "@/components/home/HomeContent";
 import { FeaturedCategory } from "@/components/home/FeaturedCategories";
@@ -56,6 +58,12 @@ function toHandpicked(b: BookRow): HandpickedBook {
 
 export default async function Home() {
   const supabase = await createClient();
+  const hero = await getPageContent("hero");
+  const heroBooks: BookData[] = hero.items.map(item => ({
+    ...item, id: item.id, title: item.title, subject: item.subject, category: item.category, bgColor: item.bgColor,
+    coverType: item.coverType as BookCoverType, price: Number(item.price), originalPrice: Number(item.originalPrice),
+    rating: Number(item.rating), reviewsCount: Number(item.reviewsCount),
+  }));
 
   const [categoriesRes, bestsellersRes, handpickedRes] =
     await Promise.all([
@@ -94,6 +102,7 @@ export default async function Home() {
 
   return (
     <HomeContent
+      heroBooks={heroBooks}
       categories={categories}
       bestsellers={bestsellers}
       handpicked={handpicked}

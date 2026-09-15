@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Image from "next/image";
+import { useBookCarousel } from "./useBookCarousel";
 import {
   Star,
   ShoppingCart,
@@ -220,40 +221,8 @@ export default function BestsellersSection({
   const BESTSELLER_LIMIT = 10;
   const hasTooManyBooks = list.length > BESTSELLER_LIMIT;
 
-  const [currentPage, setCurrentPage] = useState(0);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
   const [addedIds, setAddedIds] = useState<Array<number | string>>([]);
-
-  // Update items per page based on window width for responsive calculation
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setItemsPerPage(5);
-      } else if (window.innerWidth >= 768) {
-        setItemsPerPage(3);
-      } else if (window.innerWidth >= 640) {
-        setItemsPerPage(2);
-      } else {
-        setItemsPerPage(1);
-      }
-    };
-
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  const totalPages = Math.max(1, Math.ceil(list.length / itemsPerPage));
-
-  const safeCurrentPage = Math.min(currentPage, totalPages - 1);
-
-  const handlePrev = () => {
-    setCurrentPage((prev) => (prev > 0 ? prev - 1 : totalPages - 1));
-  };
-
-  const handleNext = () => {
-    setCurrentPage((prev) => (prev < totalPages - 1 ? prev + 1 : 0));
-  };
+  const { trackRef, itemsPerPage, handlePrev, handleNext, interactionProps } = useBookCarousel(list.length);
 
   const handleBrowseAll = () => {
     router.push("/shop?filter=bestsellers");
@@ -331,14 +300,10 @@ export default function BestsellersSection({
     }
   };
 
-  const visibleBooks = list.slice(
-    safeCurrentPage * itemsPerPage,
-    safeCurrentPage * itemsPerPage + itemsPerPage
-  );
-
   return (
     <section
       id="bestsellers"
+      {...interactionProps}
       className="relative py-10 sm:py-14 lg:py-16 bg-white overflow-hidden"
     >
       {/* Subtle Background Ambience */}
@@ -398,17 +363,22 @@ export default function BestsellersSection({
           </button>
 
           {/* Cards Grid / Container - 5 Columns on Desktop */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4 lg:gap-5 items-stretch transition-all duration-300">
-            {visibleBooks.map((book) => {
+        <div className="overflow-hidden p-1 -m-1 [contain:layout_paint] [--book-gap:14px] sm:[--book-gap:16px] lg:[--book-gap:20px]">
+          <div ref={trackRef} className="flex items-stretch gap-[var(--book-gap)] transform-gpu will-change-transform">
+            {(list.length > 1 ? Array.from({ length: Math.max(2, Math.ceil(itemsPerPage / list.length) + 1) }, () => list).flat() : list).map((book, index) => {
               const isWishlisted =
                 wishlistIds.includes(book.id) || isInWishlist(book.id);
               const isAdded = addedIds.includes(book.id) || isInCart(book.id);
 
               return (
                 <div
-                  key={book.id}
+                  key={`${book.id}-${index}`}
+                  data-carousel-book-id={book.id}
+                  aria-hidden={index >= list.length ? true : undefined}
+                  data-carousel-copy={index >= list.length}
+                  style={{ width: `calc((100% - ${itemsPerPage - 1} * var(--book-gap)) / ${itemsPerPage})` }}
                   onClick={() => handleCardClick(book)}
-                  className="group relative bg-white rounded-[5px] sm:rounded-[5px] p-4 sm:p-4.5 border border-gray-100/90 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_16px_34px_-6px_rgba(198,24,33,0.12)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between cursor-pointer select-none h-full hover:border-[#C61821]/30"
+                  className="group relative bg-white rounded-[5px] sm:rounded-[5px] p-4 sm:p-4.5 border border-gray-100/90 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_16px_34px_-6px_rgba(198,24,33,0.12)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between cursor-pointer select-none shrink-0 hover:border-[#C61821]/30"
                 >
                   {/* --- Top Card Controls (Badge & Wishlist) --- */}
                   <div className="relative z-10 flex items-center justify-between w-full h-7 mb-1">
@@ -444,8 +414,9 @@ export default function BestsellersSection({
                         src={book.image}
                         alt={book.title}
                         width={420}
+                        sizes="(min-width: 1450px) 270px, (min-width: 1024px) 20vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
                         height={600}
-                        className="max-h-full max-w-full object-contain filter drop-shadow-[0_12px_18px_rgba(0,0,0,0.14)] group-hover:drop-shadow-[0_18px_24px_rgba(198,24,33,0.20)] group-hover:scale-105 transition-all duration-300"
+                        className="max-h-full max-w-full object-contain   group-hover:scale-105 transition-transform duration-300"
                       />
                     </div>
                   </div>
@@ -524,24 +495,9 @@ export default function BestsellersSection({
             })}
           </div>
         </div>
+        </div>
 
-        {/* ================= BOTTOM PAGINATION DOTS ================= */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-8 sm:mt-10">
-            {Array.from({ length: totalPages }).map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setCurrentPage(idx)}
-                aria-label={`Go to slide ${idx + 1}`}
-                className={`transition-all duration-300 rounded-full cursor-pointer ${
-                  currentPage === idx
-                    ? "w-7 h-2 bg-[#C61821]"
-                    : "w-2 h-2 bg-gray-200 hover:bg-red-200"
-                }`}
-              />
-            ))}
-          </div>
-        )}
+
       </div>
     </section>
   );

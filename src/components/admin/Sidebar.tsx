@@ -24,6 +24,9 @@ const navItems = [
   { href: "/admin/books", label: "Books", icon: BookOpen },
   { href: "/admin/categories", label: "Categories", icon: Folder },
   { href: "/admin/authors", label: "Authors", icon: Users },
+  { href: "/admin/hero", label: "Hero Section", icon: BookOpen },
+  { href: "/admin/team", label: "Team", icon: Users },
+  { href: "/admin/blog", label: "Blog", icon: Newspaper },
   { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
   { href: "/admin/inquiries", label: "Inquiries", icon: MessageSquare },
   { href: "/admin/whats-new", label: "What's New", icon: Newspaper },
@@ -50,7 +53,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
         )}
       </div>
 
-      <nav className="flex-1 space-y-1 p-4">
+      <nav className="flex-1 overflow-y-auto space-y-1 p-4">
         {navItems.map((item) => {
           const active = pathname === item.href;
           const Icon = item.icon;
