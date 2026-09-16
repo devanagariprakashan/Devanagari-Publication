@@ -12,7 +12,7 @@ export function useBookCarousel(bookCount: number) {
   const focusedRef = useRef(false);
 
   useEffect(() => {
-    const resize = () => setItemsPerPage(window.innerWidth >= 1024 ? 5 : window.innerWidth >= 768 ? 3 : window.innerWidth >= 640 ? 2 : 1);
+    const resize = () => setItemsPerPage(window.innerWidth >= 1024 ? 5 : window.innerWidth >= 768 ? 3 : 2);
     resize();
     window.addEventListener("resize", resize);
     return () => window.removeEventListener("resize", resize);

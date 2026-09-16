@@ -415,7 +415,7 @@ export default function WishlistPage() {
                 </button>
               </div>
             ) : viewMode === "grid" ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5">
                 {filteredWishlist.map((item) => {
                   const discount = item.originalPrice
                     ? Math.round(((item.originalPrice - item.price) / item.originalPrice) * 100)
@@ -428,11 +428,11 @@ export default function WishlistPage() {
                       className="group bg-white rounded-[5px] border border-gray-200/90 hover:border-red-200/90 shadow-2xs hover:shadow-cardHover transition-all duration-300 flex flex-col justify-between overflow-hidden"
                     >
                       {/* Top Media & Tags */}
-                      <div className="p-3 pb-0">
-                        <div className="relative aspect-[4/3] bg-gradient-to-b from-gray-50 to-gray-100/60 rounded-[5px] p-2 flex items-center justify-center overflow-hidden border border-gray-100 mb-2">
+                      <div className="p-2 pb-0 sm:p-3">
+                        <div className="relative aspect-[4/3] bg-gradient-to-b from-gray-50 to-gray-100/60 rounded-[5px] p-1.5 sm:p-2 flex items-center justify-center overflow-hidden border border-gray-100 mb-1.5 sm:mb-2">
                           {/* Discount Pill */}
                           {discount > 0 && (
-                            <span className="absolute top-2.5 left-2.5 z-10 bg-[#C61821] text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-xs">
+                            <span className="absolute top-1.5 left-1.5 sm:top-2.5 sm:left-2.5 z-10 bg-[#C61821] text-white text-[9px] sm:text-[10px] font-extrabold px-1.5 sm:px-2 py-0.5 rounded-full shadow-xs">
                               {discount}% OFF
                             </span>
                           )}
@@ -445,16 +445,16 @@ export default function WishlistPage() {
                           />
 
                           {/* Action Buttons Top-Right */}
-                          <div className="absolute top-2.5 right-2.5 z-10 flex flex-col gap-1.5">
+                          <div className="absolute top-1.5 right-1.5 sm:top-2.5 sm:right-2.5 z-10 flex flex-col gap-1 sm:gap-1.5">
                             {/* Remove from Wishlist */}
                             <button
                               type="button"
                               onClick={() => removeFromWishlist(item.id)}
                               aria-label="Remove from wishlist"
-                              className="w-8 h-8 rounded-full bg-white/95 hover:bg-rose-50 text-gray-400 hover:text-red-600 shadow-xs flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer"
+                              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/95 hover:bg-rose-50 text-gray-400 hover:text-red-600 shadow-xs flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer"
                               title="Remove"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                             </button>
 
                             {/* Quick Preview Modal */}
@@ -462,62 +462,62 @@ export default function WishlistPage() {
                               type="button"
                               onClick={() => openModalForItem(item)}
                               aria-label="Quick Preview"
-                              className="w-8 h-8 rounded-full bg-white/95 hover:bg-gray-100 text-gray-600 hover:text-gray-900 shadow-xs flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer"
+                              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/95 hover:bg-gray-100 text-gray-600 hover:text-gray-900 shadow-xs flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer"
                               title="Quick View"
                             >
-                              <Eye className="w-4 h-4" />
+                              <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                             </button>
                           </div>
                         </div>
 
                         {/* Category & Edition */}
-                        <div className="flex items-center justify-between gap-1 mb-1.5">
-                          <span className="text-[10px] font-extrabold text-[#C61821] uppercase tracking-wider bg-red-50 px-2 py-0.5 rounded">
+                        <div className="flex items-center justify-between gap-1 mb-1 sm:mb-1.5">
+                          <span className="text-[9px] sm:text-[10px] font-extrabold text-[#C61821] uppercase tracking-wider bg-red-50 px-1.5 sm:px-2 py-0.5 rounded truncate">
                             {item.category}
                           </span>
                           {item.edition && (
-                            <span className="text-[10.5px] text-gray-400 font-medium truncate max-w-[120px]">
+                            <span className="text-[9px] sm:text-[10.5px] text-gray-400 font-medium truncate max-w-[60px] sm:max-w-[120px]">
                               {item.edition}
                             </span>
                           )}
                         </div>
 
                         {/* Title & Hindi Title */}
-                        <h3 className="font-bold text-[17px] text-gray-900 leading-snug line-clamp-1 group-hover:text-[#C61821] transition-colors">
+                        <h3 className="font-bold text-[13px] sm:text-[17px] text-gray-900 leading-snug line-clamp-1 group-hover:text-[#C61821] transition-colors">
                           {item.title}
                         </h3>
                         {item.hindiTitle && (
-                          <p className="text-xs text-gray-500 font-devanagari line-clamp-1 mt-0.5 font-medium">
+                          <p className="text-[10px] sm:text-xs text-gray-500 font-devanagari line-clamp-1 mt-0.5 font-medium">
                             {item.hindiTitle}
                           </p>
                         )}
 
                         {/* Author */}
-                        <p className="text-xs text-gray-400 mt-1 font-medium">{item.author || "Devanagari Publications"}</p>
+                        <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5 sm:mt-1 font-medium truncate">{item.author || "Devanagari Publications"}</p>
 
                         {/* Rating */}
-                        <div className="flex items-center gap-1.5 text-amber-500 text-xs font-bold mt-2">
+                        <div className="flex items-center gap-1 sm:gap-1.5 text-amber-500 text-[10px] sm:text-xs font-bold mt-1 sm:mt-2">
                           <div className="flex items-center">
                             <Star className="w-3.5 h-3.5 fill-amber-400" />
                           </div>
                           <span>{item.rating}</span>
                           <span className="text-gray-400 font-normal">({item.reviewsCount})</span>
                           <span className="text-gray-300 ml-auto">•</span>
-                          <span className="text-emerald-600 font-semibold text-[11px]">In Stock</span>
+                          <span className="text-emerald-600 font-semibold text-[9px] sm:text-[11px]">In Stock</span>
                         </div>
                       </div>
 
                       {/* Card Footer: Price & CTA */}
-                      <div className="p-4 pt-3 mt-3 border-t border-gray-100 bg-gray-50/40">
-                        <div className="flex items-baseline justify-between mb-3">
-                          <div className="flex items-baseline gap-1.5">
-                            <span className="text-lg font-extrabold text-gray-900">₹{item.price}</span>
+                      <div className="p-2.5 pt-2 mt-2 sm:p-4 sm:pt-3 sm:mt-3 border-t border-gray-100 bg-gray-50/40">
+                        <div className="flex items-baseline justify-between mb-2 sm:mb-3 gap-1">
+                          <div className="flex items-baseline gap-1 sm:gap-1.5 min-w-0">
+                            <span className="text-[15px] sm:text-lg font-extrabold text-gray-900">₹{item.price}</span>
                             {item.originalPrice && item.originalPrice > item.price && (
-                              <span className="text-xs text-gray-400 line-through">₹{item.originalPrice}</span>
+                              <span className="text-[10px] sm:text-xs text-gray-400 line-through">₹{item.originalPrice}</span>
                             )}
                           </div>
                           {item.originalPrice && item.originalPrice > item.price && (
-                            <span className="text-[11px] font-bold text-emerald-600">
+                            <span className="text-[9px] sm:text-[11px] font-bold text-emerald-600 shrink-0">
                               Save ₹{item.originalPrice - item.price}
                             </span>
                           )}
@@ -529,19 +529,19 @@ export default function WishlistPage() {
                             <button
                               type="button"
                               onClick={() => setIsCartDrawerOpen(true)}
-                              className="flex-1 py-2.5 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                              className="flex-1 py-2 px-2 sm:py-2.5 sm:px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-[10px] sm:text-xs font-bold flex items-center justify-center gap-1 sm:gap-1.5 transition-all cursor-pointer"
                             >
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                              <span>In Cart (View)</span>
+                              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                              <span className="truncate">In Cart (View)</span>
                             </button>
                           ) : (
                             <button
                               type="button"
                               onClick={() => moveToCart(item.id)}
-                              className="flex-1 py-2.5 px-3 rounded-[5px] bg-[#C61821] hover:bg-[#8F0E15] text-white text-xs font-bold shadow-xs hover:shadow-md flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                              className="flex-1 py-2 px-2 sm:py-2.5 sm:px-3 rounded-[5px] bg-[#C61821] hover:bg-[#8F0E15] text-white text-[10px] sm:text-xs font-bold shadow-xs hover:shadow-md flex items-center justify-center gap-1 sm:gap-1.5 transition-all active:scale-95 cursor-pointer"
                             >
-                              <ShoppingCart className="w-3.5 h-3.5" />
-                              <span>Move to Cart</span>
+                              <ShoppingCart className="w-3.5 h-3.5 shrink-0" />
+                              <span className="truncate">Move to Cart</span>
                             </button>
                           )}
                         </div>

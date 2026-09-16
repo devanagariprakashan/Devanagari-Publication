@@ -24,6 +24,7 @@ import { useCartWishlist } from "@/components/providers/CartWishlistProvider";
 
 interface HomeContentProps {
   heroBooks?: BookData[];
+  heroBannerImage?: string;
   categories?: FeaturedCategory[];
   bestsellers?: BestsellerBook[];
   handpicked?: HandpickedBook[];
@@ -78,6 +79,7 @@ function TickerTrack({ ariaHidden = false }: { ariaHidden?: boolean }) {
 
 export default function HomeContent({
   heroBooks,
+  heroBannerImage,
   categories,
   bestsellers,
   handpicked,
@@ -125,6 +127,7 @@ export default function HomeContent({
       {/* 1. HERO SECTION */}
       <HeroSection
         books={heroBooks}
+        bannerImage={heroBannerImage}
         onSelectBook={goToProduct}
         onExploreBooks={() => {
           const el = document.getElementById("bestsellers");

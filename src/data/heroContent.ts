@@ -1,3 +1,5 @@
+export const HERO_BANNER_DEFAULT = "/devanagari-hero-section.webp";
+
 export type BookCoverType =
   | "hindi"
   | "polity"

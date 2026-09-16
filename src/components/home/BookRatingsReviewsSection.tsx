@@ -61,10 +61,18 @@ export default function BookRatingsReviewsSection() {
               </div>
             ))}
           </div>
-          <div className="flex justify-center gap-1.5 mt-4 sm:hidden">
-            {Array.from({ length: total }).map((_, i) => (
-              <button key={i} onClick={() => setPage(i)} className={`h-1.5 rounded-full transition-all ${i === page ? "w-6 bg-[#C61821]" : "w-1.5 bg-gray-200"}`} />
-            ))}
+          <div className="flex items-center justify-center gap-4 mt-4 sm:hidden">
+            <button onClick={() => setPage((p) => (p > 0 ? p - 1 : total - 1))} aria-label="Prev" className="w-9 h-9 rounded-full bg-white border border-gray-200 shadow-sm items-center justify-center flex">
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <div className="flex gap-1.5">
+              {Array.from({ length: total }).map((_, i) => (
+                <button key={i} onClick={() => setPage(i)} className={`h-1.5 rounded-full transition-all ${i === page ? "w-6 bg-[#C61821]" : "w-1.5 bg-gray-200"}`} />
+              ))}
+            </div>
+            <button onClick={() => setPage((p) => (p < total - 1 ? p + 1 : 0))} aria-label="Next" className="w-9 h-9 rounded-full bg-white border border-gray-200 shadow-sm items-center justify-center flex">
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>

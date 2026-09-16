@@ -884,7 +884,7 @@ function ShopContent() {
 
             {/* GRID VIEW */}
             {viewMode === "grid" && filteredBooks.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
+              <div className="grid grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
                 {filteredBooks.map((book) => {
                   const isWishlisted = isInWishlist(book.id);
                   const isCarted = isInCart(book.id);
@@ -895,10 +895,10 @@ function ShopContent() {
                       className="group bg-white rounded-2xl border border-gray-200/80 hover:border-red-200 hover:shadow-xl transition-all duration-200 flex flex-col justify-between overflow-hidden relative"
                     >
                       {/* Top Card Media Showcase */}
-                      <div className="relative bg-gradient-to-b from-gray-50 to-white p-4 flex flex-col items-center justify-center border-b border-gray-100 overflow-hidden min-h-[220px]">
+                      <div className="relative bg-gradient-to-b from-gray-50 to-white p-2 sm:p-4 flex flex-col items-center justify-center border-b border-gray-100 overflow-hidden min-h-[150px] sm:min-h-[220px]">
                         
                         {/* Badges Overlay */}
-                        <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
+                        <div className="absolute top-2 left-2 right-2 sm:top-3 sm:left-3 sm:right-3 flex items-center justify-between z-10">
                           {book.badge ? (
                             <span
                               className={`text-[9px] font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wider ${
@@ -917,7 +917,7 @@ function ShopContent() {
                           <button
                             type="button"
                             onClick={() => handleToggleWishlist(book)}
-                            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all ${
                               isWishlisted
                                 ? "bg-red-50 text-[#C61821] scale-110 shadow-xs"
                                 : "bg-white/80 hover:bg-white text-gray-400 hover:text-[#C61821] shadow-2xs"
@@ -925,7 +925,7 @@ function ShopContent() {
                             aria-label="Wishlist"
                           >
                             <Heart
-                              className={`w-4 h-4 ${
+                              className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${
                                 isWishlisted ? "fill-[#C61821]" : ""
                               }`}
                             />
@@ -955,10 +955,10 @@ function ShopContent() {
                       </div>
 
                       {/* Card Content Details */}
-                      <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                      <div className="p-2.5 sm:p-4 flex-1 flex flex-col justify-between space-y-2 sm:space-y-3">
                         <div>
                           {/* Exam Tag + Rating */}
-                          <div className="flex items-center justify-between text-[11px] mb-1.5">
+                          <div className="flex items-center justify-between text-[10px] sm:text-[11px] mb-1 sm:mb-1.5">
                             <span className="font-bold text-[#C61821] uppercase tracking-wide">
                               {book.category}
                             </span>
@@ -974,34 +974,34 @@ function ShopContent() {
                           {/* Book Title */}
                           <Link
                             href={`/product/${book.id}`}
-                            className="font-bold text-sm text-gray-900 group-hover:text-[#C61821] transition-colors line-clamp-1 cursor-pointer leading-snug block"
+                            className="font-bold text-[13px] sm:text-sm text-gray-900 group-hover:text-[#C61821] transition-colors line-clamp-1 cursor-pointer leading-snug block"
                           >
                             {book.title}
                           </Link>
 
                           {/* Hindi Title / Subtitle */}
-                          <p className="text-[11px] text-gray-500 font-devanagari line-clamp-1 mt-0.5">
+                          <p className="text-[10px] sm:text-[11px] text-gray-500 font-devanagari line-clamp-1 mt-0.5">
                             {book.hindiTitle || book.subtitle}
                           </p>
 
                           {/* Author */}
-                          <p className="text-[10.5px] text-gray-400 font-medium mt-1">
+                          <p className="text-[9.5px] sm:text-[10.5px] text-gray-400 font-medium mt-0.5 sm:mt-1">
                             by {book.author}
                           </p>
                         </div>
 
                         {/* Price & Cart Action */}
-                        <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
-                          <div>
-                            <div className="flex items-baseline gap-1.5">
-                              <span className="text-base font-extrabold text-gray-900">
+                        <div className="pt-2 sm:pt-3 border-t border-gray-100 flex items-center justify-between gap-1">
+                          <div className="min-w-0">
+                            <div className="flex items-baseline gap-1 sm:gap-1.5">
+                              <span className="text-[15px] sm:text-base font-extrabold text-gray-900">
                                 ₹{book.price}
                               </span>
-                              <span className="text-xs text-gray-400 line-through">
+                              <span className="text-[10px] sm:text-xs text-gray-400 line-through">
                                 ₹{book.originalPrice}
                               </span>
                             </div>
-                            <span className="text-[10px] font-bold text-emerald-600">
+                            <span className="text-[9px] sm:text-[10px] font-bold text-emerald-600">
                               {book.discountPercent}% OFF
                             </span>
                           </div>
@@ -1009,7 +1009,7 @@ function ShopContent() {
                           <button
                             type="button"
                             onClick={() => handleAddToCart(book)}
-                            className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer ${
+                            className={`px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold flex items-center gap-1 sm:gap-1.5 shrink-0 transition-all active:scale-95 cursor-pointer ${
                               isCarted
                                 ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                                 : "bg-[#C61821] hover:bg-[#8F0E15] text-white shadow-xs"

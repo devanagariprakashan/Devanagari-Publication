@@ -10,10 +10,11 @@ import {
   ArrowRight,
   Sparkles,
 } from "lucide-react";
-import type { BookData } from "@/data/heroContent";
+import { HERO_BANNER_DEFAULT, type BookData } from "@/data/heroContent";
 
 interface HeroSectionProps {
   books?: BookData[];
+  bannerImage?: string;
   onSelectBook?: (book: BookData) => void;
   onExploreBooks?: () => void;
   onViewAuthors?: () => void;
@@ -27,6 +28,7 @@ const STATS = [
 ];
 
 export default function HeroSection({
+  bannerImage = HERO_BANNER_DEFAULT,
   onExploreBooks,
   onViewAuthors,
 }: HeroSectionProps) {
@@ -35,10 +37,10 @@ export default function HeroSection({
       aria-label="Hero"
       className="relative overflow-hidden bg-[#FDF3F2] lg:flex lg:min-h-[760px] lg:items-center"
     >
-      {/* Full-bleed background on desktop (books, emblem, category list, tricolor wave) */}
-      <div className="absolute inset-0 hidden lg:block">
+      {/* Full-bleed background on all sizes (books, emblem, category list, tricolor wave) */}
+      <div className="absolute inset-0">
         <Image
-          src="/devanagari-hero-section.webp"
+          src={bannerImage}
           alt=""
           aria-hidden="true"
           fill
@@ -46,6 +48,8 @@ export default function HeroSection({
           sizes="100vw"
           className="object-cover object-[center_38%]"
         />
+        {/* Keep copy readable over the banner on mobile/tablet */}
+        <div className="absolute inset-0 bg-[#FDF3F2]/70 lg:hidden" />
       </div>
 
       {/* Left editorial copy */}
@@ -144,19 +148,6 @@ export default function HeroSection({
             })}
           </dl>
         </div>
-      </div>
-
-      {/* Stacked background visual on mobile / tablet */}
-      <div className="relative h-[260px] w-full sm:h-[360px] lg:hidden">
-        <Image
-          src="/devanagari-hero-section.webp"
-          alt=""
-          aria-hidden="true"
-          fill
-          sizes="100vw"
-          className="object-cover object-[78%_center]"
-        />
-        <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-[#FDF3F2] to-transparent" />
       </div>
     </section>
   );

@@ -378,7 +378,7 @@ export default function BestsellersSection({
                   data-carousel-copy={index >= list.length}
                   style={{ width: `calc((100% - ${itemsPerPage - 1} * var(--book-gap)) / ${itemsPerPage})` }}
                   onClick={() => handleCardClick(book)}
-                  className="group relative bg-white rounded-[5px] sm:rounded-[5px] p-4 sm:p-4.5 border border-gray-100/90 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_16px_34px_-6px_rgba(198,24,33,0.12)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between cursor-pointer select-none shrink-0 hover:border-[#C61821]/30"
+                  className="group relative bg-white rounded-[5px] sm:rounded-[5px] p-3 sm:p-4.5 border border-gray-100/90 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_16px_34px_-6px_rgba(198,24,33,0.12)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between cursor-pointer select-none shrink-0 hover:border-[#C61821]/30"
                 >
                   {/* --- Top Card Controls (Badge & Wishlist) --- */}
                   <div className="relative z-10 flex items-center justify-between w-full h-7 mb-1">
@@ -393,7 +393,7 @@ export default function BestsellersSection({
                     <button
                       onClick={(e) => handleWishlistClick(book, e)}
                       aria-label="Add to wishlist"
-                      className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all duration-200 hover:scale-110 ${
+                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full border flex items-center justify-center transition-all duration-200 hover:scale-110 ${
                         isWishlisted
                           ? "bg-red-50 border-red-200 text-[#C61821]"
                           : "bg-white border-gray-200 text-gray-400 hover:border-red-200 hover:text-[#C61821]"
@@ -408,13 +408,13 @@ export default function BestsellersSection({
                   </div>
 
                   {/* --- Center: Book 3D Realistic Cover Image --- */}
-                  <div className="relative z-10 w-full h-[192px] sm:h-[216px] lg:h-[238px] flex items-center justify-center my-2 sm:my-3 px-1">
+                  <div className="relative z-10 w-full h-[150px] sm:h-[216px] lg:h-[238px] flex items-center justify-center my-2 sm:my-3 px-1">
                     <div className="relative w-full h-full flex items-center justify-center">
                       <Image
                         src={book.image}
                         alt={book.title}
                         width={420}
-                        sizes="(min-width: 1450px) 270px, (min-width: 1024px) 20vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
+                        sizes="(min-width: 1450px) 270px, (min-width: 1024px) 20vw, (min-width: 768px) 33vw, 50vw"
                         height={600}
                         className="max-h-full max-w-full object-contain   group-hover:scale-105 transition-transform duration-300"
                       />
@@ -425,17 +425,17 @@ export default function BestsellersSection({
                   <div className="relative z-10 pt-1 flex flex-col justify-between flex-1">
                     <div>
                       {/* Category Label (MPPSC, etc.) */}
-                      <div className="text-[11px] sm:text-[11.5px] font-extrabold tracking-wider text-[#C61821] uppercase font-sans truncate min-h-[16px]">
+                      <div className="text-[10px] sm:text-[11.5px] font-extrabold tracking-wider text-[#C61821] uppercase font-sans truncate min-h-[16px]">
                         {book.category}
                       </div>
 
                       {/* Book Title */}
-                      <h3 className="text-[14.5px] sm:text-[15.5px] font-bold text-gray-900 group-hover:text-[#C61821] transition-colors line-clamp-1 mt-0.5 min-h-[18px] font-sans flex items-center">
+                      <h3 className="text-[13px] sm:text-[15.5px] font-bold text-gray-900 group-hover:text-[#C61821] transition-colors line-clamp-1 mt-0.5 min-h-[18px] font-sans flex items-center">
                         {book.title}
                       </h3>
 
                       {/* Author */}
-                      <p className="text-[12px] sm:text-[12.5px] text-gray-500 line-clamp-1 mt-1 font-normal h-4 flex items-center">
+                      <p className="text-[11px] sm:text-[12.5px] text-gray-500 line-clamp-1 mt-1 font-normal h-4 flex items-center">
                         {book.author}
                       </p>
 
@@ -443,11 +443,11 @@ export default function BestsellersSection({
                       <div className="flex items-center gap-1.5 mt-2">
                         <div className="flex items-center gap-1 text-amber-500">
                           <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                          <span className="text-[12px] font-bold text-gray-900">
+                          <span className="text-[11px] sm:text-[12px] font-bold text-gray-900">
                             {book.rating.toFixed(1)}
                           </span>
                         </div>
-                        <span className="text-[11.5px] text-gray-400 font-medium">
+                        <span className="text-[10.5px] sm:text-[11.5px] text-gray-400 font-medium">
                           ({book.reviewsCount.toLocaleString()})
                         </span>
                       </div>
@@ -458,16 +458,16 @@ export default function BestsellersSection({
                       <div>
                         {/* Price Numbers */}
                         <div className="flex items-baseline gap-1.5">
-                          <span className="text-[18px] sm:text-[20px] font-extrabold text-gray-900 tracking-tight">
+                          <span className="text-[15px] sm:text-[20px] font-extrabold text-gray-900 tracking-tight">
                             ₹{book.price}
                           </span>
-                          <span className="text-[12px] text-gray-400 line-through font-medium">
+                          <span className="text-[10.5px] sm:text-[12px] text-gray-400 line-through font-medium">
                             ₹{book.originalPrice}
                           </span>
                         </div>
 
                         {/* Save Tag */}
-                        <span className="text-[11px] font-bold text-[#C61821] block -mt-0.5">
+                        <span className="text-[10px] sm:text-[11px] font-bold text-[#C61821] block -mt-0.5">
                           {book.discountPercent}% OFF
                         </span>
                       </div>
@@ -476,7 +476,7 @@ export default function BestsellersSection({
                       <button
                         onClick={(e) => handleCartClick(book, e)}
                         aria-label="Add to cart"
-                        className={`w-10 h-10 rounded-full flex items-center justify-center shadow-md transition-all duration-200 cursor-pointer ${
+                        className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shadow-md transition-all duration-200 cursor-pointer ${
                           isAdded
                             ? "bg-green-600 text-white scale-105 shadow-green-600/30"
                             : "bg-[#C61821] hover:bg-[#A8131B] text-white shadow-red-600/25 hover:scale-110 active:scale-95"

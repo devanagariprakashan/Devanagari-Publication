@@ -275,7 +275,7 @@ export default function Navbar({
 
   return (
     <>
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-xs transition-all">
+    <header className={`${isMobileMenuOpen ? "fixed inset-x-0 top-0" : "sticky top-0"} z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-xs transition-all`}>
       <div className="max-w-[1450px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20 gap-3 lg:gap-6">
           {/* ======================================================== */}
@@ -900,12 +900,12 @@ export default function Navbar({
           onClick={() => setIsMobileMenuOpen(false)}
         >
           <div
-            className="bg-white w-full max-w-sm h-full shadow-2xl flex flex-col overflow-hidden"
+            className="bg-white w-full sm:max-w-sm h-full shadow-2xl flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <div
               data-lenis-prevent
-              className="flex-1 overflow-y-auto overscroll-contain p-5 pb-36 space-y-6"
+              className="flex-1 overflow-y-auto overscroll-contain p-5 pb-36 space-y-6 no-scrollbar"
               style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
             >
               {/* Main Navigation Links: Books, Categories, Authors, Blog, Team, Contact */}

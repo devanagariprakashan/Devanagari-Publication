@@ -58,7 +58,7 @@ export default function PageContentForm({ kind, initial }: { kind: PageKind; ini
     else if (selected !== null && selected > index) setSelected(selected - 1);
   }
   function field(key: string, value: string, update: (value: string) => void, id: string) {
-    if (key === "image") return <ImageUploadField key={key} id={id} label={kind === "team" ? "Photo (optional)" : "Cover image (optional)"} value={value} onChange={update} />;
+    if (key === "image" || key === "bannerImage") return <ImageUploadField key={key} id={id} label={key === "bannerImage" ? "Banner image" : kind === "team" ? "Photo (optional)" : "Cover image (optional)"} value={value} onChange={update} />;
     const choices = key === "bgColor" ? HERO_BOOKS.map(book => book.bgColor) : key === "coverType" ? ["hindi", "polity", "essay", "history", "constitution", "law", "gk", "economy", "science", "geography"] : gradients;
     const isSelect = ["gradient", "imageBg", "bgColor", "coverType"].includes(key);
     const multiline = ["bio", "excerpt", "ctaDescription"].includes(key);

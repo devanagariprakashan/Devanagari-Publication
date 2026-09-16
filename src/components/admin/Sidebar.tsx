@@ -14,6 +14,7 @@ import {
   Star,
   Settings,
   ExternalLink,
+  Image,
   X,
 } from "lucide-react";
 import { logout } from "@/actions/auth";
@@ -25,6 +26,7 @@ const navItems = [
   { href: "/admin/categories", label: "Categories", icon: Folder },
   { href: "/admin/authors", label: "Authors", icon: Users },
   { href: "/admin/hero", label: "Hero Section", icon: BookOpen },
+  { href: "/admin/hero-banner", label: "Hero Banner", icon: Image },
   { href: "/admin/team", label: "Team", icon: Users },
   { href: "/admin/blog", label: "Blog", icon: Newspaper },
   { href: "/admin/orders", label: "Orders", icon: ShoppingCart },

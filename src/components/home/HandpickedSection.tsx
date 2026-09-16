@@ -358,7 +358,7 @@ export default function HandpickedSection({
                   data-carousel-copy={index >= list.length}
                   style={{ width: `calc((100% - ${itemsPerPage - 1} * var(--book-gap)) / ${itemsPerPage})` }}
                 onClick={() => handleCardClick(book)}
-                className="group relative bg-white rounded-[5px] sm:rounded-[5px] p-3.5 sm:p-4 border border-gray-100/90 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.04)] hover:shadow-[0_14px_30px_-6px_rgba(198,24,33,0.12)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between cursor-pointer select-none shrink-0 hover:border-[#C61821]/30"
+                className="group relative bg-white rounded-[5px] sm:rounded-[5px] p-2.5 sm:p-4 border border-gray-100/90 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.04)] hover:shadow-[0_14px_30px_-6px_rgba(198,24,33,0.12)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between cursor-pointer select-none shrink-0 hover:border-[#C61821]/30"
               >
                 {/* Subtle Card Background Curved Watermark */}
                 <div className="absolute inset-0 rounded-[5px] sm:rounded-[5px] overflow-hidden pointer-events-none -z-0">
@@ -378,7 +378,7 @@ export default function HandpickedSection({
                   <button
                     onClick={(e) => handleWishlistClick(book, e)}
                     aria-label="Add to wishlist"
-                    className={`w-7.5 h-7.5 rounded-full border flex items-center justify-center transition-all duration-200 hover:scale-110 p-2 ${
+                    className={`w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full border flex items-center justify-center transition-all duration-200 hover:scale-110 p-2 ${
                       isWishlisted
                         ? "bg-red-50 border-red-200 text-[#C61821]"
                         : "bg-white/90 border-gray-200 text-gray-400 hover:border-red-200 hover:text-[#C61821]"
@@ -393,7 +393,7 @@ export default function HandpickedSection({
                 </div>
 
                 {/* --- Center: Book 3D Mockup Image --- */}
-                <div className="relative z-10 w-full h-36 sm:h-40 lg:h-44 flex items-center justify-center my-1 sm:my-2 px-2">
+                <div className="relative z-10 w-full h-28 sm:h-40 lg:h-44 flex items-center justify-center my-1 sm:my-2 px-2">
                   <div className="relative w-full h-full flex items-center justify-center">
                     <Image
                       src={book.image}
@@ -409,17 +409,17 @@ export default function HandpickedSection({
                 <div className="relative z-10 pt-2 flex flex-col justify-between flex-1">
                   <div>
                     {/* Category Label */}
-                    <div className="text-[10.5px] sm:text-[11px] font-extrabold tracking-wider text-[#C61821] uppercase font-sans truncate">
+                    <div className="text-[9.5px] sm:text-[11px] font-extrabold tracking-wider text-[#C61821] uppercase font-sans truncate">
                       {book.examCategory}
                     </div>
 
                     {/* Book Title */}
-                    <h3 className="text-[14.5px] sm:text-[15.5px] font-bold text-gray-900 group-hover:text-[#C61821] transition-colors line-clamp-1 mt-0.5 min-h-[18px] font-sans flex items-center">
+                    <h3 className="text-[13px] sm:text-[15.5px] font-bold text-gray-900 group-hover:text-[#C61821] transition-colors line-clamp-1 mt-0.5 min-h-[18px] font-sans flex items-center">
                       {book.title}
                     </h3>
 
                     {/* Author */}
-                    <p className="text-[11.5px] sm:text-[12px] text-gray-500 line-clamp-1 mt-0.5 font-normal h-4 flex items-center">
+                    <p className="text-[10.5px] sm:text-[12px] text-gray-500 line-clamp-1 mt-0.5 font-normal h-4 flex items-center">
                       {book.author}
                     </p>
 
@@ -427,11 +427,11 @@ export default function HandpickedSection({
                     <div className="flex items-center gap-1.5 mt-1.5">
                       <div className="flex items-center gap-1 text-amber-500">
                         <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                        <span className="text-[12px] font-bold text-gray-900">
+                        <span className="text-[11px] sm:text-[12px] font-bold text-gray-900">
                           {book.rating.toFixed(1)}
                         </span>
                       </div>
-                      <span className="text-[11.5px] text-gray-400 font-medium">
+                      <span className="text-[10.5px] sm:text-[11.5px] text-gray-400 font-medium">
                         ({book.reviewsCount.toLocaleString()})
                       </span>
                     </div>
@@ -442,16 +442,16 @@ export default function HandpickedSection({
                     <div>
                       {/* Price Numbers */}
                       <div className="flex items-baseline gap-1.5">
-                        <span className="text-[17px] sm:text-[19px] font-extrabold text-[#C61821] tracking-tight">
+                        <span className="text-[15px] sm:text-[19px] font-extrabold text-[#C61821] tracking-tight">
                           ₹{book.price}
                         </span>
-                        <span className="text-[12px] text-gray-400 line-through font-medium">
+                        <span className="text-[10.5px] sm:text-[12px] text-gray-400 line-through font-medium">
                           ₹{book.originalPrice}
                         </span>
                       </div>
 
                       {/* Save Tag */}
-                      <span className="text-[10.5px] font-bold text-[#C61821] block -mt-0.5">
+                      <span className="text-[9.5px] sm:text-[10.5px] font-bold text-[#C61821] block -mt-0.5">
                         Save {book.discountPercent}%
                       </span>
                     </div>
@@ -460,7 +460,7 @@ export default function HandpickedSection({
                     <button
                       onClick={(e) => handleCartClick(book, e)}
                       aria-label="Add to cart"
-                      className={`w-9 h-9 rounded-full flex items-center justify-center shadow-md transition-all duration-200 cursor-pointer ${
+                      className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shadow-md transition-all duration-200 cursor-pointer ${
                         isAdded
                           ? "bg-green-600 text-white scale-105 shadow-green-600/30"
                           : "bg-[#C61821] hover:bg-[#A8131B] text-white shadow-red-600/25 hover:scale-110 active:scale-95"
