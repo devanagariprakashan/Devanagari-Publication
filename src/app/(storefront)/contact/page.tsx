@@ -14,6 +14,7 @@ import {
   Building,
 } from "lucide-react";
 import { getSiteSettings, firstPhone, SITE_DEFAULTS, type SiteSettings } from "@/lib/site-settings";
+import { submitInquiry } from "@/actions/inquiries";
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -24,13 +25,23 @@ export default function ContactPage() {
     message: "",
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [site, setSite] = useState<SiteSettings>(SITE_DEFAULTS);
 
   // ponytail: same single-row read as Footer, no server prefetch until SEO needs it
   useEffect(() => { getSiteSettings().then(setSite); }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError("");
+    setIsSubmitting(true);
+    const result = await submitInquiry(formData);
+    setIsSubmitting(false);
+    if (result.error) {
+      setSubmitError(result.error);
+      return;
+    }
     setIsSubmitted(true);
     setTimeout(() => {
       setIsSubmitted(false);
@@ -211,12 +222,14 @@ export default function ContactPage() {
                   />
                 </div>
 
+                {submitError && <p className="text-xs text-red-600" role="alert">{submitError}</p>}
                 <button
                   type="submit"
+                  disabled={isSubmitting}
                   className="w-full py-2.5 rounded-lg bg-[#C61821] hover:bg-[#8F0E15] text-white font-bold text-sm shadow-sm transition-all flex items-center justify-center gap-2"
                 >
                   <Send className="w-4 h-4" />
-                  <span>Submit Message</span>
+                  <span>{isSubmitting ? "Sending..." : "Submit Message"}</span>
                 </button>
               </form>
             )}

@@ -45,7 +45,8 @@ export const metadata: Metadata = {
     "Competitive Exam Books",
   ],
   icons: {
-    icon: "/logos.png",
+    icon: "/favicon.ico",
+    apple: "/devanagari_logo.jpeg",
   },
 };
 
