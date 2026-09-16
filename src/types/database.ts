@@ -34,14 +34,9 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['reviews']['Insert']>
       }
       inquiries: {
-        Row: { id: string; name: string; email: string | null; phone: string | null; subject: string | null; message: string; status: string; created_at: string }
-        Insert: { id: string; name: string; email?: string | null; phone?: string | null; subject?: string | null; message: string; status?: string; created_at?: string }
+        Row: { id: string; name: string; email: string | null; phone: string | null; message: string; status: string; created_at: string }
+        Insert: { id: string; name: string; email?: string | null; phone?: string | null; message: string; status?: string; created_at?: string }
         Update: Partial<Database['public']['Tables']['inquiries']['Insert']>
-      }
-      newsletter_subscribers: {
-        Row: { id: string; email: string; status: string; created_at: string }
-        Insert: { id: string; email: string; status?: string; created_at?: string }
-        Update: Partial<Database['public']['Tables']['newsletter_subscribers']['Insert']>
       }
       announcements: {
         Row: { id: string; text: string; is_active: boolean; created_at: string }
