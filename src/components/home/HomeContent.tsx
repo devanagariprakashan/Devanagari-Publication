@@ -20,6 +20,7 @@ import TestimonialsSection from "@/components/home/TestimonialsSection";
 import WhatsNewSection from "@/components/home/WhatsNewSection";
 import BookRatingsReviewsSection from "@/components/home/BookRatingsReviewsSection";
 import HeroBook3D, { BookData } from "@/components/home/HeroBook3D";
+import FeaturedOfferPopup from "@/components/home/FeaturedOfferPopup";
 import { useCartWishlist } from "@/components/providers/CartWishlistProvider";
 
 interface HomeContentProps {
@@ -202,6 +203,9 @@ export default function HomeContent({
 
       {/* 8. TESTIMONIALS (legacy) */}
       <TestimonialsSection />
+
+      {/* 9. FEATURED OFFER PROMO POPUP */}
+      <FeaturedOfferPopup />
     </>
   );
 }

@@ -17,6 +17,9 @@ import {
   ArrowRight,
   Percent,
 } from "lucide-react";
+import { FEATURED_OFFER } from "@/data/featuredOffer";
+import { useFeaturedCoupon } from "@/components/providers/FeaturedCouponProvider";
+import { couponHeadline } from "@/lib/coupon-shared";
 
 interface BooksMegaMenuProps {
   isOpen: boolean;
@@ -145,6 +148,10 @@ export default function BooksMegaMenu({
   onClose,
   onSelect,
 }: BooksMegaMenuProps) {
+  const coupon = useFeaturedCoupon();
+  const offerTitle = coupon ? couponHeadline(coupon) : FEATURED_OFFER.title;
+  const offerCode = coupon?.code ?? FEATURED_OFFER.code;
+
   if (!isOpen) return null;
 
   const handleLinkClick = (href: string) => {
@@ -331,30 +338,30 @@ export default function BooksMegaMenu({
               <div className="relative z-10">
                 <div className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[#C61821] mb-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#C61821] animate-pulse" />
-                  FEATURED OFFER
+                  {FEATURED_OFFER.label}
                 </div>
 
                 <h4 className="text-[15px] font-bold text-gray-900 leading-snug tracking-tight font-serif">
-                  Save 25% on 2025 Exam Editions
+                  {offerTitle}
                 </h4>
                 <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">
                   Use code <span
-  onClick={() => navigator.clipboard.writeText("UPSC25")}
+  onClick={() => navigator.clipboard.writeText(offerCode)}
   className="font-bold text-gray-800 bg-white/80 px-1 py-0.5 rounded border border-red-100 cursor-pointer hover:bg-gray-50"
   title="Click to copy"
 >
-  UPSC25
+  {offerCode}
 </span> at checkout.
                 </p>
               </div>
 
               <div className="relative z-10 mt-3 pt-2">
                 <Link
-                  href="/shop?filter=offers"
-                  onClick={() => handleLinkClick("/shop?filter=offers")}
+                  href={FEATURED_OFFER.ctaHref}
+                  onClick={() => handleLinkClick(FEATURED_OFFER.ctaHref)}
                   className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 bg-[#C61821] hover:bg-[#A81119] text-white text-xs font-bold rounded-full shadow-xs hover:shadow-sm transition-all group cursor-pointer"
                 >
-                  <span>Shop now</span>
+                  <span>{FEATURED_OFFER.ctaLabel}</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                 </Link>
               </div>

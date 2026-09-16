@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
   ShoppingBag,
@@ -28,33 +28,10 @@ import { useCartWishlist } from "@/components/providers/CartWishlistProvider";
 import { ALL_BOOKS } from "@/data/booksData";
 import BookModal from "@/components/home/BookModal";
 import { BookData } from "@/components/home/HeroBook3D";
+import { createClient } from "@/lib/supabase/client";
+import { Coupon, couponDiscount, couponDiscountLabel } from "@/lib/coupon-shared";
 
-interface Coupon {
-  code: string;
-  label: string;
-  type: "percent" | "fixed";
-  value: number;
-  description: string;
-  minAmount?: number;
-}
-
-const AVAILABLE_COUPONS: Coupon[] = [
-  {
-    code: "DEVA10",
-    label: "10% OFF",
-    type: "percent",
-    value: 10,
-    description: "Flat 10% Extra Discount on all exam books",
-  },
-  {
-    code: "STUDENT50",
-    label: "₹50 OFF",
-    type: "fixed",
-    value: 50,
-    minAmount: 399,
-    description: "₹50 Instant Discount on orders above ₹399",
-  },
-];
+const COUPON_STORAGE_KEY = "devanagari_coupon_v1";
 
 export default function CartPage() {
   const {
@@ -77,8 +54,25 @@ export default function CartPage() {
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [couponSuccess, setCouponSuccess] = useState<string | null>(null);
+  const [availableCoupons, setAvailableCoupons] = useState<Coupon[]>([]);
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [selectedBookForModal, setSelectedBookForModal] = useState<BookData | null>(null);
+
+  // Load active coupons from the database
+  useEffect(() => {
+    let cancelled = false;
+    createClient()
+      .from("coupons")
+      .select("*")
+      .eq("is_active", true)
+      .order("created_at")
+      .then(({ data, error }) => {
+        if (!cancelled && !error && data) setAvailableCoupons(data as Coupon[]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Delivery calculation
   const isFreeDelivery = cartTotal >= freeDeliveryThreshold || cart.length === 0;
@@ -87,17 +81,10 @@ export default function CartPage() {
   const deliveryCharge = isFreeDelivery ? 0 : 49;
 
   // Coupon discount calculation
-  const couponDiscount = useMemo(() => {
-    if (!appliedCoupon) return 0;
-    if (appliedCoupon.minAmount && cartTotal < appliedCoupon.minAmount) return 0;
-    if (appliedCoupon.type === "percent") {
-      return Math.round((cartTotal * appliedCoupon.value) / 100);
-    }
-    return Math.min(cartTotal, appliedCoupon.value);
-  }, [appliedCoupon, cartTotal]);
+  const appliedDiscount = couponDiscount(appliedCoupon, cartTotal);
 
-  const finalPayable = Math.max(0, cartTotal - couponDiscount + deliveryCharge);
-  const totalCombinedSavings = cartSavings + couponDiscount;
+  const finalPayable = Math.max(0, cartTotal - appliedDiscount + deliveryCharge);
+  const totalCombinedSavings = cartSavings + appliedDiscount;
 
   // Handle Apply Coupon
   const handleApplyCoupon = (couponToApply?: Coupon) => {
@@ -110,19 +97,20 @@ export default function CartPage() {
       return;
     }
 
-    const found = AVAILABLE_COUPONS.find((c) => c.code.toUpperCase() === code);
+    const found = availableCoupons.find((c) => c.code.toUpperCase() === code);
     if (!found) {
-      setCouponError("Invalid coupon code. Try DEVA10 or STUDENT50");
+      setCouponError("Invalid coupon code");
       return;
     }
 
-    if (found.minAmount && cartTotal < found.minAmount) {
-      setCouponError(`Minimum order value ₹${found.minAmount} required for ${found.code}`);
+    if (couponDiscount(found, cartTotal) <= 0) {
+      setCouponError(`Add ₹${Math.ceil((found.min_amount ?? 0) - cartTotal)} more to use this code`);
       return;
     }
 
     setAppliedCoupon(found);
     setCouponInput("");
+    localStorage.setItem(COUPON_STORAGE_KEY, found.code);
     setCouponSuccess(`Code '${found.code}' applied successfully!`);
     setTimeout(() => setCouponSuccess(null), 3500);
   };
@@ -131,6 +119,7 @@ export default function CartPage() {
     setAppliedCoupon(null);
     setCouponError(null);
     setCouponSuccess(null);
+    localStorage.removeItem(COUPON_STORAGE_KEY);
   };
 
   // Move item to wishlist
@@ -514,7 +503,7 @@ export default function CartPage() {
 
                     {/* Pre-set Coupon Pills */}
                     <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                      {AVAILABLE_COUPONS.map((cp) => (
+                      {availableCoupons.map((cp) => (
                         <button
                           key={cp.code}
                           type="button"
@@ -522,7 +511,7 @@ export default function CartPage() {
                           className="text-[10px] font-bold px-2 py-1 rounded-md border border-dashed border-red-300 bg-red-50/60 text-[#C61821] hover:bg-red-100 transition-colors cursor-pointer flex items-center gap-1"
                         >
                           <span>{cp.code}</span>
-                          <span className="text-gray-500 font-normal">({cp.label})</span>
+                          <span className="text-gray-500 font-normal">({couponDiscountLabel(cp)})</span>
                         </button>
                       ))}
                     </div>
@@ -535,11 +524,11 @@ export default function CartPage() {
                       </div>
                       <div>
                         <span className="font-bold text-emerald-900">{appliedCoupon.code} Applied</span>
-                        <p className="text-[10px] text-emerald-700">{appliedCoupon.description}</p>
+                        <p className="text-[10px] text-emerald-700">{appliedCoupon.title}</p>
                       </div>
                     </div>
                     <span className="font-extrabold text-emerald-700 tabular-nums">
-                      -₹{couponDiscount}
+                      -₹{appliedDiscount}
                     </span>
                   </div>
                 )}
@@ -572,10 +561,10 @@ export default function CartPage() {
                     </div>
                   )}
 
-                  {couponDiscount > 0 && (
+                  {appliedDiscount > 0 && (
                     <div className="flex justify-between text-emerald-700 font-medium">
                       <span>Coupon Discount ({appliedCoupon?.code})</span>
-                      <span className="font-bold tabular-nums">-₹{couponDiscount}</span>
+                      <span className="font-bold tabular-nums">-₹{appliedDiscount}</span>
                     </div>
                   )}
 

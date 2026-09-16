@@ -25,6 +25,9 @@ import {
   CheckCircle2,
   Grid,
 } from "lucide-react";
+import { FEATURED_OFFER } from "@/data/featuredOffer";
+import { useFeaturedCoupon } from "@/components/providers/FeaturedCouponProvider";
+import { couponHeadline } from "@/lib/coupon-shared";
 
 export interface CategoryItem {
   title: string;
@@ -282,6 +285,9 @@ export default function CategoryMegaMenu({
   onSelectSubCategory,
 }: CategoryMegaMenuProps) {
   const [copied, setCopied] = useState(false);
+  const coupon = useFeaturedCoupon();
+  const offerTitle = coupon ? couponHeadline(coupon) : FEATURED_OFFER.title;
+  const offerCode = coupon?.code ?? FEATURED_OFFER.code;
 
   if (!isOpen) return null;
 
@@ -418,18 +424,18 @@ export default function CategoryMegaMenu({
                   </div>
 
                   <h4 className="text-[15px] font-bold text-gray-900 leading-snug tracking-tight font-serif">
-                    Save 25% on UPSC 2025 Editions
+                    {offerTitle}
                   </h4>
                   
                   <div className="text-[11px] text-gray-500 mt-1.5 leading-relaxed flex items-center gap-1.5 flex-wrap">
                     <span>Use code</span>
                     <button
                       type="button"
-                      onClick={(e) => handleCopyCode("UPSC25", e)}
+                      onClick={(e) => handleCopyCode(offerCode, e)}
                       className="inline-flex items-center gap-1 font-bold text-gray-800 bg-white/90 px-2 py-0.5 rounded-md border border-red-200 hover:border-[#C61821] hover:bg-white shadow-2xs transition-all cursor-pointer"
                       title="Click to copy coupon code"
                     >
-                      <span>UPSC25</span>
+                      <span>{offerCode}</span>
                       {copied ? (
                         <Check className="w-3 h-3 text-emerald-600" />
                       ) : (
@@ -448,11 +454,11 @@ export default function CategoryMegaMenu({
 
                 <div className="relative z-10 mt-4 pt-2">
                   <Link
-                    href="/shop?category=upsc&filter=offers"
-                    onClick={() => handleLinkClick("/shop?category=upsc&filter=offers")}
+                    href={FEATURED_OFFER.ctaHref}
+                    onClick={() => handleLinkClick(FEATURED_OFFER.ctaHref)}
                     className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-[#C61821] hover:bg-[#A81119] text-white text-xs font-bold rounded-full shadow-xs hover:shadow-sm transition-all group cursor-pointer active:scale-95"
                   >
-                    <span>Shop now</span>
+                    <span>{FEATURED_OFFER.ctaLabel}</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                   </Link>
                 </div>

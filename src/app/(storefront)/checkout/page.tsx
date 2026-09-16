@@ -30,33 +30,10 @@ import {
   X,
 } from "lucide-react";
 import { useCartWishlist, CartItem } from "@/components/providers/CartWishlistProvider";
+import { createClient } from "@/lib/supabase/client";
+import { Coupon, couponDiscount, couponDiscountLabel } from "@/lib/coupon-shared";
 
-interface Coupon {
-  code: string;
-  label: string;
-  type: "percent" | "fixed";
-  value: number;
-  description: string;
-  minAmount?: number;
-}
-
-const AVAILABLE_COUPONS: Coupon[] = [
-  {
-    code: "DEVA10",
-    label: "10% OFF",
-    type: "percent",
-    value: 10,
-    description: "Flat 10% Extra Discount on all exam books",
-  },
-  {
-    code: "STUDENT50",
-    label: "₹50 OFF",
-    type: "fixed",
-    value: 50,
-    minAmount: 399,
-    description: "₹50 Instant Discount on orders above ₹399",
-  },
-];
+const COUPON_STORAGE_KEY = "devanagari_coupon_v1";
 
 const INDIAN_STATES = [
   "Madhya Pradesh",
@@ -125,6 +102,7 @@ export default function CheckoutPage() {
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [couponSuccess, setCouponSuccess] = useState<string | null>(null);
+  const [availableCoupons, setAvailableCoupons] = useState<Coupon[]>([]);
 
   // Order Placement Modal & Loading
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -176,19 +154,39 @@ export default function CheckoutPage() {
   const deliveryCharge = activeItems.length === 0 ? 0 : shippingMethod === "express" ? 49 : 0;
 
   // Coupon discount
-  const couponDiscount = useMemo(() => {
-    if (!appliedCoupon) return 0;
-    if (appliedCoupon.minAmount && subtotalCurrent < appliedCoupon.minAmount) return 0;
-    if (appliedCoupon.type === "percent") {
-      return Math.round((subtotalCurrent * appliedCoupon.value) / 100);
-    }
-    return Math.min(subtotalCurrent, appliedCoupon.value);
-  }, [appliedCoupon, subtotalCurrent]);
+  const appliedDiscount = couponDiscount(appliedCoupon, subtotalCurrent);
 
   // Final Total & Total Savings
-  const finalTotal = Math.max(0, subtotalCurrent - couponDiscount + deliveryCharge);
+  const finalTotal = Math.max(0, subtotalCurrent - appliedDiscount + deliveryCharge);
   // Total savings shown in design: (subtotalOriginalMRP - finalTotal)
   const totalSavings = Math.max(0, subtotalOriginalMRP - finalTotal);
+
+  // Load active coupons from the database
+  useEffect(() => {
+    let cancelled = false;
+    createClient()
+      .from("coupons")
+      .select("*")
+      .eq("is_active", true)
+      .order("created_at")
+      .then(({ data, error }) => {
+        if (!cancelled && !error && data) setAvailableCoupons(data as Coupon[]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Auto-apply a coupon carried over from the cart page
+  useEffect(() => {
+    if (availableCoupons.length === 0) return;
+    const stored = localStorage.getItem(COUPON_STORAGE_KEY);
+    if (!stored) return;
+    const found = availableCoupons.find((c) => c.code.toUpperCase() === stored.toUpperCase());
+    if (!found || couponDiscount(found, subtotalCurrent) <= 0) return;
+    const timer = window.setTimeout(() => setAppliedCoupon(found), 0);
+    return () => window.clearTimeout(timer);
+  }, [availableCoupons, subtotalCurrent]);
 
   // Handle Pincode Verify
   const handleVerifyPincode = () => {
@@ -230,19 +228,20 @@ export default function CheckoutPage() {
       return;
     }
 
-    const found = AVAILABLE_COUPONS.find((c) => c.code.toUpperCase() === code);
+    const found = availableCoupons.find((c) => c.code.toUpperCase() === code);
     if (!found) {
-      setCouponError("Invalid coupon code. Try DEVA10 or STUDENT50");
+      setCouponError("Invalid coupon code");
       return;
     }
 
-    if (found.minAmount && subtotalCurrent < found.minAmount) {
-      setCouponError(`Minimum order value ₹${found.minAmount} required for ${found.code}`);
+    if (couponDiscount(found, subtotalCurrent) <= 0) {
+      setCouponError(`Add ₹${Math.ceil((found.min_amount ?? 0) - subtotalCurrent)} more to use this code`);
       return;
     }
 
     setAppliedCoupon(found);
     setCouponInput("");
+    localStorage.setItem(COUPON_STORAGE_KEY, found.code);
     setCouponSuccess(`Code '${found.code}' applied successfully!`);
     setTimeout(() => setCouponSuccess(null), 3500);
   };
@@ -251,6 +250,7 @@ export default function CheckoutPage() {
     setAppliedCoupon(null);
     setCouponError(null);
     setCouponSuccess(null);
+    localStorage.removeItem(COUPON_STORAGE_KEY);
   };
 
   // Handle Place Order
@@ -318,7 +318,7 @@ export default function CheckoutPage() {
       const response = await fetch("/api/orders/cod", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: activeItems.map((item) => ({ id: item.id, quantity: item.quantity || 1 })), fullName, email, phone: phoneNumber, address, landmark, city, state, pincode, shippingMethod }),
+        body: JSON.stringify({ items: activeItems.map((item) => ({ id: item.id, quantity: item.quantity || 1 })), fullName, email, phone: phoneNumber, address, landmark, city, state, pincode, shippingMethod, couponCode: appliedCoupon?.code }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Unable to create COD order");
@@ -1164,7 +1164,7 @@ export default function CheckoutPage() {
 
                   {/* Clickable Quick Coupon Tags */}
                   <div className="flex items-center gap-2 flex-wrap pt-1">
-                    {AVAILABLE_COUPONS.map((c) => (
+                    {availableCoupons.map((c) => (
                       <button
                         key={c.code}
                         type="button"
@@ -1172,7 +1172,7 @@ export default function CheckoutPage() {
                         className="text-[11px] font-bold px-2.5 py-1 rounded-md border border-dashed border-red-300 bg-red-50/60 text-[#C61821] hover:bg-red-100 transition-colors cursor-pointer flex items-center gap-1.5"
                       >
                         <span>{c.code}</span>
-                        <span className="text-gray-500 font-normal">({c.label})</span>
+                        <span className="text-gray-500 font-normal">({couponDiscountLabel(c)})</span>
                       </button>
                     ))}
                   </div>
@@ -1188,12 +1188,12 @@ export default function CheckoutPage() {
                         {appliedCoupon.code} Applied
                       </span>
                       <p className="text-[11px] text-emerald-700">
-                        {appliedCoupon.description}
+                        {appliedCoupon.title}
                       </p>
                     </div>
                   </div>
                   <span className="font-extrabold text-emerald-700 tabular-nums">
-                    -₹{couponDiscount}
+                    -₹{appliedDiscount}
                   </span>
                 </div>
               )}
@@ -1328,7 +1328,7 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
-                {couponDiscount > 0 && (
+                {appliedDiscount > 0 && (
                   <div className="flex justify-between items-center text-emerald-600 font-semibold">
                     <span>Coupon Discount ({appliedCoupon?.code})</span>
                     <span className="tabular-nums font-bold">-₹{couponDiscount.toLocaleString()}</span>

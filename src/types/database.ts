@@ -53,6 +53,11 @@ export type Database = {
         Insert: { id: string; title: string; note?: string | null; date_text?: string | null; image?: string | null; href?: string | null; sort?: number; is_active?: boolean; created_at?: string }
         Update: Partial<Database['public']['Tables']['latest_updates']['Insert']>
       }
+      coupons: {
+        Row: { id: string; code: string; title: string | null; discount_type: string; discount_value: number; min_amount: number; is_active: boolean; is_featured: boolean; created_at: string }
+        Insert: { id: string; code: string; title?: string | null; discount_type?: string; discount_value?: number; min_amount?: number; is_active?: boolean; is_featured?: boolean; created_at?: string }
+        Update: Partial<Database['public']['Tables']['coupons']['Insert']>
+      }
     }
     Views: {}
     Functions: {}

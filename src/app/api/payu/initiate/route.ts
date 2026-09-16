@@ -2,13 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createPayuRequestHash, PAYU_PAYMENT_URL, payuConfig } from "@/lib/payu";
+import { findCoupon } from "@/lib/coupons";
+import { couponDiscount } from "@/lib/coupon-shared";
 
 type Item = { id: string; quantity: number };
-
-const coupons: Record<string, { type: "percent" | "fixed"; value: number; min?: number }> = {
-  DEVA10: { type: "percent", value: 10 },
-  STUDENT50: { type: "fixed", value: 50, min: 399 },
-};
 
 export async function POST(request: NextRequest) {
   try {
@@ -44,10 +41,8 @@ export async function POST(request: NextRequest) {
       }
       return total + Number(book.price) * item.quantity;
     }, 0);
-    const coupon = coupons[(body.couponCode || "").toUpperCase()];
-    const discount = coupon && (!coupon.min || subtotal >= coupon.min)
-      ? coupon.type === "percent" ? Math.round(subtotal * coupon.value / 100) : Math.min(subtotal, coupon.value)
-      : 0;
+    const coupon = typeof body.couponCode === "string" ? await findCoupon(body.couponCode) : null;
+    const discount = couponDiscount(coupon, subtotal);
     const shipping = body.shippingMethod === "express" ? 49 : 0;
     const amount = Math.max(1, subtotal - discount + shipping);
     const txnid = `DEV${Date.now()}${Math.floor(Math.random() * 10000)}`;

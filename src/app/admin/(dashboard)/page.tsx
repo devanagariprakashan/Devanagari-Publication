@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 const statDefs = [
   { label: "Total Books", table: "books" },
   { label: "Total Orders", table: "orders" },
+  { label: "Coupons", table: "coupons" },
   { label: "Inquiries", table: "inquiries" },
   { label: "Categories", table: "categories" },
   { label: "Announcements", table: "announcements" },

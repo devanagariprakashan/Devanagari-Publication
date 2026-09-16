@@ -163,6 +163,22 @@ create table if not exists public.latest_updates (
   created_at timestamptz default timezone('utc'::text, now()) not null
 );
 
+-- Coupons (at most one row may be featured)
+create table if not exists public.coupons (
+  id text primary key,
+  code text not null,
+  title text,
+  discount_type text not null default 'percent',
+  discount_value numeric not null default 0,
+  min_amount numeric not null default 0,
+  is_active boolean not null default true,
+  is_featured boolean not null default false,
+  created_at timestamptz default timezone('utc'::text, now()) not null
+);
+alter table public.coupons drop constraint if exists coupons_discount_type_check;
+alter table public.coupons add constraint coupons_discount_type_check check (discount_type in ('percent', 'fixed'));
+create index if not exists coupons_code_idx on public.coupons (upper(code));
+
 -- Author social links
 alter table public.authors add column if not exists youtube_url text;
 alter table public.authors add column if not exists linkedin_url text;

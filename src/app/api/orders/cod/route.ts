@@ -2,12 +2,14 @@ import { NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createIthinkShipment } from "@/lib/ithink";
+import { findCoupon } from "@/lib/coupons";
+import { couponDiscount } from "@/lib/coupon-shared";
 
 type Item = { id: string; quantity: number };
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json() as { items?: Item[]; fullName?: string; email?: string; phone?: string; address?: string; landmark?: string; city?: string; state?: string; pincode?: string; shippingMethod?: string };
+    const body = await request.json() as { items?: Item[]; fullName?: string; email?: string; phone?: string; address?: string; landmark?: string; city?: string; state?: string; pincode?: string; shippingMethod?: string; couponCode?: string };
     const items = body.items || [];
     if (!items.length || !body.fullName?.trim() || !body.email?.trim() || !body.phone || !body.address?.trim() || !body.city?.trim() || !/^\d{6}$/.test(body.pincode || "")) {
       return NextResponse.json({ error: "Complete delivery and contact details are required" }, { status: 400 });
@@ -22,7 +24,9 @@ export async function POST(request: Request) {
       if (!book || !book.is_active || !book.in_stock || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 20) throw new Error("A selected book is unavailable");
       return total + Number(book.price) * item.quantity;
     }, 0);
-    const amount = subtotal + (body.shippingMethod === "express" ? 49 : 0);
+    const coupon = typeof body.couponCode === "string" ? await findCoupon(body.couponCode) : null;
+    const discount = couponDiscount(coupon, subtotal);
+    const amount = Math.max(1, subtotal - discount + (body.shippingMethod === "express" ? 49 : 0));
     const order = { id: crypto.randomUUID(), order_number: `ORD-${Date.now().toString().slice(-8)}`, customer_name: body.fullName.trim(), customer_email: body.email.trim().toLowerCase(), customer_phone: body.phone, total_amount: amount, order_status: "confirmed", payment_status: "pending", payment_method: "cod", shipping_address: body.address.trim(), landmark: body.landmark || null, city: body.city.trim(), state: body.state || null, pincode: body.pincode, shipment_status: "pending" };
     const { error: orderError } = await admin.from("orders").insert(order);
     if (orderError) throw orderError;
