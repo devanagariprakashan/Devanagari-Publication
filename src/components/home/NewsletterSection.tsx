@@ -11,17 +11,23 @@ import {
   Lock,
   CheckCircle2,
 } from "lucide-react";
+import { subscribeToNewsletter } from "@/actions/newsletter";
 
 export default function NewsletterSection() {
   const [email, setEmail] = useState("");
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email.trim()) {
-      setIsSubscribed(true);
-      setEmail("");
-    }
+    setSubmitError("");
+    setIsSubmitting(true);
+    const result = await subscribeToNewsletter(email);
+    setIsSubmitting(false);
+    if (result.error) { setSubmitError(result.error); return; }
+    setIsSubscribed(true);
+    setEmail("");
   };
 
   return (
@@ -86,11 +92,13 @@ export default function NewsletterSection() {
 
                     <button
                       type="submit"
+                      disabled={isSubmitting}
                       className="w-full sm:w-auto bg-[#C61821] hover:bg-[#a5131b] text-white px-5 sm:px-6 py-2.5 sm:py-3 rounded-[4px] sm:rounded-[5px] font-semibold text-xs sm:text-sm flex justify-center items-center gap-2 shadow-md shadow-red-900/20 hover:shadow-lg transition-all active:scale-95 shrink-0 group cursor-pointer"
                     >
                       <span>Subscribe</span>
                       <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
                     </button>
+                    {submitError && <p className="basis-full text-xs text-red-600" role="alert">{submitError}</p>}
                   </form>
                 )}
               </div>

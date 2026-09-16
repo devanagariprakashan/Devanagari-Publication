@@ -30,6 +30,7 @@ export default async function InquiriesPage() {
                 <th className={tableTh}>Name</th>
                 <th className={tableTh}>Email</th>
                 <th className={tableTh}>Phone</th>
+                <th className={tableTh}>Subject</th>
                 <th className={tableTh}>Message</th>
                 <th className={tableTh}>Status</th>
                 <th className={tableTh}>Created</th>
@@ -42,6 +43,7 @@ export default async function InquiriesPage() {
                   <td className={tableTd}>{i.name}</td>
                   <td className={tableTd}>{i.email ?? "—"}</td>
                   <td className={tableTd}>{i.phone ?? "—"}</td>
+                  <td className={tableTd}>{i.subject ?? "—"}</td>
                   <td className={tableTd}>
                     <span className="block max-w-xs truncate" title={i.message}>
                       {i.message}
@@ -65,7 +67,7 @@ export default async function InquiriesPage() {
               ))}
               {(inquiries ?? []).length === 0 && (
                 <tr>
-                  <td className={tableTd} colSpan={7}>
+                  <td className={tableTd} colSpan={8}>
                     No inquiries yet.
                   </td>
                 </tr>

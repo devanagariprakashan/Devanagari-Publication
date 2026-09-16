@@ -20,10 +20,13 @@ import {
 
 import { createClient } from "@/lib/supabase/client";
 import { SITE_DEFAULTS, type SiteSettings } from "@/lib/site-settings";
+import { subscribeToNewsletter } from "@/actions/newsletter";
 
 export default function Footer() {
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [newsletterError, setNewsletterError] = useState("");
+  const [isNewsletterSubmitting, setIsNewsletterSubmitting] = useState(false);
   const [site, setSite] = useState<SiteSettings>(SITE_DEFAULTS);
 
   // ponytail: client fetch like TopBanner, no context/store until >2 consumers need sync
@@ -35,9 +38,16 @@ export default function Footer() {
     return () => { cancelled = true; };
   }, []);
 
-  const handleNewsletterSubmit = (e: React.FormEvent) => {
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newsletterEmail.trim() || !newsletterEmail.includes("@")) return;
+    setNewsletterError("");
+    setIsNewsletterSubmitting(true);
+    const result = await subscribeToNewsletter(newsletterEmail);
+    setIsNewsletterSubmitting(false);
+    if (result.error) {
+      setNewsletterError(result.error);
+      return;
+    }
     setIsSubscribed(true);
     setTimeout(() => {
       setNewsletterEmail("");
@@ -404,12 +414,14 @@ export default function Footer() {
                 />
                 <button
                   type="submit"
+                  disabled={isNewsletterSubmitting}
                   aria-label="Subscribe to newsletter"
                   className="absolute right-1.5 w-8 h-8 rounded-lg bg-[#C61821] hover:bg-[#A81119] text-white flex items-center justify-center transition-all duration-200 hover:scale-105 shadow-sm cursor-pointer"
                 >
                   <Send className="w-3.5 h-3.5" />
                 </button>
               </div>
+              {newsletterError && <p className="text-xs text-red-300" role="alert">{newsletterError}</p>}
 
               {/* Instant Success Alert */}
               {isSubscribed && (

@@ -123,8 +123,16 @@ create table if not exists public.inquiries (
   name text not null,
   email text,
   phone text,
+  subject text,
   message text not null,
   status text default 'unread',
+  created_at timestamptz default timezone('utc'::text, now()) not null
+);
+
+create table if not exists public.newsletter_subscribers (
+  id text primary key,
+  email text unique not null,
+  status text default 'active',
   created_at timestamptz default timezone('utc'::text, now()) not null
 );
 
