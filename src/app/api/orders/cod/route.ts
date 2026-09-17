@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createIthinkShipment } from "@/lib/ithink";
 import { findCoupon } from "@/lib/coupons";
 import { couponDiscount } from "@/lib/coupon-shared";
+import { checkCodEligibility, computeShippingCharge, SITE_DEFAULTS, type SiteSettings } from "@/lib/site-settings";
 
 type Item = { id: string; quantity: number };
 
@@ -15,6 +16,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Complete delivery and contact details are required" }, { status: 400 });
     }
     const admin = createAdminClient();
+    const { data: settingsRow } = await admin.from("site_settings").select("*").eq("id", 1).maybeSingle();
+    const settings: SiteSettings = { ...SITE_DEFAULTS, ...(settingsRow ?? {}) };
+
     const { data: books, error: booksError } = await admin.from("books").select("id,title,price,is_active,in_stock").in("id", items.map((item) => item.id));
     if (booksError) throw booksError;
     if (!books || books.length !== new Set(items.map((item) => item.id)).size) return NextResponse.json({ error: "One or more books are unavailable" }, { status: 400 });
@@ -24,9 +28,16 @@ export async function POST(request: Request) {
       if (!book || !book.is_active || !book.in_stock || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 20) throw new Error("A selected book is unavailable");
       return total + Number(book.price) * item.quantity;
     }, 0);
+
+    const codEligibility = checkCodEligibility(settings, subtotal);
+    if (!codEligibility.eligible) {
+      return NextResponse.json({ error: codEligibility.reason || "Cash on Delivery is unavailable for this order" }, { status: 400 });
+    }
+
     const coupon = typeof body.couponCode === "string" ? await findCoupon(body.couponCode) : null;
     const discount = couponDiscount(coupon, subtotal);
-    const amount = Math.max(1, subtotal - discount + (body.shippingMethod === "express" ? 49 : 0));
+    const shipping = computeShippingCharge(settings, body.shippingMethod === "express" ? "express" : "standard", subtotal);
+    const amount = Math.max(1, subtotal - discount + shipping + settings.cod_fee);
     const order = { id: crypto.randomUUID(), order_number: `ORD-${Date.now().toString().slice(-8)}`, customer_name: body.fullName.trim(), customer_email: body.email.trim().toLowerCase(), customer_phone: body.phone, total_amount: amount, order_status: "confirmed", payment_status: "pending", payment_method: "cod", shipping_address: body.address.trim(), landmark: body.landmark || null, city: body.city.trim(), state: body.state || null, pincode: body.pincode, shipment_status: "pending" };
     const { error: orderError } = await admin.from("orders").insert(order);
     if (orderError) throw orderError;

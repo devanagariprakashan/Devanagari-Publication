@@ -47,44 +47,54 @@ export default function TeamContent({ settings, items }: { settings: Record<stri
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {items.map((member, idx) => (
             <div
               key={idx}
-              className="group bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full"
+              className="group bg-white rounded-lg border border-gray-200 shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-4 flex gap-3.5"
             >
-              {/* Compact Banner */}
-              <div
-                className={`h-24 bg-gradient-to-br ${member.gradient} p-4 flex flex-col justify-between text-white relative overflow-hidden shrink-0`}
-              >
-                {member.image && <><Image src={member.image} alt={member.name} fill unoptimized sizes="400px" className="object-cover" /><div className="absolute inset-0 bg-black/20" /></>}
-                <span className="relative z-10 px-2 py-0.5 rounded-md bg-white/20 backdrop-blur-md text-[10px] font-bold tracking-wide uppercase self-start">
-                  {member.dept}
-                </span>
-                <div className="absolute -bottom-6 -right-6 w-20 h-20 rounded-full bg-white/10 blur-xl group-hover:scale-125 transition-transform duration-500" />
+              {/* Avatar */}
+              <div className="shrink-0">
+                <div className="w-[96px] h-[96px] sm:w-[110px] sm:h-[110px] rounded-full overflow-hidden bg-gray-100">
+                  {member.image ? (
+                    <Image src={member.image} alt={member.name} width={110} height={110} unoptimized className="w-full h-full object-cover" />
+                  ) : (
+                    <div className={`w-full h-full bg-gradient-to-br ${member.gradient} flex items-center justify-center text-white text-sm font-bold`}>
+                      {member.name.split(" ").slice(-2).map((n) => n[0]).join("")}
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Profile Details */}
-              <div className="p-4 flex flex-col flex-grow">
-                <h3 className="text-sm sm:text-base font-bold text-gray-900 group-hover:text-[#C61821] transition-colors mb-1 line-clamp-1">
-                  {member.name}
-                </h3>
-                <p className="text-[11px] font-bold text-[#C61821] mb-2">
-                  {member.role}
-                </p>
-
-                <div className="inline-flex items-center gap-1.5 text-[10px] text-gray-500 bg-gray-50 px-2 py-1 rounded-md mb-2 w-fit">
-                  <GraduationCap className="w-3 h-3 text-gray-600" />
-                  <span className="line-clamp-1">{member.qualification}</span>
+              {/* Content */}
+              <div className="flex-1 min-w-0 flex flex-col">
+                <div className="min-w-0">
+                  <h3 className="text-[15px] sm:text-base font-bold text-gray-900 group-hover:text-[#C61821] transition-colors leading-tight">
+                    {member.name}
+                  </h3>
+                  <p className="text-xs sm:text-[13px] text-[#C61821] font-bold leading-snug mt-0.5 line-clamp-2">
+                    {member.role}
+                  </p>
                 </div>
 
-                <p className="text-xs text-gray-600 leading-relaxed mb-4 flex-grow line-clamp-3">
+                <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                  <span className="inline-flex items-center gap-1 shrink-0 bg-[#FFF1F2] text-[#E11D48] text-xs font-semibold px-2 py-1 rounded-md">
+                    <Award className="w-3.5 h-3.5" /> {member.experience}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 text-[10px] text-gray-500 bg-gray-50 px-2 py-1 rounded-md">
+                    <GraduationCap className="w-3 h-3 text-gray-600" />
+                    <span className="line-clamp-1">{member.qualification}</span>
+                  </span>
+                </div>
+
+                <p className="text-[13px] sm:text-sm text-gray-500 leading-[1.55] mt-2 line-clamp-3 flex-1">
                   {member.bio}
                 </p>
 
-                <div className="pt-3 border-t border-gray-50 flex items-center text-[11px] text-gray-500 mt-auto">
-                  <span className="font-semibold text-gray-700">
-                    {member.experience}
+                <div className="flex items-center mt-3 pt-3 border-t border-gray-50">
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-gray-700 bg-gray-50 px-2.5 py-1 rounded-md">
+                    <BookOpen className="w-3.5 h-3.5 text-red-500" />
+                    {member.dept}
                   </span>
                 </div>
               </div>

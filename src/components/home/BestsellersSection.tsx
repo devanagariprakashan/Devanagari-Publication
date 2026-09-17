@@ -9,7 +9,6 @@ import {
   Heart,
   ChevronLeft,
   ChevronRight,
-  ArrowRight,
   Check,
   Sparkles,
 } from "lucide-react";
@@ -329,9 +328,9 @@ export default function BestsellersSection({
           </div>
           <button
             onClick={handleBrowseAll}
-            className="shrink-0 text-sm font-bold text-[#C61821] inline-flex items-center gap-1 hover:gap-1.5 transition-all cursor-pointer"
+            className="shrink-0 inline-flex items-center bg-[#C61821] hover:bg-[#A8131B] text-white text-sm sm:text-[15px] font-bold px-5 sm:px-6 py-2.5 sm:py-3 rounded-full shadow-md hover:shadow-lg transition-all cursor-pointer"
           >
-            View All <ArrowRight className="w-4 h-4" />
+            View All
           </button>
         </div>
 

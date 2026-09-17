@@ -30,6 +30,7 @@ import BookModal from "@/components/home/BookModal";
 import { BookData } from "@/components/home/HeroBook3D";
 import { createClient } from "@/lib/supabase/client";
 import { Coupon, couponDiscount, couponDiscountLabel } from "@/lib/coupon-shared";
+import { computeShippingCharge, getSiteSettings, SITE_DEFAULTS, type SiteSettings } from "@/lib/site-settings";
 
 const COUPON_STORAGE_KEY = "devanagari_coupon_v1";
 
@@ -40,7 +41,6 @@ export default function CartPage() {
     cartTotal,
     cartOriginalTotal,
     cartSavings,
-    freeDeliveryThreshold,
     updateQuantity,
     removeFromCart,
     clearCart,
@@ -57,6 +57,7 @@ export default function CartPage() {
   const [availableCoupons, setAvailableCoupons] = useState<Coupon[]>([]);
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [selectedBookForModal, setSelectedBookForModal] = useState<BookData | null>(null);
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>(SITE_DEFAULTS);
 
   // Load active coupons from the database
   useEffect(() => {
@@ -74,11 +75,17 @@ export default function CartPage() {
     };
   }, []);
 
+  // Load shipping & delivery settings
+  useEffect(() => {
+    getSiteSettings().then(setSiteSettings);
+  }, []);
+
   // Delivery calculation
-  const isFreeDelivery = cartTotal >= freeDeliveryThreshold || cart.length === 0;
+  const freeDeliveryThreshold = siteSettings.free_shipping_threshold;
+  const isFreeDelivery = cart.length === 0 || (siteSettings.free_shipping_enabled && cartTotal >= freeDeliveryThreshold);
   const neededForFree = Math.max(0, freeDeliveryThreshold - cartTotal);
   const freeProgress = Math.min(100, Math.round((cartTotal / freeDeliveryThreshold) * 100));
-  const deliveryCharge = isFreeDelivery ? 0 : 49;
+  const deliveryCharge = cart.length === 0 ? 0 : computeShippingCharge(siteSettings, "standard", cartTotal);
 
   // Coupon discount calculation
   const appliedDiscount = couponDiscount(appliedCoupon, cartTotal);

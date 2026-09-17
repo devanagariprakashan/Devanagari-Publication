@@ -17,8 +17,6 @@ import FeaturedCategories, { FeaturedCategory } from "@/components/home/Featured
 import HandpickedSection, { HandpickedBook } from "@/components/home/HandpickedSection";
 import BestsellersSection, { BestsellerBook } from "@/components/home/BestsellersSection";
 import TestimonialsSection from "@/components/home/TestimonialsSection";
-import WhatsNewSection from "@/components/home/WhatsNewSection";
-import BookRatingsReviewsSection from "@/components/home/BookRatingsReviewsSection";
 import HeroBook3D, { BookData } from "@/components/home/HeroBook3D";
 import FeaturedOfferPopup from "@/components/home/FeaturedOfferPopup";
 import { useCartWishlist } from "@/components/providers/CartWishlistProvider";
@@ -37,9 +35,9 @@ const TICKER_ITEMS = [
   { title: "100% Secure", subtitle: "Payment Protection", icon: ShieldCheck },
   { title: "Original Books", subtitle: "Devanagari Publication", icon: Award },
   { title: "High Quality", subtitle: "Premium Printing", icon: BookOpen },
-  { title: "27+ Years", subtitle: "Trusted Publishing", icon: Calendar },
-  { title: "500+ Titles", subtitle: "Exam Oriented Books", icon: Library },
-  { title: "50K+ Readers", subtitle: "Pan-India Aspirants", icon: Users },
+  { title: "4 Years", subtitle: "Trusted Publishing", icon: Calendar },
+  { title: "10+ Titles", subtitle: "Exam Oriented Books", icon: Library },
+  { title: "25K+ Readers", subtitle: "Pan-India Aspirants", icon: Users },
 ];
 
 function TickerTrack({ ariaHidden = false }: { ariaHidden?: boolean }) {
@@ -177,9 +175,6 @@ export default function HomeContent({
       {/* 2. FEATURED EXAM CATEGORIES */}
       <FeaturedCategories categories={categories} />
 
-      {/* 3. WHAT'S NEW */}
-      <WhatsNewSection />
-
       {/* 4. ASPIRANTS' MOST LOVED BOOKS (reuses Bestsellers) */}
       <BestsellersSection
         books={bestsellers}
@@ -188,9 +183,6 @@ export default function HomeContent({
         wishlistIds={wishlistIds}
         onToggleWishlist={handleToggleWishlist}
       />
-
-      {/* 5. BOOK RATINGS & REVIEWS */}
-      <BookRatingsReviewsSection />
 
       {/* 7. EXISTING HANDPICKED — kept as remaining content */}
       <HandpickedSection

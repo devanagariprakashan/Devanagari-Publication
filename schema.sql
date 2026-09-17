@@ -223,3 +223,18 @@ with check (exists (select 1 from public.profiles where id = auth.uid() and role
 -- Run in Supabase SQL editor to enable per-book demos.
 alter table public.books add column if not exists demo_file_url text;
 alter table public.books add column if not exists demo_video_url text;
+
+-- Shipping, Cash on Delivery & online payment settings (admin Settings page).
+alter table public.site_settings add column if not exists shipping_flat_rate numeric default 49;
+alter table public.site_settings add column if not exists free_shipping_enabled boolean default true;
+alter table public.site_settings add column if not exists free_shipping_threshold numeric default 499;
+alter table public.site_settings add column if not exists express_shipping_enabled boolean default true;
+alter table public.site_settings add column if not exists express_shipping_rate numeric default 49;
+alter table public.site_settings add column if not exists standard_delivery_days text default '3-5 days';
+alter table public.site_settings add column if not exists express_delivery_days text default '1-2 days';
+alter table public.site_settings add column if not exists cod_enabled boolean default true;
+alter table public.site_settings add column if not exists cod_fee numeric default 0;
+alter table public.site_settings add column if not exists cod_min_order numeric;
+alter table public.site_settings add column if not exists cod_max_order numeric;
+alter table public.site_settings add column if not exists upi_enabled boolean default true;
+alter table public.site_settings add column if not exists card_enabled boolean default true;

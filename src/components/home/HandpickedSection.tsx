@@ -9,8 +9,6 @@ import {
   Heart,
   ChevronLeft,
   ChevronRight,
-  BookOpen,
-  ArrowRight,
   Check,
   Sparkles,
 } from "lucide-react";
@@ -200,7 +198,7 @@ export default function HandpickedSection({
   const hasTooManyBooks = list.length > FEATURED_LIMIT;
 
   const [addedIds, setAddedIds] = useState<Array<number | string>>([]);
-  const { trackRef, itemsPerPage, totalPages, handlePrev, handleNext, interactionProps } = useBookCarousel(list.length);
+  const { trackRef, itemsPerPage, handlePrev, handleNext, interactionProps } = useBookCarousel(list.length);
 
   const convertToBookData = (book: HandpickedBook): BookData => ({
     id: book.id,
@@ -315,22 +313,13 @@ export default function HandpickedSection({
             </p>
           </div>
 
-          {/* Right Action: Browse All Books Link & Button */}
+          {/* Right Action: Browse All Books Button */}
           <div className="flex items-center gap-3 self-start sm:self-auto shrink-0">
             <button
               onClick={handleBrowseAll}
-              className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-red-50/80 hover:bg-red-100 border border-red-100/90 flex items-center justify-center text-[#C61821] transition-all hover:scale-105 shadow-2xs cursor-pointer shrink-0"
-              aria-label="Browse all books"
+              className="inline-flex items-center bg-[#C61821] hover:bg-[#A8131B] text-white text-sm sm:text-[15px] font-bold px-5 sm:px-6 py-2.5 sm:py-3 rounded-full shadow-md hover:shadow-lg transition-all cursor-pointer"
             >
-              <BookOpen className="w-5 h-5 stroke-[1.8]" />
-            </button>
-
-            <button
-              onClick={handleBrowseAll}
-              className="group inline-flex items-center gap-1.5 text-sm sm:text-[15px] font-bold text-[#C61821] hover:text-[#A8131B] transition-colors cursor-pointer"
-            >
-              <span>Browse all books</span>
-              <ArrowRight className="w-4 h-4 text-[#C61821] group-hover:translate-x-1 transition-transform" />
+              Browse all books
             </button>
           </div>
         </div>
@@ -342,8 +331,28 @@ export default function HandpickedSection({
           </div>
         )}
 
-        {/* ================= PRODUCT CARDS GRID ================= */}
-        <div className="overflow-hidden p-1 -m-1 [contain:layout_paint] [--book-gap:14px] sm:[--book-gap:16px] lg:[--book-gap:20px]">
+        {/* ================= CAROUSEL WITH LEFT/RIGHT BUTTONS ================= */}
+        <div className="relative">
+          {/* Left Arrow Button */}
+          <button
+            onClick={handlePrev}
+            aria-label="Previous handpicked books"
+            className="absolute -left-3 sm:-left-4 lg:-left-6 top-1/2 -translate-y-1/2 z-30 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/95 backdrop-blur-sm border border-gray-200/90 text-gray-700 hover:text-[#C61821] hover:border-red-300 shadow-[0_4px_16px_rgba(0,0,0,0.12)] flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 cursor-pointer"
+          >
+            <ChevronLeft className="w-5 h-5 stroke-[2.2]" />
+          </button>
+
+          {/* Right Arrow Button */}
+          <button
+            onClick={handleNext}
+            aria-label="Next handpicked books"
+            className="absolute -right-3 sm:-right-4 lg:-right-6 top-1/2 -translate-y-1/2 z-30 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/95 backdrop-blur-sm border border-gray-200/90 text-gray-700 hover:text-[#C61821] hover:border-red-300 shadow-[0_4px_16px_rgba(0,0,0,0.12)] flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 cursor-pointer"
+          >
+            <ChevronRight className="w-5 h-5 stroke-[2.2]" />
+          </button>
+
+          {/* ================= PRODUCT CARDS GRID ================= */}
+          <div className="overflow-hidden p-1 -m-1 [contain:layout_paint] [--book-gap:14px] sm:[--book-gap:16px] lg:[--book-gap:20px]">
           <div ref={trackRef} className="flex items-stretch gap-[var(--book-gap)] transform-gpu will-change-transform">
           {(list.length > 1 ? Array.from({ length: Math.max(2, Math.ceil(itemsPerPage / list.length) + 1) }, () => list).flat() : list).map((book, index) => {
             const isWishlisted =
@@ -479,29 +488,7 @@ export default function HandpickedSection({
           })}
         </div>
         </div>
-
-        {/* ================= BOTTOM PAGINATION / CAROUSEL CONTROLS ================= */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-3 mt-8 sm:mt-10">
-            {/* Left Chevron */}
-            <button
-              onClick={handlePrev}
-              aria-label="Previous books"
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-900 flex items-center justify-center shadow-2xs hover:scale-105 active:scale-95 transition-all cursor-pointer"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-
-            {/* Right Chevron */}
-            <button
-              onClick={handleNext}
-              aria-label="Next books"
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-900 flex items-center justify-center shadow-2xs hover:scale-105 active:scale-95 transition-all cursor-pointer"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        )}
+        </div>
       </div>
     </section>
   );

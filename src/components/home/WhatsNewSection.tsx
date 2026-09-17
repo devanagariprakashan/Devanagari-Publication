@@ -201,7 +201,7 @@ export default function WhatsNewSection() {
   }, [updates.length]);
 
   return (
-    <section className="py-8 sm:py-10 bg-white">
+    <section className="py-6 sm:py-8 bg-white">
       <div className="max-w-[1450px] mx-auto px-4 sm:px-6 lg:px-8">
         {/* ===== Section header: What's New + View All ===== */}
         <div className="flex items-center justify-between gap-4 mb-7 sm:mb-8">
@@ -234,7 +234,7 @@ export default function WhatsNewSection() {
             onMouseLeave={() => setHovered(false)}
             onFocusCapture={() => setFocused(true)}
             onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false); }}
-            className="relative overflow-hidden rounded-2xl aspect-[4/3] sm:aspect-[16/10] lg:aspect-auto lg:h-[560px] xl:h-[620px] select-none">
+            className="relative overflow-hidden rounded-2xl aspect-[4/3] sm:aspect-[16/10] lg:aspect-auto lg:h-[420px] xl:h-[460px] select-none">
             <div
               className="flex flex-col h-full transition-transform duration-500 ease-out motion-reduce:transition-none"
               style={{ transform: `translateY(-${active * 100}%)` }}
@@ -289,15 +289,6 @@ export default function WhatsNewSection() {
                     />
                   </div>
 
-                  {/* Wooden surface */}
-                  <div
-                    className="absolute bottom-0 inset-x-0 h-8 sm:h-10"
-                    style={{
-                      background: "linear-gradient(180deg, #9A6A3B 0%, #7A4E28 70%, #63401F 100%)",
-                      borderTop: "1px solid rgba(255,255,255,0.25)",
-                    }}
-                  />
-                  <div className="absolute bottom-0 inset-x-0 h-1 opacity-30 blur-[2px] bg-black/30" />
                 </div>
               ))}
             </div>
@@ -339,8 +330,8 @@ export default function WhatsNewSection() {
           </div>
 
           {/* ---------- Right: Latest Updates panel ---------- */}
-          <aside className="rounded-2xl border border-gray-200 bg-white shadow-[0_2px_12px_rgba(0,0,0,0.04)] p-5 sm:p-6 flex flex-col lg:h-full">
-            <div className="flex items-center justify-between gap-3 mb-4">
+          <aside className="rounded-2xl border border-gray-200 bg-white shadow-[0_2px_12px_rgba(0,0,0,0.04)] p-4 sm:p-5 flex flex-col lg:h-full">
+            <div className="flex items-center justify-between gap-3 mb-2 sm:mb-3">
               <div>
                 <h3 className="font-serif text-[20px] sm:text-2xl font-bold tracking-tight leading-none" style={{ color: NAVY }}>
                   Latest Updates
@@ -369,13 +360,13 @@ export default function WhatsNewSection() {
                         : ""
                   }
                 >
-                  <Link href={u.href} className="group py-4 flex items-center gap-3.5 sm:gap-4 w-full">
-                    <div className="shrink-0 w-[92px] h-[84px] sm:w-[104px] sm:h-[94px] rounded-[10px] overflow-hidden border border-gray-100 bg-gray-50">
+                  <Link href={u.href} className="group py-2.5 sm:py-3 flex items-center gap-3 sm:gap-3.5 w-full">
+                    <div className="shrink-0 w-[64px] h-[56px] sm:w-[72px] sm:h-[64px] rounded-[10px] overflow-hidden border border-gray-100 bg-gray-50">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={u.image} alt={u.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h4 className="font-serif font-bold text-[15px] sm:text-[17px] leading-snug line-clamp-2 transition-colors" style={{ color: NAVY }}>
+                      <h4 className="font-serif font-bold text-[14px] sm:text-[16px] leading-snug line-clamp-2 transition-colors" style={{ color: NAVY }}>
                         {u.title}
                       </h4>
                       {u.desc && <p className="text-xs sm:text-[13px] text-gray-500 mt-0.5 line-clamp-1 font-medium">{u.desc}</p>}

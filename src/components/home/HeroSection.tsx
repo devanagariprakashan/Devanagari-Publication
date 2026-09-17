@@ -21,9 +21,9 @@ interface HeroSectionProps {
 }
 
 const STATS = [
-  { icon: BookOpen, value: "500+", label: "Exam Oriented Titles" },
-  { icon: Users, value: "50K+", label: "Pan-India Readers" },
-  { icon: ShieldCheck, value: "27+ Years", label: "Trusted Publishing" },
+  { icon: BookOpen, value: "10+", label: "Exam Oriented Titles" },
+  { icon: Users, value: "25K+", label: "Pan-India Readers" },
+  { icon: ShieldCheck, value: "4 Years", label: "Trusted Publishing" },
   { icon: GraduationCap, value: "Expert", label: "Educator Team" },
 ];
 

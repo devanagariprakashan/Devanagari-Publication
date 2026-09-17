@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createPayuRequestHash, PAYU_PAYMENT_URL, payuConfig } from "@/lib/payu";
 import { findCoupon } from "@/lib/coupons";
 import { couponDiscount } from "@/lib/coupon-shared";
+import { computeShippingCharge, SITE_DEFAULTS, type SiteSettings } from "@/lib/site-settings";
 
 type Item = { id: string; quantity: number };
 
@@ -25,6 +26,9 @@ export async function POST(request: NextRequest) {
     }
 
     const admin = createAdminClient();
+    const { data: settingsRow } = await admin.from("site_settings").select("*").eq("id", 1).maybeSingle();
+    const settings: SiteSettings = { ...SITE_DEFAULTS, ...(settingsRow ?? {}) };
+
     const ids = items.map((item) => item.id);
     const { data: books, error: booksError } = await admin
       .from("books").select("id,title,price,is_active,in_stock").in("id", ids);
@@ -43,7 +47,7 @@ export async function POST(request: NextRequest) {
     }, 0);
     const coupon = typeof body.couponCode === "string" ? await findCoupon(body.couponCode) : null;
     const discount = couponDiscount(coupon, subtotal);
-    const shipping = body.shippingMethod === "express" ? 49 : 0;
+    const shipping = computeShippingCharge(settings, body.shippingMethod === "express" ? "express" : "standard", subtotal);
     const amount = Math.max(1, subtotal - discount + shipping);
     const txnid = `DEV${Date.now()}${Math.floor(Math.random() * 10000)}`;
     const orderNumber = `ORD-${Date.now().toString().slice(-8)}`;

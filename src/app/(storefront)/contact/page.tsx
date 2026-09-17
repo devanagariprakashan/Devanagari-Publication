@@ -5,7 +5,6 @@ import Link from "next/link";
 import {
   Phone,
   Mail,
-  MapPin,
   Clock,
   Send,
   MessageSquare,
@@ -265,20 +264,6 @@ export default function ContactPage() {
               </Link>
             </div>
           </div>
-        </div>
-
-        {/* MAP SECTION */}
-        <div className="mt-8 bg-white rounded-[5px] p-2 shadow-sm border border-gray-100 h-64 sm:h-80 lg:h-96 w-full relative">
-          <iframe
-            src="https://maps.google.com/maps?q=MG%20Road,%20Bhopal,%20Madhya%20Pradesh%20462001&t=&z=15&ie=UTF8&iwloc=&output=embed"
-            width="100%"
-            height="100%"
-            style={{ border: 0, borderRadius: "0.75rem" }}
-            allowFullScreen
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-            title="Our Location - MG Road, Bhopal"
-          ></iframe>
         </div>
       </main>
     </div>

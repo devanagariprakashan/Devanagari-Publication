@@ -32,6 +32,7 @@ import {
 import { useCartWishlist, CartItem } from "@/components/providers/CartWishlistProvider";
 import { createClient } from "@/lib/supabase/client";
 import { Coupon, couponDiscount, couponDiscountLabel } from "@/lib/coupon-shared";
+import { checkCodEligibility, computeShippingCharge, getSiteSettings, SITE_DEFAULTS, type SiteSettings } from "@/lib/site-settings";
 
 const COUPON_STORAGE_KEY = "devanagari_coupon_v1";
 
@@ -110,6 +111,12 @@ export default function CheckoutPage() {
   const [placedOrderId, setPlacedOrderId] = useState("");
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
 
+  // Shipping, COD & payment settings (admin-configurable)
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>(SITE_DEFAULTS);
+  useEffect(() => {
+    getSiteSettings().then(setSiteSettings);
+  }, []);
+
   useEffect(() => {
     const syncPayuResult = () => {
       const params = new URLSearchParams(window.location.search);
@@ -150,14 +157,34 @@ export default function CheckoutPage() {
   // Book discount
   const bookDiscount = Math.max(0, subtotalOriginalMRP - subtotalCurrent);
 
-  // Delivery charge (Free above threshold or standard)
-  const deliveryCharge = activeItems.length === 0 ? 0 : shippingMethod === "express" ? 49 : 0;
+  // Falls back to "standard" when express was picked but is no longer offered (derived, not stored)
+  const effectiveShippingMethod: "standard" | "express" =
+    shippingMethod === "express" && siteSettings.express_shipping_enabled ? "express" : "standard";
+
+  // Delivery charge (Free above threshold, express flat rate, both admin-configurable)
+  const deliveryCharge =
+    activeItems.length === 0 ? 0 : computeShippingCharge(siteSettings, effectiveShippingMethod, subtotalCurrent);
 
   // Coupon discount
   const appliedDiscount = couponDiscount(appliedCoupon, subtotalCurrent);
 
+  // COD handling fee (only applies when Cash on Delivery is the selected payment method)
+  const codEligibility = useMemo(() => checkCodEligibility(siteSettings, subtotalCurrent), [siteSettings, subtotalCurrent]);
+
+  // Falls back to the next available option when the picked method becomes disabled/ineligible (derived, not stored)
+  const effectivePayment: PaymentOption =
+    selectedPayment === "upi" && !siteSettings.upi_enabled
+      ? siteSettings.card_enabled ? "cards" : siteSettings.cod_enabled ? "cod" : "upi"
+      : selectedPayment === "cards" && !siteSettings.card_enabled
+      ? siteSettings.upi_enabled ? "upi" : siteSettings.cod_enabled ? "cod" : "cards"
+      : selectedPayment === "cod" && !codEligibility.eligible
+      ? siteSettings.upi_enabled ? "upi" : siteSettings.card_enabled ? "cards" : "cod"
+      : selectedPayment;
+
+  const codFee = effectivePayment === "cod" ? siteSettings.cod_fee : 0;
+
   // Final Total & Total Savings
-  const finalTotal = Math.max(0, subtotalCurrent - appliedDiscount + deliveryCharge);
+  const finalTotal = Math.max(0, subtotalCurrent - appliedDiscount + deliveryCharge + codFee);
   // Total savings shown in design: (subtotalOriginalMRP - finalTotal)
   const totalSavings = Math.max(0, subtotalOriginalMRP - finalTotal);
 
@@ -271,6 +298,9 @@ export default function CheckoutPage() {
     }
     if (!address.trim()) errors.address = "Complete address is required";
     if (!city.trim()) errors.city = "City is required";
+    if (effectivePayment === "cod" && !codEligibility.eligible) {
+      errors.payment = codEligibility.reason || "Cash on Delivery is unavailable for this order";
+    }
 
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
@@ -282,7 +312,7 @@ export default function CheckoutPage() {
     setFormErrors({});
     setIsSubmitting(true);
 
-    if (selectedPayment !== "cod") {
+    if (effectivePayment !== "cod") {
       try {
         const response = await fetch("/api/payu/initiate", {
           method: "POST",
@@ -290,7 +320,7 @@ export default function CheckoutPage() {
           body: JSON.stringify({
             items: activeItems.map((item) => ({ id: item.id, quantity: item.quantity || 1 })),
             fullName, email, phone: phoneNumber, address, landmark, city, state, pincode,
-            shippingMethod, couponCode: appliedCoupon?.code,
+            shippingMethod: effectiveShippingMethod, couponCode: appliedCoupon?.code,
           }),
         });
         const result = await response.json();
@@ -318,7 +348,7 @@ export default function CheckoutPage() {
       const response = await fetch("/api/orders/cod", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: activeItems.map((item) => ({ id: item.id, quantity: item.quantity || 1 })), fullName, email, phone: phoneNumber, address, landmark, city, state, pincode, shippingMethod, couponCode: appliedCoupon?.code }),
+        body: JSON.stringify({ items: activeItems.map((item) => ({ id: item.id, quantity: item.quantity || 1 })), fullName, email, phone: phoneNumber, address, landmark, city, state, pincode, shippingMethod: effectiveShippingMethod, couponCode: appliedCoupon?.code }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Unable to create COD order");
@@ -675,12 +705,16 @@ export default function CheckoutPage() {
                       Shipping Method
                     </label>
                     <select
-                      value={shippingMethod}
+                      value={effectiveShippingMethod}
                       onChange={(e) => setShippingMethod(e.target.value)}
                       className="w-full px-3 py-2.5 rounded-lg border border-gray-250 hover:border-gray-350 focus:border-[#C61821] focus:ring-1 focus:ring-[#C61821] text-xs sm:text-sm bg-white transition-colors focus:outline-none"
                     >
-                      <option value="standard">Standard Delivery (3-5 days)</option>
-                      <option value="express">Express Delivery (1-2 days) +₹49</option>
+                      <option value="standard">Standard Delivery ({siteSettings.standard_delivery_days})</option>
+                      {siteSettings.express_shipping_enabled && (
+                        <option value="express">
+                          Express Delivery ({siteSettings.express_delivery_days}) +₹{siteSettings.express_shipping_rate}
+                        </option>
+                      )}
                     </select>
                   </div>
                 </div>
@@ -750,11 +784,12 @@ export default function CheckoutPage() {
                 {/* Left: Payment Method Radio List (md:col-span-5) */}
                 <div className="md:col-span-5 space-y-2.5">
                   {/* 1. UPI Option */}
+                  {siteSettings.upi_enabled && (
                   <button
                     type="button"
                     onClick={() => setSelectedPayment("upi")}
                     className={`w-full p-3 rounded-xl border text-left transition-all flex items-start gap-3 cursor-pointer ${
-                      selectedPayment === "upi"
+                      effectivePayment === "upi"
                         ? "border-[#C61821] bg-red-50/25 ring-1 ring-[#C61821]/20"
                         : "border-gray-200 hover:border-gray-300 bg-white"
                     }`}
@@ -762,12 +797,12 @@ export default function CheckoutPage() {
                     <div className="pt-0.5 shrink-0">
                       <div
                         className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                          selectedPayment === "upi"
+                          effectivePayment === "upi"
                             ? "border-[#C61821]"
                             : "border-gray-300"
                         }`}
                       >
-                        {selectedPayment === "upi" && (
+                        {effectivePayment === "upi" && (
                           <div className="w-2 h-2 rounded-full bg-[#C61821]" />
                         )}
                       </div>
@@ -784,13 +819,15 @@ export default function CheckoutPage() {
                       <p className="text-[11px] text-gray-500 mt-0.5">Pay using any UPI app</p>
                     </div>
                   </button>
+                  )}
 
                   {/* 2. Cards Option */}
+                  {siteSettings.card_enabled && (
                   <button
                     type="button"
                     onClick={() => setSelectedPayment("cards")}
                     className={`w-full p-3 rounded-xl border text-left transition-all flex items-start gap-3 cursor-pointer ${
-                      selectedPayment === "cards"
+                      effectivePayment === "cards"
                         ? "border-[#C61821] bg-red-50/25 ring-1 ring-[#C61821]/20"
                         : "border-gray-200 hover:border-gray-300 bg-white"
                     }`}
@@ -798,12 +835,12 @@ export default function CheckoutPage() {
                     <div className="pt-0.5 shrink-0">
                       <div
                         className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                          selectedPayment === "cards"
+                          effectivePayment === "cards"
                             ? "border-[#C61821]"
                             : "border-gray-300"
                         }`}
                       >
-                        {selectedPayment === "cards" && (
+                        {effectivePayment === "cards" && (
                           <div className="w-2 h-2 rounded-full bg-[#C61821]" />
                         )}
                       </div>
@@ -829,26 +866,31 @@ export default function CheckoutPage() {
                       </div>
                     </div>
                   </button>
+                  )}
 
                   {/* 3. Cash on Delivery Option */}
+                  {siteSettings.cod_enabled && (
                   <button
                     type="button"
-                    onClick={() => setSelectedPayment("cod")}
-                    className={`w-full p-3 rounded-xl border text-left transition-all flex items-start gap-3 cursor-pointer ${
-                      selectedPayment === "cod"
-                        ? "border-[#C61821] bg-red-50/25 ring-1 ring-[#C61821]/20"
-                        : "border-gray-200 hover:border-gray-300 bg-white"
+                    onClick={() => codEligibility.eligible && setSelectedPayment("cod")}
+                    disabled={!codEligibility.eligible}
+                    className={`w-full p-3 rounded-xl border text-left transition-all flex items-start gap-3 ${
+                      !codEligibility.eligible
+                        ? "border-gray-150 bg-gray-50 opacity-60 cursor-not-allowed"
+                        : effectivePayment === "cod"
+                        ? "border-[#C61821] bg-red-50/25 ring-1 ring-[#C61821]/20 cursor-pointer"
+                        : "border-gray-200 hover:border-gray-300 bg-white cursor-pointer"
                     }`}
                   >
                     <div className="pt-0.5 shrink-0">
                       <div
                         className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                          selectedPayment === "cod"
+                          effectivePayment === "cod"
                             ? "border-[#C61821]"
                             : "border-gray-300"
                         }`}
                       >
-                        {selectedPayment === "cod" && (
+                        {effectivePayment === "cod" && (
                           <div className="w-2 h-2 rounded-full bg-[#C61821]" />
                         )}
                       </div>
@@ -860,15 +902,22 @@ export default function CheckoutPage() {
                         </span>
                         <Banknote className="w-4 h-4 text-emerald-600" />
                       </div>
-                      <p className="text-[11px] text-gray-500 mt-0.5">Pay when you receive</p>
+                      <p className="text-[11px] text-gray-500 mt-0.5">
+                        {codEligibility.eligible
+                          ? siteSettings.cod_fee > 0
+                            ? `Pay when you receive · +₹${siteSettings.cod_fee} handling fee`
+                            : "Pay when you receive"
+                          : codEligibility.reason}
+                      </p>
                     </div>
                   </button>
+                  )}
                 </div>
 
                 {/* Right: Active Detail Pane (md:col-span-7) */}
                 <div className="md:col-span-7 bg-gray-50/60 rounded-xl p-4 sm:p-5 border border-gray-150 flex flex-col justify-between">
                   {/* === UPI Subview === */}
-                  {selectedPayment === "upi" && (
+                  {effectivePayment === "upi" && (
                     <div className="space-y-4">
                       <div>
                         <h3 className="text-xs sm:text-sm font-bold text-gray-900">
@@ -981,7 +1030,7 @@ export default function CheckoutPage() {
                   )}
 
                   {/* === Cards Subview === */}
-                  {selectedPayment === "cards" && (
+                  {effectivePayment === "cards" && (
                     <div className="space-y-3.5">
                       <div>
                         <h3 className="text-xs sm:text-sm font-bold text-gray-900">
@@ -1060,7 +1109,7 @@ export default function CheckoutPage() {
                   )}
 
                   {/* === Cash on Delivery Subview === */}
-                  {selectedPayment === "cod" && (
+                  {effectivePayment === "cod" && (
                     <div className="space-y-3">
                       <div>
                         <h3 className="text-xs sm:text-sm font-bold text-gray-900">
@@ -1074,7 +1123,11 @@ export default function CheckoutPage() {
                       <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 space-y-1.5">
                         <p className="font-bold flex items-center gap-1.5">
                           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                          <span>Zero Extra COD Convenience Fee</span>
+                          <span>
+                            {siteSettings.cod_fee > 0
+                              ? `COD Handling Fee: ₹${siteSettings.cod_fee}`
+                              : "Zero Extra COD Convenience Fee"}
+                          </span>
                         </p>
                         <p className="text-[11px] text-emerald-800">
                           Please keep exact change of <strong>₹{finalTotal}</strong> ready at the time of delivery.
@@ -1331,7 +1384,7 @@ export default function CheckoutPage() {
                 {appliedDiscount > 0 && (
                   <div className="flex justify-between items-center text-emerald-600 font-semibold">
                     <span>Coupon Discount ({appliedCoupon?.code})</span>
-                    <span className="tabular-nums font-bold">-₹{couponDiscount.toLocaleString()}</span>
+                    <span className="tabular-nums font-bold">-₹{appliedDiscount.toLocaleString()}</span>
                   </div>
                 )}
 
@@ -1345,6 +1398,13 @@ export default function CheckoutPage() {
                     <span className="font-bold text-gray-900 tabular-nums">₹{deliveryCharge}</span>
                   )}
                 </div>
+
+                {codFee > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span>COD Handling Fee</span>
+                    <span className="font-bold text-gray-900 tabular-nums">₹{codFee}</span>
+                  </div>
+                )}
 
                 {/* Total Amount Row */}
                 <div className="pt-3 border-t border-gray-150 flex justify-between items-center">
@@ -1583,9 +1643,9 @@ export default function CheckoutPage() {
               <div className="flex justify-between items-center">
                 <span className="text-gray-500">Payment Mode:</span>
                 <span className="font-semibold text-gray-900 uppercase">
-                  {selectedPayment === "upi"
+                  {effectivePayment === "upi"
                     ? "UPI Payment"
-                    : selectedPayment === "cards"
+                    : effectivePayment === "cards"
                     ? "Credit / Debit Card"
                     : "Cash on Delivery"}
                 </span>

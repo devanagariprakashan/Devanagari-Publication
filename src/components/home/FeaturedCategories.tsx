@@ -9,8 +9,6 @@ import {
   Trophy,
   Feather,
   LayoutGrid,
-  ArrowRight,
-  BookOpen,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -164,22 +162,13 @@ export default function FeaturedCategories({
             </p>
           </div>
 
-          {/* Right Action: Browse All Books & Book Icon */}
+          {/* Right Action: Browse All Books Button */}
           <div className="flex items-center gap-3 self-start sm:self-auto">
             <button
               onClick={handleBrowseAll}
-              className="group inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-gray-800 hover:text-[#C61821] transition-colors cursor-pointer"
+              className="inline-flex items-center bg-[#C61821] hover:bg-[#A8131B] text-white text-sm sm:text-[15px] font-bold px-5 sm:px-6 py-2.5 sm:py-3 rounded-full shadow-md hover:shadow-lg transition-all cursor-pointer"
             >
-              <span>Browse all books</span>
-              <ArrowRight className="w-3.5 h-3.5 text-gray-600 group-hover:text-[#C61821] group-hover:translate-x-0.5 transition-all" />
-            </button>
-
-            <button
-              onClick={handleBrowseAll}
-              aria-label="Browse all books"
-              className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-red-50/80 hover:bg-red-100/80 border border-red-100/90 flex items-center justify-center text-[#C61821] transition-all hover:scale-105 shadow-2xs cursor-pointer shrink-0"
-            >
-              <BookOpen className="w-5 h-5 stroke-[1.8]" />
+              Browse all books
             </button>
           </div>
         </div>
