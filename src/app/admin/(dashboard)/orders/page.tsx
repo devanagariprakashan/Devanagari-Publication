@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { deleteOrder, updateOrderStatus } from "@/actions/orders";
 import { DeleteButton } from "@/components/admin/DeleteButton";
 import { StatusSelect } from "@/components/admin/StatusSelect";
+import { OrderDetailsButton } from "@/components/admin/OrderDetailsButton";
 import { card, pageTitle, tableTd, tableTh } from "@/components/admin/ui";
 
 const STATUSES = [
@@ -16,7 +17,7 @@ export default async function OrdersPage() {
   const supabase = await createClient();
   const { data: orders } = await supabase
     .from("orders")
-    .select("*")
+    .select("*, order_items(*, books(image_url))")
     .order("created_at", { ascending: false });
 
   return (
@@ -60,7 +61,10 @@ export default async function OrdersPage() {
                     {new Date(o.created_at).toLocaleDateString()}
                   </td>
                   <td className={tableTd}>
-                    <DeleteButton action={deleteOrder} id={o.id} />
+                    <div className="flex items-center gap-2">
+                      <OrderDetailsButton order={o} />
+                      <DeleteButton action={deleteOrder} id={o.id} />
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -73,6 +73,22 @@ export default function CheckoutPage() {
   const [shippingMethod, setShippingMethod] = useState("standard");
   const [saveAddress, setSaveAddress] = useState(true);
 
+  // Pre-fill contact details from the logged-in session so the order's customer_email
+  // matches the account dashboard's email and the order shows up under "My Orders".
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const storedUser = localStorage.getItem("devanagari_user");
+    if (!storedUser) return;
+    try {
+      const parsed = JSON.parse(storedUser);
+      if (parsed.name || parsed.fullName) setFullName(parsed.name || parsed.fullName);
+      if (parsed.email) setEmail(parsed.email);
+      if (parsed.phone) setPhoneNumber(parsed.phone);
+    } catch (e) {
+      console.error("Failed to parse user session", e);
+    }
+  }, []);
+
   // Payment Method Selection
   type PaymentOption = "upi" | "cards" | "cod";
   const [selectedPayment, setSelectedPayment] = useState<PaymentOption>("upi");

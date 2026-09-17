@@ -15,9 +15,11 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import AuthLayout from "@/components/auth/AuthLayout";
+import { useCartWishlist } from "@/components/providers/CartWishlistProvider";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { showToast } = useCartWishlist();
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -71,30 +73,39 @@ export default function RegisterPage() {
     }
 
     setIsLoading(true);
-    // Simulate registration & save user session
+    // Simulate registration & save user session. Everything below is wrapped in
+    // try/finally so a storage error (corrupted JSON, private-browsing restrictions,
+    // an extension blocking storage, etc.) can never leave the button stuck loading
+    // or skip the redirect — both always happen in the finally block, no matter what.
     setTimeout(() => {
-      setIsLoading(false);
-      setSuccessMessage("Account created successfully! Redirecting to your account...");
-
-      if (typeof window !== "undefined") {
-        localStorage.setItem(
-          "devanagari_user",
-          JSON.stringify({
-            name: formData.fullName.trim(),
-            email: formData.email.trim(),
-            phone: formData.phone.trim(),
-          })
-        );
-        localStorage.removeItem("devanagari_logged_out");
-        // ponytail: wishlist is browser-global; reset it on new account so stale demo items don't carry over
-        localStorage.removeItem("devanagari_wishlist_v2");
-        window.dispatchEvent(new Event("devanagari_user_updated"));
+      try {
+        if (typeof window !== "undefined") {
+          localStorage.setItem(
+            "devanagari_user",
+            JSON.stringify({
+              name: formData.fullName.trim(),
+              email: formData.email.trim(),
+              phone: formData.phone.trim(),
+            })
+          );
+          localStorage.removeItem("devanagari_logged_out");
+          // ponytail: wishlist is browser-global; reset it on new account so stale demo items don't carry over
+          localStorage.removeItem("devanagari_wishlist_v2");
+          window.dispatchEvent(new Event("devanagari_user_updated"));
+        }
+      } catch (e) {
+        console.error("Failed to save session", e);
+      } finally {
+        setIsLoading(false);
+        setSuccessMessage("Account created successfully! Taking you to the shop...");
+        showToast({
+          type: "info",
+          title: "Welcome to Devanagari Publications!",
+          message: `You're logged in, ${formData.fullName.trim().split(" ")[0]}. Start reading — explore our books below.`,
+        });
+        router.push("/shop");
       }
-
-      setTimeout(() => {
-        router.push("/account");
-      }, 900);
-    }, 1100);
+    }, 1000);
   };
 
   return (

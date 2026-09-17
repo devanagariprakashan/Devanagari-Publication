@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { deleteInquiry, updateInquiryStatus } from "@/actions/inquiries";
 import { DeleteButton } from "@/components/admin/DeleteButton";
-import { StatusSelect } from "@/components/admin/StatusSelect";
+import { InquiryDetailsButton } from "@/components/admin/InquiryDetailsButton";
 import { card, pageTitle, tableTd, tableTh } from "@/components/admin/ui";
 
 const STATUSES = [
@@ -31,7 +31,6 @@ export default async function InquiriesPage() {
                 <th className={tableTh}>Email</th>
                 <th className={tableTh}>Phone</th>
                 <th className={tableTh}>Message</th>
-                <th className={tableTh}>Status</th>
                 <th className={tableTh}>Created</th>
                 <th className={tableTh}>Actions</th>
               </tr>
@@ -48,24 +47,19 @@ export default async function InquiriesPage() {
                     </span>
                   </td>
                   <td className={tableTd}>
-                    <StatusSelect
-                      id={i.id}
-                      value={i.status}
-                      options={STATUSES}
-                      action={updateInquiryStatus}
-                    />
-                  </td>
-                  <td className={tableTd}>
                     {new Date(i.created_at).toLocaleDateString()}
                   </td>
                   <td className={tableTd}>
-                    <DeleteButton action={deleteInquiry} id={i.id} />
+                    <div className="flex items-center gap-2">
+                      <InquiryDetailsButton inquiry={i} statuses={STATUSES} updateStatus={updateInquiryStatus} />
+                      <DeleteButton action={deleteInquiry} id={i.id} />
+                    </div>
                   </td>
                 </tr>
               ))}
               {(inquiries ?? []).length === 0 && (
                 <tr>
-                  <td className={tableTd} colSpan={7}>
+                  <td className={tableTd} colSpan={6}>
                     No inquiries yet.
                   </td>
                 </tr>

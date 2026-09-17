@@ -47,7 +47,8 @@ export async function POST(request: NextRequest) {
     }, 0);
     const coupon = typeof body.couponCode === "string" ? await findCoupon(body.couponCode) : null;
     const discount = couponDiscount(coupon, subtotal);
-    const shipping = computeShippingCharge(settings, body.shippingMethod === "express" ? "express" : "standard", subtotal);
+    const shippingMethod = body.shippingMethod === "express" ? "express" : "standard";
+    const shipping = computeShippingCharge(settings, shippingMethod, subtotal);
     const amount = Math.max(1, subtotal - discount + shipping);
     const txnid = `DEV${Date.now()}${Math.floor(Math.random() * 10000)}`;
     const orderNumber = `ORD-${Date.now().toString().slice(-8)}`;
@@ -58,6 +59,8 @@ export async function POST(request: NextRequest) {
       payment_method: "online", gateway_order_id: txnid,
       shipping_address: body.address, landmark: body.landmark || null, city: body.city,
       state: body.state || null, pincode: body.pincode,
+      shipping_method: shippingMethod, subtotal_amount: subtotal, discount_amount: discount,
+      coupon_code: coupon?.code ?? null, shipping_charge: shipping, cod_fee: 0,
     };
     const { error: orderError } = await admin.from("orders").insert(order);
     if (orderError) throw orderError;

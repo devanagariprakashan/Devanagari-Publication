@@ -106,6 +106,7 @@ interface CartWishlistContextType {
   isWishlistDrawerOpen: boolean;
   setIsWishlistDrawerOpen: (open: boolean) => void;
   toast: ToastData | null;
+  showToast: (data: Omit<ToastData, "id">) => void;
   hideToast: () => void;
 }
 
@@ -521,6 +522,7 @@ export function CartWishlistProvider({
       isWishlistDrawerOpen,
       setIsWishlistDrawerOpen,
       toast,
+      showToast,
       hideToast,
     }),
     [
@@ -547,6 +549,7 @@ export function CartWishlistProvider({
       isCartDrawerOpen,
       isWishlistDrawerOpen,
       toast,
+      showToast,
       hideToast,
     ]
   );

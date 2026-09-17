@@ -36,9 +36,10 @@ export async function POST(request: Request) {
 
     const coupon = typeof body.couponCode === "string" ? await findCoupon(body.couponCode) : null;
     const discount = couponDiscount(coupon, subtotal);
-    const shipping = computeShippingCharge(settings, body.shippingMethod === "express" ? "express" : "standard", subtotal);
+    const shippingMethod = body.shippingMethod === "express" ? "express" : "standard";
+    const shipping = computeShippingCharge(settings, shippingMethod, subtotal);
     const amount = Math.max(1, subtotal - discount + shipping + settings.cod_fee);
-    const order = { id: crypto.randomUUID(), order_number: `ORD-${Date.now().toString().slice(-8)}`, customer_name: body.fullName.trim(), customer_email: body.email.trim().toLowerCase(), customer_phone: body.phone, total_amount: amount, order_status: "confirmed", payment_status: "pending", payment_method: "cod", shipping_address: body.address.trim(), landmark: body.landmark || null, city: body.city.trim(), state: body.state || null, pincode: body.pincode, shipment_status: "pending" };
+    const order = { id: crypto.randomUUID(), order_number: `ORD-${Date.now().toString().slice(-8)}`, customer_name: body.fullName.trim(), customer_email: body.email.trim().toLowerCase(), customer_phone: body.phone, total_amount: amount, order_status: "confirmed", payment_status: "pending", payment_method: "cod", shipping_address: body.address.trim(), landmark: body.landmark || null, city: body.city.trim(), state: body.state || null, pincode: body.pincode, shipment_status: "pending", shipping_method: shippingMethod, subtotal_amount: subtotal, discount_amount: discount, coupon_code: coupon?.code ?? null, shipping_charge: shipping, cod_fee: settings.cod_fee };
     const { error: orderError } = await admin.from("orders").insert(order);
     if (orderError) throw orderError;
     const { error: itemsError } = await admin.from("order_items").insert(items.map((item) => ({ id: crypto.randomUUID(), order_id: order.id, book_id: item.id, product_name: byId.get(item.id)?.title, product_sku: item.id, quantity: item.quantity, unit_price: Number(byId.get(item.id)?.price) })));

@@ -25,6 +25,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { useCartWishlist } from "@/components/providers/CartWishlistProvider";
+import { createClient } from "@/lib/supabase/client";
 
 // Define Address Interface
 interface UserAddress {
@@ -59,6 +60,74 @@ interface AccountOrder {
   courier: string;
   estimatedDelivery?: string;
   deliveredDate?: string;
+  shipTo: {
+    name: string;
+    phone: string;
+    street: string;
+    landmark?: string;
+    city: string;
+    state: string;
+    pincode: string;
+  };
+}
+
+const ORDER_STATUS_MAP: Record<string, AccountOrder["status"]> = {
+  pending: "Processing",
+  confirmed: "Processing",
+  shipped: "Shipped",
+  delivered: "Delivered",
+  cancelled: "Cancelled",
+  payment_failed: "Cancelled",
+};
+
+// Real orders placed via checkout (COD/PayU), fetched by the signed-in email —
+// order_items/books are joined for the thumbnail, title and author shown on each card.
+async function fetchAccountOrders(email: string): Promise<AccountOrder[]> {
+  if (!email) return [];
+  const { data, error } = await createClient()
+    .from("orders")
+    .select("*, order_items(quantity, product_name, unit_price, books(image_url, author))")
+    .eq("customer_email", email.toLowerCase())
+    .order("created_at", { ascending: false });
+  if (error || !data) return [];
+
+  return data.map((order) => {
+    const items = (order.order_items ?? []) as Array<{
+      quantity: number;
+      product_name: string;
+      unit_price: number;
+      books: { image_url: string | null; author: string | null } | null;
+    }>;
+    const first = items[0];
+    const extraCount = items.length - 1;
+    const createdDate = new Date(order.created_at as string);
+
+    return {
+      id: order.id as string,
+      orderNumber: order.order_number as string,
+      title: first ? (extraCount > 0 ? `${first.product_name} + ${extraCount} more item${extraCount > 1 ? "s" : ""}` : first.product_name) : "Order",
+      date: createdDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
+      rawDate: order.created_at as string,
+      price: Number(order.total_amount),
+      status: ORDER_STATUS_MAP[order.order_status as string] ?? "Processing",
+      image: first?.books?.image_url ?? "/images/books/image-2.png",
+      author: first?.books?.author ?? "Devanagari Publications",
+      itemsCount: items.reduce((sum, item) => sum + item.quantity, 0),
+      trackingNumber: (order.awb_number as string | null) ?? "Not yet assigned",
+      courier: order.shipment_id ? "iThink Logistics" : "Not yet dispatched",
+      deliveredDate: order.order_status === "delivered" ? createdDate.toLocaleDateString("en-IN") : undefined,
+      estimatedDelivery: order.order_status === "delivered" || order.order_status === "cancelled" ? undefined : "Estimated delivery in 3-5 days",
+      shipTo: {
+        name: (order.customer_name as string | null) ?? "—",
+        phone: (order.customer_phone as string | null) ?? "—",
+        street: (order.shipping_address as string | null) ?? "—",
+        landmark: (order.landmark as string | null) ?? undefined,
+        city: (order.city as string | null) ?? "—",
+        state: (order.state as string | null) ?? "",
+        pincode: (order.pincode as string | null) ?? "",
+      },
+    };
+  });
 }
 
 // Define Review Interface
@@ -133,64 +202,63 @@ function AccountPageContent() {
 
   // Load persisted state & seed initial wishlist if empty so user has items to test removing
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      // 1. User session
-      const storedUser = localStorage.getItem("devanagari_user");
-      if (storedUser) {
-        try {
-          const parsed = JSON.parse(storedUser);
-          setUserProfile((prev) => ({
-            ...prev,
-            name: parsed.name || parsed.fullName || prev.name,
-            email: parsed.email || prev.email,
-            phone: parsed.phone || prev.phone,
-          }));
-        } catch (e) {
-          console.error("Failed to parse user session", e);
-        }
-      }
+    if (typeof window === "undefined") return;
+    let cancelled = false;
 
-      // 2. Saved Addresses
-      const storedAddresses = localStorage.getItem("devanagari_addresses");
-      if (storedAddresses) {
-        try {
-          const parsed = JSON.parse(storedAddresses);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setAddresses(parsed);
-          }
-        } catch (e) {
-          console.error(e);
-        }
+    // 1. User session
+    const storedUser = localStorage.getItem("devanagari_user");
+    let currentEmail = userProfile.email;
+    if (storedUser) {
+      try {
+        const parsed = JSON.parse(storedUser);
+        currentEmail = parsed.email || currentEmail;
+        setUserProfile((prev) => ({
+          ...prev,
+          name: parsed.name || parsed.fullName || prev.name,
+          email: parsed.email || prev.email,
+          phone: parsed.phone || prev.phone,
+        }));
+      } catch (e) {
+        console.error("Failed to parse user session", e);
       }
-
-      // 3. Orders
-      const storedOrders = localStorage.getItem("devanagari_orders");
-      if (storedOrders) {
-        try {
-          const parsed = JSON.parse(storedOrders);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setOrders(parsed);
-          }
-        } catch (e) {
-          console.error(e);
-        }
-      }
-
-      // 4. Reviews (starts at 24)
-      const storedReviews = localStorage.getItem("devanagari_user_reviews");
-      if (storedReviews) {
-        try {
-          const parsed = JSON.parse(storedReviews);
-          if (Array.isArray(parsed)) {
-            setReviews(parsed);
-          }
-        } catch (e) {
-          console.error(e);
-        }
-      }
-
-      // 5. Wishlist: loaded from provider (no seeding)
     }
+
+    // 2. Saved Addresses
+    const storedAddresses = localStorage.getItem("devanagari_addresses");
+    if (storedAddresses) {
+      try {
+        const parsed = JSON.parse(storedAddresses);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setAddresses(parsed);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // 3. Orders — real orders placed via checkout, matched by email
+    fetchAccountOrders(currentEmail).then((fetched) => {
+      if (!cancelled) setOrders(fetched);
+    });
+
+    // 4. Reviews (starts at 24)
+    const storedReviews = localStorage.getItem("devanagari_user_reviews");
+    if (storedReviews) {
+      try {
+        const parsed = JSON.parse(storedReviews);
+        if (Array.isArray(parsed)) {
+          setReviews(parsed);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // 5. Wishlist: loaded from provider (no seeding)
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Toast notification helper
@@ -199,8 +267,6 @@ function AccountPageContent() {
     setTimeout(() => setShowSaveToast(null), 2500);
   };
 
-  // Default address finder
-  const defaultAddress = addresses.find((a) => a.isDefault) || addresses[0];
 
   // Save/Update Address
   const handleSaveAddress = (e: React.FormEvent<HTMLFormElement>) => {
@@ -761,6 +827,11 @@ function AccountPageContent() {
                                   Processing
                                 </span>
                               )}
+                              {order.status === "Cancelled" && (
+                                <span className="inline-flex items-center justify-center w-full px-2 py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-red-50 text-red-600">
+                                  Cancelled
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -885,6 +956,12 @@ function AccountPageContent() {
                               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#F1F5F9] text-[#64748B]">
                                 <Clock className="w-3.5 h-3.5" />
                                 Processing
+                              </span>
+                            )}
+                            {order.status === "Cancelled" && (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-600">
+                                <X className="w-3.5 h-3.5" />
+                                Cancelled
                               </span>
                             )}
                           </div>
@@ -1703,11 +1780,13 @@ function AccountPageContent() {
             <div className="p-3.5 rounded-xl border border-gray-100 bg-[#FBFBFC] text-xs space-y-1 mb-6">
               <span className="font-bold text-gray-800 block mb-1">Delivery Address:</span>
               <p className="text-gray-600">
-                {defaultAddress.name} ({defaultAddress.phone})
+                {selectedOrder.shipTo.name} ({selectedOrder.shipTo.phone})
               </p>
               <p className="text-gray-500">
-                {defaultAddress.street}, {defaultAddress.area}, {defaultAddress.city},{" "}
-                {defaultAddress.state} - {defaultAddress.pincode}
+                {selectedOrder.shipTo.street}
+                {selectedOrder.shipTo.landmark ? `, ${selectedOrder.shipTo.landmark}` : ""}, {selectedOrder.shipTo.city}
+                {selectedOrder.shipTo.state ? `, ${selectedOrder.shipTo.state}` : ""}
+                {selectedOrder.shipTo.pincode ? ` - ${selectedOrder.shipTo.pincode}` : ""}
               </p>
             </div>
 

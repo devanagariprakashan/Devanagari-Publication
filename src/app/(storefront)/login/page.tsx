@@ -29,41 +29,45 @@ export default function LoginPage() {
     }
 
     setIsLoading(true);
-    // Simulate authentication & save user session
+    // Simulate authentication & save user session. Everything below is wrapped in
+    // try/finally so a storage error (corrupted JSON, private-browsing restrictions,
+    // an extension blocking storage, etc.) can never leave the button stuck loading
+    // or skip the redirect — both always happen in the finally block, no matter what.
     setTimeout(() => {
-      setIsLoading(false);
-      setSuccessMessage("Login successful! Redirecting to your account...");
-
-      if (typeof window !== "undefined") {
-        const isEmail = identifier.includes("@");
-        const existingSession = localStorage.getItem("devanagari_user");
-        let sessionData = {
-          name: "Rahul Sharma",
-          email: isEmail ? identifier : "rahulsharma@gmail.com",
-          phone: !isEmail ? identifier : "+91 98765 43210",
-        };
-        if (existingSession) {
-          try {
-            const parsed = JSON.parse(existingSession);
-            sessionData = {
-              ...sessionData,
-              ...parsed,
-              email: isEmail ? identifier : parsed.email || sessionData.email,
-              phone: !isEmail ? identifier : parsed.phone || sessionData.phone,
-            };
-          } catch (e) {
-            console.error(e);
+      try {
+        if (typeof window !== "undefined") {
+          const isEmail = identifier.includes("@");
+          const existingSession = localStorage.getItem("devanagari_user");
+          let sessionData = {
+            name: "Rahul Sharma",
+            email: isEmail ? identifier : "rahulsharma@gmail.com",
+            phone: !isEmail ? identifier : "+91 98765 43210",
+          };
+          if (existingSession) {
+            try {
+              const parsed = JSON.parse(existingSession);
+              sessionData = {
+                ...sessionData,
+                ...parsed,
+                email: isEmail ? identifier : parsed.email || sessionData.email,
+                phone: !isEmail ? identifier : parsed.phone || sessionData.phone,
+              };
+            } catch (e) {
+              console.error(e);
+            }
           }
+          localStorage.setItem("devanagari_user", JSON.stringify(sessionData));
+          localStorage.removeItem("devanagari_logged_out");
+          window.dispatchEvent(new Event("devanagari_user_updated"));
         }
-        localStorage.setItem("devanagari_user", JSON.stringify(sessionData));
-        localStorage.removeItem("devanagari_logged_out");
-        window.dispatchEvent(new Event("devanagari_user_updated"));
-      }
-
-      setTimeout(() => {
+      } catch (e) {
+        console.error("Failed to save session", e);
+      } finally {
+        setIsLoading(false);
+        setSuccessMessage("Login successful! Redirecting to your account...");
         router.push("/account");
-      }, 800);
-    }, 1000);
+      }
+    }, 900);
   };
 
   return (

@@ -508,9 +508,8 @@ export default function Navbar({
               }}
             >
               {isLoggedIn ? (
-                <button
-                  type="button"
-                  onClick={() => setIsAccountMenuOpen((prev) => !prev)}
+                <Link
+                  href="/account"
                   aria-label="User Account"
                   aria-expanded={isAccountMenuOpen}
                   className="flex p-2 rounded-[5px] transition-colors cursor-pointer text-[#C61821] bg-red-50"
@@ -520,7 +519,7 @@ export default function Navbar({
                     className="w-6 h-6"
                     strokeWidth={2.2}
                   />
-                </button>
+                </Link>
               ) : (
                 <Link
                   href="/login"

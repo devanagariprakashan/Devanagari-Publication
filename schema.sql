@@ -238,3 +238,11 @@ alter table public.site_settings add column if not exists cod_min_order numeric;
 alter table public.site_settings add column if not exists cod_max_order numeric;
 alter table public.site_settings add column if not exists upi_enabled boolean default true;
 alter table public.site_settings add column if not exists card_enabled boolean default true;
+
+-- Order price breakdown (subtotal/discount/shipping/COD fee) & delivery method, for the admin order details view.
+alter table public.orders add column if not exists shipping_method text default 'standard';
+alter table public.orders add column if not exists subtotal_amount numeric;
+alter table public.orders add column if not exists discount_amount numeric default 0;
+alter table public.orders add column if not exists coupon_code text;
+alter table public.orders add column if not exists shipping_charge numeric default 0;
+alter table public.orders add column if not exists cod_fee numeric default 0;
