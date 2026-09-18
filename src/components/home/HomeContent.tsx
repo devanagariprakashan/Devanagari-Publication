@@ -26,6 +26,16 @@ interface HomeContentProps {
   heroBooks?: BookData[];
   heroBannerImage?: string;
   heroStats?: HeroStat[];
+  heroText?: {
+    badgeText?: string;
+    editionBadge?: string;
+    headingLine1?: string;
+    headingHighlight?: string;
+    headingLine3?: string;
+    description?: string;
+    ctaPrimaryLabel?: string;
+    ctaSecondaryLabel?: string;
+  };
   categories?: FeaturedCategory[];
   bestsellers?: BestsellerBook[];
   handpicked?: HandpickedBook[];
@@ -90,6 +100,7 @@ export default function HomeContent({
   heroBooks,
   heroBannerImage,
   heroStats = heroStatsFromSettings(SITE_DEFAULTS),
+  heroText,
   categories,
   bestsellers,
   handpicked,
@@ -140,6 +151,7 @@ export default function HomeContent({
         books={heroBooks}
         bannerImage={heroBannerImage}
         stats={heroStats}
+        {...heroText}
         onSelectBook={goToProduct}
         onExploreBooks={() => {
           const el = document.getElementById("bestsellers");

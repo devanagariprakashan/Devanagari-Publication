@@ -2,7 +2,7 @@ import { z } from "zod";
 import { CORE_TEAM, PAGE_SETTINGS as TEAM_SETTINGS } from "@/data/teamContent";
 import { BLOG_POSTS, PAGE_SETTINGS as BLOG_SETTINGS } from "@/data/blogContent";
 
-import { HERO_BANNER_DEFAULT, HERO_BOOKS } from "@/data/heroContent";
+import { HERO_BANNER_DEFAULT, HERO_BOOKS, HERO_TEXT_DEFAULTS } from "@/data/heroContent";
 
 export { HERO_BANNER_DEFAULT };
 
@@ -27,13 +27,24 @@ export const HERO_ITEM_DEFAULT = {
   id: "", title: "", subtitle: "", subject: "", category: "", price: "0", originalPrice: "0", rating: "0", reviewsCount: "0",
   coverType: "hindi", bgColor: HERO_BOOKS[0].bgColor, edition: "", badge: "", author: "", image: "",
 };
+const heroSettings = z.object({
+  bannerImage: requiredImageUrl.default(HERO_BANNER_DEFAULT),
+  badgeText: text.default(HERO_TEXT_DEFAULTS.badgeText),
+  editionBadge: text.default(HERO_TEXT_DEFAULTS.editionBadge),
+  headingLine1: text.default(HERO_TEXT_DEFAULTS.headingLine1),
+  headingHighlight: text.default(HERO_TEXT_DEFAULTS.headingHighlight),
+  headingLine3: text.default(HERO_TEXT_DEFAULTS.headingLine3),
+  description: text.default(HERO_TEXT_DEFAULTS.description),
+  ctaPrimaryLabel: text.default(HERO_TEXT_DEFAULTS.ctaPrimaryLabel),
+  ctaSecondaryLabel: text.default(HERO_TEXT_DEFAULTS.ctaSecondaryLabel),
+});
 export const contentSchemas = {
-  hero: z.object({ settings: z.object({ bannerImage: requiredImageUrl.default(HERO_BANNER_DEFAULT) }), items: z.array(heroItem).max(100).refine(items => new Set(items.map(item => item.id)).size === items.length, "Book IDs must be unique") }),
+  hero: z.object({ settings: heroSettings, items: z.array(heroItem).max(100).refine(items => new Set(items.map(item => item.id)).size === items.length, "Book IDs must be unique") }),
   team: z.object({ settings: settingsSchema(TEAM_SETTINGS), items: z.array(teamItem).max(200) }),
   blog: z.object({ settings: settingsSchema(BLOG_SETTINGS), items: z.array(blogItem).max(500).refine(items => new Set(items.map(item => item.id)).size === items.length, "Article IDs must be unique") }),
 };
 export const contentDefaults = {
-  hero: { settings: { bannerImage: HERO_BANNER_DEFAULT }, items: HERO_BOOKS.map(book => Object.fromEntries(Object.keys(HERO_ITEM_DEFAULT).map(key => [key, String(book[key as keyof typeof book] ?? HERO_ITEM_DEFAULT[key as keyof typeof HERO_ITEM_DEFAULT])]))) },
+  hero: { settings: { bannerImage: HERO_BANNER_DEFAULT, ...HERO_TEXT_DEFAULTS }, items: HERO_BOOKS.map(book => Object.fromEntries(Object.keys(HERO_ITEM_DEFAULT).map(key => [key, String(book[key as keyof typeof book] ?? HERO_ITEM_DEFAULT[key as keyof typeof HERO_ITEM_DEFAULT])]))) },
   team: { settings: TEAM_SETTINGS, items: CORE_TEAM.map(item => ({ ...item, image: item.image ?? "" })) },
   blog: { settings: BLOG_SETTINGS, items: BLOG_POSTS.map(item => ({ ...item, image: item.image ?? "" })) },
 };

@@ -89,7 +89,7 @@ export default function TestimonialsSection() {
 
             <div className="flex items-center gap-1.5 bg-white/90 backdrop-blur-sm px-3.5 py-1.5 rounded-full border border-gray-200 shadow-sm text-xs font-semibold text-gray-800">
               <GraduationCap className="w-4 h-4 text-[#C61821]" />
-              <span>50,000+ Students &amp; Mentors</span>
+              <span>25,000+ Students &amp; Mentors</span>
             </div>
           </div>
         </div>

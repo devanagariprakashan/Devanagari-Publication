@@ -109,6 +109,7 @@ export default async function Home() {
       heroBooks={heroBooks}
       heroBannerImage={hero.settings.bannerImage}
       heroStats={heroStats}
+      heroText={hero.settings}
       categories={categories}
       bestsellers={bestsellers}
       handpicked={handpicked}

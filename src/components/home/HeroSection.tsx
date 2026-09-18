@@ -10,13 +10,21 @@ import {
   ArrowRight,
   Sparkles,
 } from "lucide-react";
-import { HERO_BANNER_DEFAULT, type BookData } from "@/data/heroContent";
+import { HERO_BANNER_DEFAULT, HERO_TEXT_DEFAULTS, type BookData } from "@/data/heroContent";
 import { SITE_DEFAULTS, heroStatsFromSettings, type HeroStat } from "@/lib/site-settings";
 
 interface HeroSectionProps {
   books?: BookData[];
   bannerImage?: string;
   stats?: HeroStat[];
+  badgeText?: string;
+  editionBadge?: string;
+  headingLine1?: string;
+  headingHighlight?: string;
+  headingLine3?: string;
+  description?: string;
+  ctaPrimaryLabel?: string;
+  ctaSecondaryLabel?: string;
   onSelectBook?: (book: BookData) => void;
   onExploreBooks?: () => void;
   onViewAuthors?: () => void;
@@ -27,6 +35,14 @@ const STAT_ICONS = [BookOpen, Users, ShieldCheck, GraduationCap];
 export default function HeroSection({
   bannerImage = HERO_BANNER_DEFAULT,
   stats = heroStatsFromSettings(SITE_DEFAULTS),
+  badgeText = HERO_TEXT_DEFAULTS.badgeText,
+  editionBadge = HERO_TEXT_DEFAULTS.editionBadge,
+  headingLine1 = HERO_TEXT_DEFAULTS.headingLine1,
+  headingHighlight = HERO_TEXT_DEFAULTS.headingHighlight,
+  headingLine3 = HERO_TEXT_DEFAULTS.headingLine3,
+  description = HERO_TEXT_DEFAULTS.description,
+  ctaPrimaryLabel = HERO_TEXT_DEFAULTS.ctaPrimaryLabel,
+  ctaSecondaryLabel = HERO_TEXT_DEFAULTS.ctaSecondaryLabel,
   onExploreBooks,
   onViewAuthors,
 }: HeroSectionProps) {
@@ -60,32 +76,25 @@ export default function HeroSection({
               strokeWidth={2.2}
             />
             <span className="text-xs font-medium text-gray-700 sm:text-[13px]">
-              India&apos;s Trusted Publication for Competitive Exams
+              {badgeText}
             </span>
             <span className="hidden items-center gap-1 border-l border-red-100 pl-2.5 text-[11px] font-semibold text-[#C61821] sm:inline-flex">
-              <Sparkles className="h-3 w-3" /> 2025-26 Edition
+              <Sparkles className="h-3 w-3" /> {editionBadge}
             </span>
           </div>
 
           {/* Heading */}
           <h1 className="mt-5 font-serif text-[34px] font-bold leading-[1.08] tracking-tight text-[#101828] sm:text-5xl lg:text-[clamp(44px,4.3vw,64px)]">
-            India&apos;s Trusted
+            {headingLine1}
             <br />
-            <span className="text-[#C61821]">Publication</span>
+            <span className="text-[#C61821]">{headingHighlight}</span>
             <br />
-            for Competitive Exams
+            {headingLine3}
           </h1>
 
           {/* Description */}
           <p className="mt-5 max-w-xl text-sm leading-relaxed text-gray-600 sm:text-base">
-            High-quality, exam-oriented study material for{" "}
-            <strong className="font-semibold text-[#C61821]">MPPSC</strong>,{" "}
-            <strong className="font-semibold text-[#C61821]">Judiciary</strong>,{" "}
-            <strong className="font-semibold text-[#C61821]">SI</strong>,{" "}
-            <strong className="font-semibold text-[#C61821]">
-              Hindi Grammar &amp; Law
-            </strong>{" "}
-            — prepared by expert educators.
+            {description}
           </p>
 
           {/* CTA buttons */}
@@ -100,7 +109,7 @@ export default function HeroSection({
               }}
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#C61821] px-6 py-3 text-sm font-bold text-white shadow-md shadow-red-600/20 transition-all duration-200 hover:bg-[#A81119] hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C61821] focus-visible:ring-offset-2 active:scale-[0.98]"
             >
-              Explore All Books
+              {ctaPrimaryLabel}
               <ArrowRight className="h-4 w-4" />
             </a>
             <a
@@ -113,7 +122,7 @@ export default function HeroSection({
               }}
               className="inline-flex items-center justify-center gap-2 rounded-lg border border-[#C61821] bg-white px-6 py-3 text-sm font-bold text-[#C61821] transition-all duration-200 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C61821] focus-visible:ring-offset-2 active:scale-[0.98]"
             >
-              View Categories
+              {ctaSecondaryLabel}
             </a>
           </div>
 

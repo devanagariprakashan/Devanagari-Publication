@@ -63,3 +63,12 @@ export async function deleteAuthor(id: string): Promise<ActionResult> {
   revalidatePath('/admin/authors')
   return { success: true }
 }
+
+export async function deleteAuthors(ids: string[]): Promise<ActionResult> {
+  if (ids.length === 0) return { success: true }
+  const supabase = await createClient()
+  const { error } = await supabase.from('authors').delete().in('id', ids)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/authors')
+  return { success: true }
+}

@@ -21,15 +21,15 @@ export async function savePageContent(kind: PageKind, raw: string): Promise<{ er
   return { success: "Changes saved" };
 }
 
-export async function saveHeroBanner(bannerImage: string): Promise<{ error?: string; success?: string }> {
+export async function saveHeroBanner(settings: Record<string, string>): Promise<{ error?: string; success?: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Please sign in as an admin" };
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
   if (profile?.role !== "admin") return { error: "Admin access required" };
   const current = await getPageContent("hero");
-  const parsed = contentSchemas.hero.safeParse({ ...current, settings: { ...current.settings, bannerImage } });
-  if (!parsed.success) return { error: "Enter a valid image URL or upload an image." };
+  const parsed = contentSchemas.hero.safeParse({ ...current, settings: { ...current.settings, ...settings } });
+  if (!parsed.success) return { error: "Check the banner fields: image must be a site path or HTTP(S) URL." };
   const { error } = await supabase.from("page_content").upsert({ slug: "hero", content: parsed.data }, { onConflict: "slug" });
   if (error) return { error: error.message };
   revalidatePath("/");

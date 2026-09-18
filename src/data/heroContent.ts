@@ -1,5 +1,17 @@
 export const HERO_BANNER_DEFAULT = "/devanagari-hero-section.webp";
 
+export const HERO_TEXT_DEFAULTS = {
+  badgeText: "India's Trusted Publication for Competitive Exams",
+  editionBadge: "2025-26 Edition",
+  headingLine1: "India's Trusted",
+  headingHighlight: "Publication",
+  headingLine3: "for Competitive Exams",
+  description:
+    "High-quality, exam-oriented study material for MPPSC, Judiciary, SI, Hindi Grammar & Law — prepared by expert educators.",
+  ctaPrimaryLabel: "Explore All Books",
+  ctaSecondaryLabel: "View Categories",
+};
+
 export type BookCoverType =
   | "hindi"
   | "polity"
