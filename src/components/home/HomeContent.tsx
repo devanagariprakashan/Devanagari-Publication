@@ -20,33 +20,43 @@ import TestimonialsSection from "@/components/home/TestimonialsSection";
 import HeroBook3D, { BookData } from "@/components/home/HeroBook3D";
 import FeaturedOfferPopup from "@/components/home/FeaturedOfferPopup";
 import { useCartWishlist } from "@/components/providers/CartWishlistProvider";
+import { SITE_DEFAULTS, heroStatsFromSettings, type HeroStat } from "@/lib/site-settings";
 
 interface HomeContentProps {
   heroBooks?: BookData[];
   heroBannerImage?: string;
+  heroStats?: HeroStat[];
   categories?: FeaturedCategory[];
   bestsellers?: BestsellerBook[];
   handpicked?: HandpickedBook[];
 }
 
-const TICKER_ITEMS = [
+const STATIC_TICKER_ITEMS = [
   { title: "2025-26 Edition", subtitle: "Updated Syllabus", icon: Sparkles },
   { title: "Fast Shipping", subtitle: "All India Delivery", icon: Truck },
   { title: "100% Secure", subtitle: "Payment Protection", icon: ShieldCheck },
   { title: "Original Books", subtitle: "Devanagari Publication", icon: Award },
   { title: "High Quality", subtitle: "Premium Printing", icon: BookOpen },
-  { title: "4 Years", subtitle: "Trusted Publishing", icon: Calendar },
-  { title: "10+ Titles", subtitle: "Exam Oriented Books", icon: Library },
-  { title: "25K+ Readers", subtitle: "Pan-India Aspirants", icon: Users },
 ];
 
-function TickerTrack({ ariaHidden = false }: { ariaHidden?: boolean }) {
+// Reuses the same hero stats (titles/readers/years) so the ticker can never drift out of sync with the banner.
+function buildTickerItems(heroStats: HeroStat[]) {
+  const [titles, readers, years] = heroStats;
+  return [
+    ...STATIC_TICKER_ITEMS,
+    { title: years?.value ?? "4+ Years", subtitle: years?.label ?? "Trusted Publishing", icon: Calendar },
+    { title: titles?.value ?? "10+", subtitle: titles?.label ?? "Exam Oriented Titles", icon: Library },
+    { title: readers?.value ?? "25K+", subtitle: readers?.label ?? "Pan-India Readers", icon: Users },
+  ];
+}
+
+function TickerTrack({ items, ariaHidden = false }: { items: ReturnType<typeof buildTickerItems>; ariaHidden?: boolean }) {
   return (
     <div
       className="js-marquee flex items-center shrink-0"
       aria-hidden={ariaHidden}
     >
-      {TICKER_ITEMS.map((item, idx) => {
+      {items.map((item, idx) => {
         const Icon = item.icon;
         return (
           <div
@@ -79,11 +89,13 @@ function TickerTrack({ ariaHidden = false }: { ariaHidden?: boolean }) {
 export default function HomeContent({
   heroBooks,
   heroBannerImage,
+  heroStats = heroStatsFromSettings(SITE_DEFAULTS),
   categories,
   bestsellers,
   handpicked,
 }: HomeContentProps) {
   const router = useRouter();
+  const tickerItems = buildTickerItems(heroStats);
   const { wishlist, addToCart, toggleWishlist } = useCartWishlist();
   const goToProduct = (book: BookData) => router.push(`/product/${book.id}`);
 
@@ -127,6 +139,7 @@ export default function HomeContent({
       <HeroSection
         books={heroBooks}
         bannerImage={heroBannerImage}
+        stats={heroStats}
         onSelectBook={goToProduct}
         onExploreBooks={() => {
           const el = document.getElementById("bestsellers");
@@ -141,8 +154,8 @@ export default function HomeContent({
 
         <div className="flex overflow-hidden">
           <div className="flex animate-ticker whitespace-nowrap m-0 p-0 items-center">
-            <TickerTrack />
-            <TickerTrack ariaHidden />
+            <TickerTrack items={tickerItems} />
+            <TickerTrack items={tickerItems} ariaHidden />
           </div>
         </div>
       </div>

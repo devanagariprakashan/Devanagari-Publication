@@ -45,6 +45,14 @@ async function saveSiteSettings(formData: FormData) {
       cod_max_order: numOrNull("cod_max_order"),
       upi_enabled: bool("upi_enabled"),
       card_enabled: bool("card_enabled"),
+      hero_stat1_value: str("hero_stat1_value") ?? SITE_DEFAULTS.hero_stat1_value,
+      hero_stat1_label: str("hero_stat1_label") ?? SITE_DEFAULTS.hero_stat1_label,
+      hero_stat2_value: str("hero_stat2_value") ?? SITE_DEFAULTS.hero_stat2_value,
+      hero_stat2_label: str("hero_stat2_label") ?? SITE_DEFAULTS.hero_stat2_label,
+      hero_stat3_value: str("hero_stat3_value") ?? SITE_DEFAULTS.hero_stat3_value,
+      hero_stat3_label: str("hero_stat3_label") ?? SITE_DEFAULTS.hero_stat3_label,
+      hero_stat4_value: str("hero_stat4_value") ?? SITE_DEFAULTS.hero_stat4_value,
+      hero_stat4_label: str("hero_stat4_label") ?? SITE_DEFAULTS.hero_stat4_label,
     },
     { onConflict: "id" }
   );
@@ -168,6 +176,53 @@ export default async function SettingsPage() {
             <div>
               <label className={labelCls} htmlFor="cod_max_order">Maximum Order for COD (₹)</label>
               <input id="cod_max_order" name="cod_max_order" type="number" min="0" step="1" defaultValue={s.cod_max_order ?? ""} placeholder="No maximum" className={inputCls + " mt-1"} />
+            </div>
+          </div>
+        </div>
+
+        <div className={card + " p-6"}>
+          <h2 className="mb-1 text-lg font-semibold text-gray-900">Homepage Stats</h2>
+          <p className="mb-4 text-xs text-gray-500">The 4 stats shown under the home page banner and in the scrolling trust ticker.</p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="flex gap-2">
+              <div className="w-24">
+                <label className={labelCls} htmlFor="hero_stat1_value">Value</label>
+                <input id="hero_stat1_value" name="hero_stat1_value" defaultValue={s.hero_stat1_value} className={inputCls + " mt-1"} />
+              </div>
+              <div className="flex-1">
+                <label className={labelCls} htmlFor="hero_stat1_label">Label</label>
+                <input id="hero_stat1_label" name="hero_stat1_label" defaultValue={s.hero_stat1_label} className={inputCls + " mt-1"} />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <div className="w-24">
+                <label className={labelCls} htmlFor="hero_stat2_value">Value</label>
+                <input id="hero_stat2_value" name="hero_stat2_value" defaultValue={s.hero_stat2_value} className={inputCls + " mt-1"} />
+              </div>
+              <div className="flex-1">
+                <label className={labelCls} htmlFor="hero_stat2_label">Label</label>
+                <input id="hero_stat2_label" name="hero_stat2_label" defaultValue={s.hero_stat2_label} className={inputCls + " mt-1"} />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <div className="w-24">
+                <label className={labelCls} htmlFor="hero_stat3_value">Value</label>
+                <input id="hero_stat3_value" name="hero_stat3_value" defaultValue={s.hero_stat3_value} className={inputCls + " mt-1"} />
+              </div>
+              <div className="flex-1">
+                <label className={labelCls} htmlFor="hero_stat3_label">Label</label>
+                <input id="hero_stat3_label" name="hero_stat3_label" defaultValue={s.hero_stat3_label} className={inputCls + " mt-1"} />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <div className="w-24">
+                <label className={labelCls} htmlFor="hero_stat4_value">Value</label>
+                <input id="hero_stat4_value" name="hero_stat4_value" defaultValue={s.hero_stat4_value} className={inputCls + " mt-1"} />
+              </div>
+              <div className="flex-1">
+                <label className={labelCls} htmlFor="hero_stat4_label">Label</label>
+                <input id="hero_stat4_label" name="hero_stat4_label" defaultValue={s.hero_stat4_label} className={inputCls + " mt-1"} />
+              </div>
             </div>
           </div>
         </div>

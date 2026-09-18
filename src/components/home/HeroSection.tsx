@@ -11,24 +11,22 @@ import {
   Sparkles,
 } from "lucide-react";
 import { HERO_BANNER_DEFAULT, type BookData } from "@/data/heroContent";
+import { SITE_DEFAULTS, heroStatsFromSettings, type HeroStat } from "@/lib/site-settings";
 
 interface HeroSectionProps {
   books?: BookData[];
   bannerImage?: string;
+  stats?: HeroStat[];
   onSelectBook?: (book: BookData) => void;
   onExploreBooks?: () => void;
   onViewAuthors?: () => void;
 }
 
-const STATS = [
-  { icon: BookOpen, value: "10+", label: "Exam Oriented Titles" },
-  { icon: Users, value: "25K+", label: "Pan-India Readers" },
-  { icon: ShieldCheck, value: "4 Years", label: "Trusted Publishing" },
-  { icon: GraduationCap, value: "Expert", label: "Educator Team" },
-];
+const STAT_ICONS = [BookOpen, Users, ShieldCheck, GraduationCap];
 
 export default function HeroSection({
   bannerImage = HERO_BANNER_DEFAULT,
+  stats = heroStatsFromSettings(SITE_DEFAULTS),
   onExploreBooks,
   onViewAuthors,
 }: HeroSectionProps) {
@@ -121,8 +119,8 @@ export default function HeroSection({
 
           {/* Statistics */}
           <dl className="mt-9 grid grid-cols-2 gap-x-4 gap-y-5 sm:flex sm:items-center sm:gap-0">
-            {STATS.map((stat, i) => {
-              const Icon = stat.icon;
+            {stats.map((stat, i) => {
+              const Icon = STAT_ICONS[i] ?? BookOpen;
               return (
                 <div
                   key={stat.label}

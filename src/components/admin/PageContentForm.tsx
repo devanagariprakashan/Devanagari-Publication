@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { ArrowDown, ArrowUp, Plus } from "lucide-react";
 import { savePageContent } from "@/actions/page-content";
 import { contentDefaults, HERO_ITEM_DEFAULT, type PageKind } from "@/lib/page-content-shared";
@@ -25,6 +25,17 @@ export default function PageContentForm({ kind, initial }: { kind: PageKind; ini
   const title = entryLabel[0].toUpperCase() + entryLabel.slice(1);
   const secondaryKey = kind === "team" ? "role" : "category";
   const active = selected === null ? null : content.items[selected];
+
+  // Guard against losing unsaved edits (e.g. a delete) by closing the tab or reloading.
+  useEffect(() => {
+    if (!dirty) return;
+    const handler = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [dirty]);
 
   function change(update: (previous: Content) => Content) {
     setContent(update);
@@ -80,9 +91,10 @@ export default function PageContentForm({ kind, initial }: { kind: PageKind; ini
   }}>
     <fieldset disabled={pending} className="min-w-0 space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-gray-500">{content.items.length} {entryLabel}{content.items.length === 1 ? "" : "s"}{dirty ? " - Unsaved changes" : ""}</p>
+        <p className="text-sm text-gray-500">{content.items.length} {entryLabel}{content.items.length === 1 ? "" : "s"}</p>
         <div className="flex flex-wrap gap-2"><button type="button" onClick={add} className={btnSecondary + " gap-2"}><Plus className="h-4 w-4" />Add {title}</button><button type="submit" className={btnPrimary}>{pending ? "Saving..." : "Save changes"}</button></div>
       </div>
+      {dirty && <div role="status" className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm font-medium text-amber-800">You have unsaved changes — click &quot;Save changes&quot; before leaving this page, or they&apos;ll be lost.</div>}
       {message.error && <div role="alert" className="rounded-md bg-red-50 p-3 text-sm text-red-700">{message.error}</div>}
       {message.success && <div role="status" className="rounded-md bg-green-50 p-3 text-sm text-green-700">{message.success}</div>}
       {active && selected !== null && <div ref={editorRef} className={card + " scroll-mt-6 p-6"}>

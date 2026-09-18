@@ -246,3 +246,13 @@ alter table public.orders add column if not exists discount_amount numeric defau
 alter table public.orders add column if not exists coupon_code text;
 alter table public.orders add column if not exists shipping_charge numeric default 0;
 alter table public.orders add column if not exists cod_fee numeric default 0;
+
+-- Homepage hero stats bar (value + label pairs), editable from the admin Settings page.
+alter table public.site_settings add column if not exists hero_stat1_value text default '10+';
+alter table public.site_settings add column if not exists hero_stat1_label text default 'Exam Oriented Titles';
+alter table public.site_settings add column if not exists hero_stat2_value text default '25K+';
+alter table public.site_settings add column if not exists hero_stat2_label text default 'Pan-India Readers';
+alter table public.site_settings add column if not exists hero_stat3_value text default '4+ Years';
+alter table public.site_settings add column if not exists hero_stat3_label text default 'Trusted Publishing';
+alter table public.site_settings add column if not exists hero_stat4_value text default 'Expert';
+alter table public.site_settings add column if not exists hero_stat4_label text default 'Educator Team';

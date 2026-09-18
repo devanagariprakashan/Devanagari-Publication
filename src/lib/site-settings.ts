@@ -25,6 +25,15 @@ export type SiteSettings = {
   // Online payments
   upi_enabled: boolean;
   card_enabled: boolean;
+  // Homepage hero stats bar
+  hero_stat1_value: string;
+  hero_stat1_label: string;
+  hero_stat2_value: string;
+  hero_stat2_label: string;
+  hero_stat3_value: string;
+  hero_stat3_label: string;
+  hero_stat4_value: string;
+  hero_stat4_label: string;
 };
 
 // ponytail: hardcoded fallback until site_settings row exists, drop when table seeded everywhere
@@ -51,7 +60,26 @@ export const SITE_DEFAULTS: SiteSettings = {
   cod_max_order: null,
   upi_enabled: true,
   card_enabled: true,
+  hero_stat1_value: "10+",
+  hero_stat1_label: "Exam Oriented Titles",
+  hero_stat2_value: "25K+",
+  hero_stat2_label: "Pan-India Readers",
+  hero_stat3_value: "4+ Years",
+  hero_stat3_label: "Trusted Publishing",
+  hero_stat4_value: "Expert",
+  hero_stat4_label: "Educator Team",
 };
+
+export type HeroStat = { value: string; label: string };
+
+export function heroStatsFromSettings(settings: Pick<SiteSettings, "hero_stat1_value" | "hero_stat1_label" | "hero_stat2_value" | "hero_stat2_label" | "hero_stat3_value" | "hero_stat3_label" | "hero_stat4_value" | "hero_stat4_label">): HeroStat[] {
+  return [
+    { value: settings.hero_stat1_value, label: settings.hero_stat1_label },
+    { value: settings.hero_stat2_value, label: settings.hero_stat2_label },
+    { value: settings.hero_stat3_value, label: settings.hero_stat3_label },
+    { value: settings.hero_stat4_value, label: settings.hero_stat4_label },
+  ];
+}
 
 // ponytail: single shared reader (TopBanner pattern), no caching layer until traffic needs it
 export async function getSiteSettings(): Promise<SiteSettings> {

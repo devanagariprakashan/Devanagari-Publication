@@ -5,6 +5,7 @@ import HomeContent from "@/components/home/HomeContent";
 import { FeaturedCategory } from "@/components/home/FeaturedCategories";
 import { BestsellerBook } from "@/components/home/BestsellersSection";
 import { HandpickedBook } from "@/components/home/HandpickedSection";
+import { SITE_DEFAULTS, heroStatsFromSettings, type SiteSettings } from "@/lib/site-settings";
 import type { Database } from "@/types/database";
 
 type BookRow = Database["public"]["Tables"]["books"]["Row"];
@@ -65,7 +66,7 @@ export default async function Home() {
     rating: Number(item.rating), reviewsCount: Number(item.reviewsCount),
   }));
 
-  const [categoriesRes, bestsellersRes, handpickedRes] =
+  const [categoriesRes, bestsellersRes, handpickedRes, siteSettingsRes] =
     await Promise.all([
       supabase
         .from("categories")
@@ -86,6 +87,7 @@ export default async function Home() {
         .eq("is_active", true)
         .order("id")
         .limit(10),
+      supabase.from("site_settings").select("*").eq("id", 1).maybeSingle(),
     ]);
 
   const categories: FeaturedCategory[] = (categoriesRes.data ?? []).map(
@@ -99,11 +101,14 @@ export default async function Home() {
 
   const bestsellers = (bestsellersRes.data ?? []).map(toBestseller);
   const handpicked = (handpickedRes.data ?? []).map(toHandpicked);
+  const siteSettings: SiteSettings = { ...SITE_DEFAULTS, ...(siteSettingsRes.data ?? {}) };
+  const heroStats = heroStatsFromSettings(siteSettings);
 
   return (
     <HomeContent
       heroBooks={heroBooks}
       heroBannerImage={hero.settings.bannerImage}
+      heroStats={heroStats}
       categories={categories}
       bestsellers={bestsellers}
       handpicked={handpicked}

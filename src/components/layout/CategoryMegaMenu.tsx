@@ -324,7 +324,7 @@ export default function CategoryMegaMenu({
                   Shop by Categories &amp; Exams
                 </h3>
                 <span className="hidden sm:inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-[#C61821] border border-red-100 uppercase tracking-wider">
-                  500+ Publications
+                  10+ Publications
                 </span>
               </div>
             </div>

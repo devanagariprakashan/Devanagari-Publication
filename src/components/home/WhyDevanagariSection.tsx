@@ -44,7 +44,7 @@ export default function WhyDevanagariSection() {
           {/* Left Column Text */}
           <div className="lg:col-span-5 space-y-5">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-red-50 text-[#C61821] text-xs font-bold uppercase tracking-wider">
-              27+ Years of Trust &amp; Excellence
+              4+ Years of Trust &amp; Excellence
             </div>
 
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 font-serif leading-tight">
