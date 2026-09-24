@@ -11,9 +11,22 @@ export async function savePageContent(kind: PageKind, raw: string): Promise<{ er
   if (!user) return { error: "Please sign in as an admin" };
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
   if (profile?.role !== "admin") return { error: "Admin access required" };
-  let content;
-  try { content = contentSchemas[kind].parse(JSON.parse(raw)); }
-  catch { return { error: "Check required fields, unique IDs, numeric values, and URLs." }; }
+  let parsedRaw: unknown;
+  try { parsedRaw = JSON.parse(raw); }
+  catch { return { error: "Could not read the submitted content." }; }
+  const result = contentSchemas[kind].safeParse(parsedRaw);
+  if (!result.success) {
+    const issue = result.error.issues[0];
+    // issue.path looks like ["items", 4, "rating"] — surface it as "Item 5: rating — <reason>"
+    // so the admin can find the exact entry to fix instead of guessing across all of them.
+    const [section, index, field] = issue.path;
+    const location =
+      section === "items" && typeof index === "number"
+        ? `Item ${index + 1}${field ? `: ${String(field)}` : ""}`
+        : issue.path.join(".") || "Form";
+    return { error: `${location} — ${issue.message}` };
+  }
+  const content = result.data;
   const { error } = await supabase.from("page_content").upsert({ slug: kind, content }, { onConflict: "slug" });
   if (error) return { error: error.message };
   revalidatePath(kind === "hero" ? "/" : `/${kind}`);

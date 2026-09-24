@@ -140,6 +140,7 @@ function ShopContent() {
   );
   const [inStockOnly, setInStockOnly] = useState(false);
   const [bestsellerOnly, setBestsellerOnly] = useState(paramFilter === "bestsellers");
+  const [newOnly, setNewOnly] = useState(paramFilter === "new");
   const [offersOnly, setOffersOnly] = useState(paramFilter === "offers" || paramFilter === "featured");
   const [wishlistOnly, setWishlistOnly] = useState(paramView === "wishlist" || paramFilter === "wishlist");
   const [sortBy, setSortBy] = useState<string>("featured");
@@ -156,6 +157,7 @@ function ShopContent() {
     else if (!paramMinPrice) setMinPrice(0);
     if (paramMaxPrice) setMaxPrice(Number(paramMaxPrice));
     if (paramFilter === "bestsellers") setBestsellerOnly(true);
+    if (paramFilter === "new") setNewOnly(true);
     if (paramFilter === "offers" || paramFilter === "featured") setOffersOnly(true);
     if (paramView === "wishlist" || paramFilter === "wishlist") setWishlistOnly(true);
     if (paramView === "cart") {
@@ -220,6 +222,7 @@ function ShopContent() {
     setMaxPrice(1000);
     setInStockOnly(false);
     setBestsellerOnly(false);
+    setNewOnly(false);
     setOffersOnly(false);
     setWishlistOnly(false);
     setSortBy("featured");
@@ -306,6 +309,11 @@ function ShopContent() {
         return false;
       }
 
+      // New releases only
+      if (newOnly && !book.isNewRelease) {
+        return false;
+      }
+
       // Offers only
       if (offersOnly && book.discountPercent < 20) {
         return false;
@@ -326,7 +334,7 @@ function ShopContent() {
           return (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0) || b.rating - a.rating;
       }
     });
-  }, [catalogBooks, wishlist, wishlistOnly, selectedCategory, searchQuery, selectedLanguages, selectedAuthors, maxPrice, minPrice, inStockOnly, bestsellerOnly, offersOnly, sortBy]);
+  }, [catalogBooks, wishlist, wishlistOnly, selectedCategory, searchQuery, selectedLanguages, selectedAuthors, maxPrice, minPrice, inStockOnly, bestsellerOnly, newOnly, offersOnly, sortBy]);
 
   // Active filters count
   const activeFiltersCount =
@@ -338,6 +346,7 @@ function ShopContent() {
     (maxPrice < 1000 ? 1 : 0) +
     (inStockOnly ? 1 : 0) +
     (bestsellerOnly ? 1 : 0) +
+    (newOnly ? 1 : 0) +
     (offersOnly ? 1 : 0);
 
   return (
@@ -768,6 +777,15 @@ function ShopContent() {
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[11px] font-semibold border border-amber-200">
                     Bestsellers
                     <button onClick={() => setBestsellerOnly(false)} className="hover:opacity-75">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+
+                {newOnly && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-[11px] font-semibold border border-blue-200">
+                    New Releases
+                    <button onClick={() => setNewOnly(false)} className="hover:opacity-75">
                       <X className="w-3 h-3" />
                     </button>
                   </span>
