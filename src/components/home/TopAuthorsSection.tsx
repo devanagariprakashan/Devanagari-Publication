@@ -21,105 +21,22 @@ export interface AuthorItem {
   linkedinUrl: string;
   twitterUrl: string;
   instagramUrl: string;
-  books: { id: number; title: string; category: string; price: number; image: string }[];
+  books: { id: number | string; title: string; category: string; price: number; image: string }[];
 }
 
-export const TOP_AUTHORS: AuthorItem[] = [
-  {
-    id: "a2",
-    name: "Mr. Mayank Jagdish Sharma",
-    role: "Faculty, Hindi Sahitya And Vyakaran",
-    shortRole: "Hindi Sahitya & Vyakaran",
-    category: "hindi",
-    booksCount: 4,
-    image: "/images/authors/mayank-sharma.jpg",
-    fallbackGradient: "from-red-500 to-amber-600",
-    experience: "4+ Years Experience",
-    bio: "Expert in Hindi language, grammar and literature. Known for simplified explanations and student-friendly approach.",
-    youtubeUrl: "", linkedinUrl: "", twitterUrl: "", instagramUrl: "",
-    books: [
-      { id: 201, title: "Samanya Hindi Exam Vyakaran", category: "Hindi Grammar", price: 900, image: "/images/books/image-2.png" },
-      { id: 202, title: "Nibandh Sanhita", category: "Essay Writing", price: 850, image: "/images/books/image-3.png" },
-    ],
-  },
-  {
-    id: "a4",
-    name: "Mr. Shubham Gupta",
-    role: "GS Faculty & Prelims Strategist",
-    shortRole: "GS & Current Affairs",
-    category: "gs",
-    booksCount: 3,
-    image: "/images/authors/shubham-gupta.jpg",
-    fallbackGradient: "from-blue-600 to-cyan-600",
-    experience: "4+ Years Experience",
-    bio: "Renowned for his structured approach to General Studies and Prelims preparation.",
-    youtubeUrl: "", linkedinUrl: "", twitterUrl: "", instagramUrl: "",
-    books: [{ id: 205, title: "Madhya Pradesh Samanya Gyan", category: "State GS", price: 750, image: "/images/books/image-8.png" }],
-  },
-  {
-    id: "a3",
-    name: "Mr. Anand Mishra",
-    role: "Director - Raksha Academy · Faculty - Ethics",
-    shortRole: "Ethics & Integrity (Paper 4)",
-    category: "ethics",
-    booksCount: 1,
-    image: "/images/authors/anand-mishra.jpg",
-    fallbackGradient: "from-emerald-600 to-teal-700",
-    experience: "4+ Years Experience",
-    bio: "Specializes in Ethics, Integrity and Aptitude with real-world examples and case studies.",
-    youtubeUrl: "", linkedinUrl: "", twitterUrl: "", instagramUrl: "",
-    books: [
-      { id: 203, title: "Darshan, Manovigyan evam Lok Prashasan", category: "Ethics Paper-4", price: 899, image: "/images/books/image-4.png" },
-      { id: 204, title: "Bhartiya Samaj evam Mudde", category: "Sociology Paper-2", price: 799, image: "/images/books/image-5.png" },
-    ],
-  },
-  {
-    id: "a5",
-    name: "Dr. Sunita Trivedi",
-    role: "Dean & Faculty - Law & Judicial Exams",
-    shortRole: "Law & Judicial Services",
-    category: "law",
-    booksCount: 0,
-    image: "/images/authors/sunita-trivedi.jpg",
-    fallbackGradient: "from-purple-600 to-indigo-700",
-    experience: "4+ Years Legal Academics",
-    bio: "Expert in Law, Polity and Judicial Exams with years of teaching experience.",
-    youtubeUrl: "", linkedinUrl: "", twitterUrl: "", instagramUrl: "",
-    books: [{ id: 206, title: "Judiciary Civil Procedure & Evidence", category: "Civil Judge", price: 950, image: "/images/books/image-9.png" }],
-  },
-  {
-    id: "a6",
-    name: "Prof. Rajeshwar Sharma",
-    role: "Senior Academician & MP Historian",
-    shortRole: "MP History & Culture",
-    category: "gs",
-    booksCount: 0,
-    image: "/images/authors/rajeshwar-sharma.jpg",
-    fallbackGradient: "from-amber-600 to-orange-700",
-    experience: "4+ Years Research",
-    bio: "A well-known historian and academician with deep knowledge of Madhya Pradesh's history and culture.",
-    youtubeUrl: "", linkedinUrl: "", twitterUrl: "", instagramUrl: "",
-    books: [{ id: 208, title: "MP Itihas, Kala evam Janjatiya Sanskriti", category: "History Paper-1", price: 820, image: "/images/books/image-11.png" }],
-  },
-  {
-    id: "a7",
-    name: "Adv. Vivek Deshmukh",
-    role: "Constitutional Law & Polity Expert",
-    shortRole: "Polity & Constitution",
-    category: "law",
-    booksCount: 0,
-    image: "/images/authors/vivek-deshmukh.jpg",
-    fallbackGradient: "from-slate-700 to-slate-900",
-    experience: "4+ Years Practice",
-    bio: "Specializes in Constitutional Law, Polity and current legal developments.",
-    youtubeUrl: "", linkedinUrl: "", twitterUrl: "", instagramUrl: "",
-    books: [{ id: 209, title: "Bhartiya Samvidhan evam Rajvyavastha", category: "Polity Paper-2", price: 880, image: "/images/books/image-12.png" }],
-  },
-];
+const YoutubeIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="white"><path d="M23.5 6.2a3.02 3.02 0 0 0-2.12-2.14C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.38.56A3.02 3.02 0 0 0 .5 6.2 31.6 31.6 0 0 0 0 12a31.6 31.6 0 0 0 .5 5.8 3.02 3.02 0 0 0 2.12 2.14C4.5 20.5 12 20.5 12 20.5s7.5 0 9.38-.56a3.02 3.02 0 0 0 2.12-2.14A31.6 31.6 0 0 0 24 12a31.6 31.6 0 0 0-.5-5.8ZM9.6 15.6V8.4l6.4 3.6-6.4 3.6Z" /></svg>
+);
+
+const InstagramIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37Z" />
+    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+  </svg>
+);
 
 interface Props { onSelectBook?: (book: BookData) => void; authors?: AuthorItem[]; }
-
-const SUBJECTS = ["All Subjects", "Hindi Sahitya & Vyakaran", "GS & Current Affairs", "Ethics & Integrity (Paper 4)", "Law & Judicial Services", "MP History & Culture", "Polity & Constitution"];
 
 export default function TopAuthorsSection({ authors }: Props) {
   const [imgErr, setImgErr] = useState<Record<string, boolean>>({});
@@ -128,7 +45,9 @@ export default function TopAuthorsSection({ authors }: Props) {
   const [sort, setSort] = useState("Featured");
   const [openId, setOpenId] = useState<string | null>(null);
 
-  const list = authors ?? TOP_AUTHORS;
+  const list = authors ?? [];
+
+  const subjects = useMemo(() => ["All Subjects", ...Array.from(new Set(list.map((a) => a.shortRole).filter(Boolean)))], [list]);
 
   const filtered = useMemo(() => {
     let r = [...list];
@@ -164,7 +83,7 @@ export default function TopAuthorsSection({ authors }: Props) {
               onChange={(e) => setSubject(e.target.value)}
               className="w-full h-[42px] px-3 pr-8 bg-white border border-gray-200 rounded-lg text-[13px] text-gray-700 appearance-none focus:outline-none focus:border-gray-300 cursor-pointer"
             >
-              {SUBJECTS.map((s) => <option key={s} value={s}>{s}</option>)}
+              {subjects.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
           </div>
@@ -218,10 +137,10 @@ export default function TopAuthorsSection({ authors }: Props) {
                   {/* Social icons — only render when the author has a URL */}
                   {(() => {
                     const socials = [
-                      { url: a.youtubeUrl, label: "YouTube", node: <span className="w-6 h-6 rounded-[4px] bg-[#FF0000] flex items-center justify-center"><span className="w-2.5 h-2.5 bg-white rounded-[1px] flex items-center justify-center text-[7px] font-bold text-[#FF0000]">▶</span></span> },
+                      { url: a.youtubeUrl, label: "YouTube", node: <span className="w-6 h-6 rounded-[4px] bg-[#FF0000] flex items-center justify-center"><YoutubeIcon /></span> },
                       { url: a.linkedinUrl, label: "LinkedIn", node: <span className="w-6 h-6 rounded-[4px] bg-[#0A66C2] text-white flex items-center justify-center text-[10px] font-bold">in</span> },
                       { url: a.twitterUrl, label: "X (Twitter)", node: <span className="w-6 h-6 rounded-[4px] bg-black text-white flex items-center justify-center text-[10px] font-bold">𝕏</span> },
-                      { url: a.instagramUrl, label: "Instagram", node: <span className="w-6 h-6 rounded-[4px] bg-gradient-to-br from-[#FEDA77] via-[#D62976] to-[#4F5BD5] flex items-center justify-center text-white text-[10px]">◎</span> },
+                      { url: a.instagramUrl, label: "Instagram", node: <span className="w-6 h-6 rounded-[4px] bg-gradient-to-br from-[#FEDA77] via-[#D62976] to-[#4F5BD5] flex items-center justify-center"><InstagramIcon /></span> },
                     ];
                     const visible = socials.filter((s) => s.url);
                     if (visible.length === 0) return null;

@@ -33,12 +33,33 @@ function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }
 
+const REVIEWS_PAGE_SIZE = 5;
+
 export default function BookReviews({ bookId }: { bookId: string | number }) {
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
+  const [visibleCount, setVisibleCount] = useState(REVIEWS_PAGE_SIZE);
   const [name, setName] = useState("");
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "done" | "error">("idle");
+
+  // Pre-fill with the signed-in customer's name so they don't have to retype it.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = localStorage.getItem("devanagari_user");
+    if (!stored) return;
+    try {
+      const parsed = JSON.parse(stored);
+      const loggedInName = parsed.name || parsed.fullName;
+      if (loggedInName) setName(loggedInName);
+    } catch {
+      // ignore malformed session data
+    }
+  }, []);
+
+  useEffect(() => {
+    setVisibleCount(REVIEWS_PAGE_SIZE);
+  }, [bookId]);
 
   useEffect(() => {
     let active = true;
@@ -171,7 +192,7 @@ export default function BookReviews({ bookId }: { bookId: string | number }) {
 
         {/* Reviews list */}
         <div className="lg:col-span-7 space-y-3">
-          {reviews.map((r) => (
+          {reviews.slice(0, visibleCount).map((r) => (
             <div key={r.id} className="bg-white rounded-[8px] border border-stone-200/90 shadow-sm p-4">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2.5">
@@ -188,6 +209,16 @@ export default function BookReviews({ bookId }: { bookId: string | number }) {
               <p className="text-sm text-stone-600 leading-relaxed mt-2.5">{r.comment}</p>
             </div>
           ))}
+
+          {visibleCount < reviews.length && (
+            <button
+              type="button"
+              onClick={() => setVisibleCount((c) => c + REVIEWS_PAGE_SIZE)}
+              className="w-full py-2.5 rounded-[5px] border border-stone-200 text-sm font-semibold text-stone-700 hover:bg-stone-50 transition-colors cursor-pointer"
+            >
+              Load More Reviews ({reviews.length - visibleCount} more)
+            </button>
+          )}
         </div>
       </div>
     </section>

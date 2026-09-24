@@ -1,4 +1,0 @@
-# PayU test credentials (keep PAYU_SALT server-only)
-PAYU_KEY=your_payu_test_key
-PAYU_SALT=your_payu_test_salt
-PAYU_PAYMENT_URL=https://test.payu.in/_payment

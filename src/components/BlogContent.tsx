@@ -89,8 +89,9 @@ export default function BlogContent({ settings, items }: { settings: Record<stri
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
             {filteredPosts.map((post) => (
-              <article
+              <Link
                 key={post.id}
+                href={`/blog/${post.id}`}
                 className="group bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full"
               >
                 {/* Compact Image Banner */}
@@ -139,7 +140,7 @@ export default function BlogContent({ settings, items }: { settings: Record<stri
                     </span>
                   </div>
                 </div>
-              </article>
+              </Link>
             ))}
           </div>
         )}

@@ -29,6 +29,7 @@ export async function POST(request: Request) {
   const destination = new URL("/checkout", origin);
   destination.searchParams.set("payu", status);
   if (orderId) destination.searchParams.set("order", orderId);
+  if (order) destination.searchParams.set("amount", String(order.total_amount));
   if (!valid) destination.searchParams.set("error", "verification");
   return NextResponse.redirect(destination, 303);
 }

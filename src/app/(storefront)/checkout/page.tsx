@@ -16,7 +16,6 @@ import {
   CheckCircle2,
   AlertCircle,
   ChevronRight,
-  ArrowLeft,
   Banknote,
   QrCode,
   Sparkles,
@@ -28,6 +27,7 @@ import {
   Download,
   ArrowRight,
   X,
+  Package,
 } from "lucide-react";
 import { useCartWishlist, CartItem } from "@/components/providers/CartWishlistProvider";
 import { createClient } from "@/lib/supabase/client";
@@ -36,20 +36,45 @@ import { checkCodEligibility, computeShippingCharge, getSiteSettings, SITE_DEFAU
 
 const COUPON_STORAGE_KEY = "devanagari_coupon_v1";
 
+// All 28 states + 8 union territories, so a pincode-verified address from anywhere in India
+// (not just a handful of states) shows correctly selected instead of blank.
 const INDIAN_STATES = [
-  "Madhya Pradesh",
-  "Uttar Pradesh",
-  "Rajasthan",
+  "Andhra Pradesh",
+  "Arunachal Pradesh",
+  "Assam",
   "Bihar",
-  "Delhi",
-  "Maharashtra",
   "Chhattisgarh",
+  "Goa",
   "Gujarat",
   "Haryana",
+  "Himachal Pradesh",
   "Jharkhand",
+  "Karnataka",
+  "Kerala",
+  "Madhya Pradesh",
+  "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
+  "Odisha",
   "Punjab",
+  "Rajasthan",
+  "Sikkim",
+  "Tamil Nadu",
+  "Telangana",
+  "Tripura",
+  "Uttar Pradesh",
   "Uttarakhand",
   "West Bengal",
+  "Andaman and Nicobar Islands",
+  "Chandigarh",
+  "Dadra and Nagar Haveli and Daman and Diu",
+  "Delhi",
+  "Jammu and Kashmir",
+  "Ladakh",
+  "Lakshadweep",
+  "Puducherry",
   "Other State / UT",
 ];
 
@@ -66,6 +91,7 @@ export default function CheckoutPage() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [pincode, setPincode] = useState("");
   const [pincodeVerified, setPincodeVerified] = useState(false);
+  const [isVerifyingPincode, setIsVerifyingPincode] = useState(false);
   const [address, setAddress] = useState("");
   const [landmark, setLandmark] = useState("");
   const [city, setCity] = useState("");
@@ -89,9 +115,10 @@ export default function CheckoutPage() {
     }
   }, []);
 
-  // Payment Method Selection
-  type PaymentOption = "upi" | "cards" | "cod";
-  const [selectedPayment, setSelectedPayment] = useState<PaymentOption>("upi");
+  // Payment Method Selection — "online" covers UPI/Card/NetBanking/Wallets, all handled by PayU's
+  // own hosted page after redirect, so there's no real choice for our site to make between them.
+  type PaymentOption = "online" | "cod";
+  const [selectedPayment, setSelectedPayment] = useState<PaymentOption>("online");
 
   // Active Stepper Step (1: Cart, 2: Address, 3: Payment, 4: Review)
   const [currentStep, setCurrentStep] = useState<number>(2);
@@ -107,12 +134,33 @@ export default function CheckoutPage() {
     }
   };
 
-  // Sub-method states
-  const [upiId, setUpiId] = useState("");
-  const [cardNumber, setCardNumber] = useState("");
-  const [cardExpiry, setCardExpiry] = useState("");
-  const [cardCvv, setCardCvv] = useState("");
-  const [cardName, setCardName] = useState("");
+  // Keep the stepper in sync with actual scroll position — it used to only move when a step
+  // button was clicked, so it stayed stuck on "Address" the whole way through checkout.
+  // Note: "order-summary-section" is a sticky sidebar next to the form, not a section further
+  // down the page, so it can't be used as a scroll target — step 4 is "near the page bottom" instead.
+  useEffect(() => {
+    const paymentEl = document.getElementById("payment-section");
+    const triggerY = () => window.innerHeight * 0.3;
+
+    const updateStep = () => {
+      const nearBottom =
+        window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 150;
+      if (nearBottom) {
+        setCurrentStep(4);
+        return;
+      }
+      const reachedPayment = paymentEl ? paymentEl.getBoundingClientRect().top <= triggerY() : false;
+      setCurrentStep(reachedPayment ? 3 : 2);
+    };
+
+    updateStep();
+    window.addEventListener("scroll", updateStep, { passive: true });
+    window.addEventListener("resize", updateStep);
+    return () => {
+      window.removeEventListener("scroll", updateStep);
+      window.removeEventListener("resize", updateStep);
+    };
+  }, []);
 
   // Coupon state
   const [couponInput, setCouponInput] = useState("");
@@ -125,6 +173,12 @@ export default function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isOrderSuccess, setIsOrderSuccess] = useState(false);
   const [placedOrderId, setPlacedOrderId] = useState("");
+  // The order's real database id — needed to link to /account/invoice/[orderId], since
+  // placedOrderId above is the human-readable order number for COD orders.
+  const [placedOrderDbId, setPlacedOrderDbId] = useState("");
+  // Captured at the moment the order is placed/confirmed — the cart (and therefore any total
+  // computed from it) is emptied right after, so the success screen can't recompute this later.
+  const [placedOrderAmount, setPlacedOrderAmount] = useState(0);
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
 
   // Shipping, COD & payment settings (admin-configurable)
@@ -138,7 +192,10 @@ export default function CheckoutPage() {
       const params = new URLSearchParams(window.location.search);
       const payuStatus = params.get("payu");
       if (payuStatus === "paid") {
-        setPlacedOrderId(params.get("order") || "");
+        const orderId = params.get("order") || "";
+        setPlacedOrderId(orderId);
+        setPlacedOrderDbId(orderId);
+        setPlacedOrderAmount(Number(params.get("amount")) || 0);
         setIsOrderSuccess(true);
         clearCart();
         window.history.replaceState({}, "", "/checkout");
@@ -187,14 +244,14 @@ export default function CheckoutPage() {
   // COD handling fee (only applies when Cash on Delivery is the selected payment method)
   const codEligibility = useMemo(() => checkCodEligibility(siteSettings, subtotalCurrent), [siteSettings, subtotalCurrent]);
 
+  const onlineEnabled = siteSettings.upi_enabled || siteSettings.card_enabled;
+
   // Falls back to the next available option when the picked method becomes disabled/ineligible (derived, not stored)
   const effectivePayment: PaymentOption =
-    selectedPayment === "upi" && !siteSettings.upi_enabled
-      ? siteSettings.card_enabled ? "cards" : siteSettings.cod_enabled ? "cod" : "upi"
-      : selectedPayment === "cards" && !siteSettings.card_enabled
-      ? siteSettings.upi_enabled ? "upi" : siteSettings.cod_enabled ? "cod" : "cards"
+    selectedPayment === "online" && !onlineEnabled
+      ? siteSettings.cod_enabled ? "cod" : "online"
       : selectedPayment === "cod" && !codEligibility.eligible
-      ? siteSettings.upi_enabled ? "upi" : siteSettings.card_enabled ? "cards" : "cod"
+      ? onlineEnabled ? "online" : "cod"
       : selectedPayment;
 
   const codFee = effectivePayment === "cod" ? siteSettings.cod_fee : 0;
@@ -231,32 +288,37 @@ export default function CheckoutPage() {
     return () => window.clearTimeout(timer);
   }, [availableCoupons, subtotalCurrent]);
 
-  // Handle Pincode Verify
-  const handleVerifyPincode = () => {
+  // Handle Pincode Verify — real lookup against India Post's public pincode API,
+  // not a hardcoded list of 4 city prefixes that "verified" any 6-digit number.
+  const handleVerifyPincode = async () => {
     if (!pincode || pincode.trim().length !== 6) {
       setFormErrors((prev) => ({ ...prev, pincode: "Please enter a valid 6-digit Pincode" }));
       setPincodeVerified(false);
       return;
     }
-    setFormErrors((prev) => {
-      const copy = { ...prev };
-      delete copy.pincode;
-      return copy;
-    });
-    setPincodeVerified(true);
-    // Auto-detect example city/state if user changes
-    if (pincode.startsWith("452")) {
-      setCity("Indore");
-      setState("Madhya Pradesh");
-    } else if (pincode.startsWith("462")) {
-      setCity("Bhopal");
-      setState("Madhya Pradesh");
-    } else if (pincode.startsWith("110")) {
-      setCity("New Delhi");
-      setState("Delhi");
-    } else if (pincode.startsWith("226")) {
-      setCity("Lucknow");
-      setState("Uttar Pradesh");
+    setIsVerifyingPincode(true);
+    try {
+      const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+      const data = await response.json();
+      const postOffice = data?.[0]?.PostOffice?.[0];
+      if (data?.[0]?.Status !== "Success" || !postOffice) {
+        setFormErrors((prev) => ({ ...prev, pincode: "This pincode wasn't found. Please check and try again." }));
+        setPincodeVerified(false);
+        return;
+      }
+      setFormErrors((prev) => {
+        const copy = { ...prev };
+        delete copy.pincode;
+        return copy;
+      });
+      setCity(postOffice.District || postOffice.Block || postOffice.Name || "");
+      setState(postOffice.State || "");
+      setPincodeVerified(true);
+    } catch {
+      setFormErrors((prev) => ({ ...prev, pincode: "Couldn't verify this pincode right now. Please check your connection and try again." }));
+      setPincodeVerified(false);
+    } finally {
+      setIsVerifyingPincode(false);
     }
   };
 
@@ -369,6 +431,8 @@ export default function CheckoutPage() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Unable to create COD order");
       setPlacedOrderId(result.orderNumber);
+      setPlacedOrderDbId(result.orderId);
+      setPlacedOrderAmount(Number(result.totalAmount) || finalTotal);
       setIsSubmitting(false);
       setIsOrderSuccess(true);
       clearCart();
@@ -380,6 +444,10 @@ export default function CheckoutPage() {
 
   return (
     <main className="min-h-screen bg-[#FBFBFC] text-[#1D2129] pb-28 md:pb-16">
+      {/* Hide the filled-in form/cart behind the success modal — nothing left to edit or resubmit,
+          and it kept the printed invoice spanning multiple pages. */}
+      {!isOrderSuccess && (
+      <>
       {/* 1. Breadcrumb Bar */}
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
@@ -600,65 +668,68 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                {/* Row 2: Pincode + Verify Button */}
+                {/* Row 2: Address (full width — it needs the most room) */}
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                    Pincode
+                    Address (House No., Building, Street)
                   </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={pincode}
-                      onChange={(e) => {
-                        setPincode(e.target.value);
-                        setPincodeVerified(false);
-                      }}
-                      placeholder="Enter pincode"
-                      maxLength={6}
-                      className={`flex-1 px-3.5 py-2.5 rounded-lg border text-xs sm:text-sm transition-colors focus:outline-none focus:ring-1 focus:ring-[#C61821] ${
-                        formErrors.pincode
-                          ? "border-red-500 bg-red-50/20"
-                          : "border-gray-250 hover:border-gray-350 focus:border-[#C61821]"
-                      }`}
-                    />
-                    <button
-                      type="button"
-                      onClick={handleVerifyPincode}
-                      className="px-5 py-2.5 rounded-lg border border-[#C61821] text-[#C61821] font-semibold text-xs sm:text-sm hover:bg-red-50 transition-colors cursor-pointer shrink-0"
-                    >
-                      {pincodeVerified ? "Verified ✓" : "Verify"}
-                    </button>
-                  </div>
-                  {pincodeVerified && (
-                    <p className="text-[11px] text-emerald-600 font-medium mt-1 flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Delivery available to this pincode (Standard: 3-5 days)</span>
-                    </p>
-                  )}
-                  {formErrors.pincode && (
-                    <p className="text-[11px] text-red-600 mt-1">{formErrors.pincode}</p>
+                  <input
+                    type="text"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder="Enter complete address"
+                    className={`w-full px-3.5 py-2.5 rounded-lg border text-xs sm:text-sm transition-colors focus:outline-none focus:ring-1 focus:ring-[#C61821] ${
+                      formErrors.address
+                        ? "border-red-500 bg-red-50/20"
+                        : "border-gray-250 hover:border-gray-350 focus:border-[#C61821]"
+                    }`}
+                  />
+                  {formErrors.address && (
+                    <p className="text-[11px] text-red-600 mt-1">{formErrors.address}</p>
                   )}
                 </div>
 
-                {/* Row 3: Address & City / Town Side by Side (Responsive) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Row 3: Pincode (narrow — it's only 6 digits) + City / Town (wider) */}
+                <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                      Address (House No., Building, Street)
+                      Pincode
                     </label>
-                    <input
-                      type="text"
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      placeholder="Enter complete address"
-                      className={`w-full px-3.5 py-2.5 rounded-lg border text-xs sm:text-sm transition-colors focus:outline-none focus:ring-1 focus:ring-[#C61821] ${
-                        formErrors.address
-                          ? "border-red-500 bg-red-50/20"
-                          : "border-gray-250 hover:border-gray-350 focus:border-[#C61821]"
-                      }`}
-                    />
-                    {formErrors.address && (
-                      <p className="text-[11px] text-red-600 mt-1">{formErrors.address}</p>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={pincode}
+                        onChange={(e) => {
+                          setPincode(e.target.value.replace(/\D/g, ""));
+                          setPincodeVerified(false);
+                        }}
+                        placeholder="Enter pincode"
+                        maxLength={6}
+                        className={`w-full px-3.5 py-2.5 rounded-lg border text-xs sm:text-sm transition-colors focus:outline-none focus:ring-1 focus:ring-[#C61821] ${
+                          formErrors.pincode
+                            ? "border-red-500 bg-red-50/20"
+                            : "border-gray-250 hover:border-gray-350 focus:border-[#C61821]"
+                        }`}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleVerifyPincode}
+                        disabled={isVerifyingPincode}
+                        className="px-4 py-2.5 rounded-lg border border-[#C61821] text-[#C61821] font-semibold text-xs sm:text-sm hover:bg-red-50 transition-colors cursor-pointer shrink-0 disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        {isVerifyingPincode ? "Checking..." : pincodeVerified ? "Verified ✓" : "Verify"}
+                      </button>
+                    </div>
+                    {pincodeVerified && (
+                      <p className="text-[11px] text-emerald-600 font-medium mt-1 flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Delivery available to {city}{state ? `, ${state}` : ""} (Standard: 3-5 days)</span>
+                      </p>
+                    )}
+                    {formErrors.pincode && (
+                      <p className="text-[11px] text-red-600 mt-1">{formErrors.pincode}</p>
                     )}
                   </div>
 
@@ -759,17 +830,6 @@ export default function CheckoutPage() {
                   </label>
                 </div>
 
-                {/* Continue to Payment CTA */}
-                <div className="pt-2 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => goToStep(3)}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#C61821] hover:bg-[#8F0E15] text-white font-semibold text-xs transition-all active:scale-95 cursor-pointer shadow-xs"
-                  >
-                    <span>Proceed to Payment</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
               </div>
             </div>
 
@@ -799,13 +859,13 @@ export default function CheckoutPage() {
               <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
                 {/* Left: Payment Method Radio List (md:col-span-5) */}
                 <div className="md:col-span-5 space-y-2.5">
-                  {/* 1. UPI Option */}
-                  {siteSettings.upi_enabled && (
+                  {/* 1. Online Payment (UPI / Cards / NetBanking — all via PayU) */}
+                  {onlineEnabled && (
                   <button
                     type="button"
-                    onClick={() => setSelectedPayment("upi")}
+                    onClick={() => setSelectedPayment("online")}
                     className={`w-full p-3 rounded-xl border text-left transition-all flex items-start gap-3 cursor-pointer ${
-                      effectivePayment === "upi"
+                      effectivePayment === "online"
                         ? "border-[#C61821] bg-red-50/25 ring-1 ring-[#C61821]/20"
                         : "border-gray-200 hover:border-gray-300 bg-white"
                     }`}
@@ -813,63 +873,28 @@ export default function CheckoutPage() {
                     <div className="pt-0.5 shrink-0">
                       <div
                         className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                          effectivePayment === "upi"
+                          effectivePayment === "online"
                             ? "border-[#C61821]"
                             : "border-gray-300"
                         }`}
                       >
-                        {effectivePayment === "upi" && (
-                          <div className="w-2 h-2 rounded-full bg-[#C61821]" />
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs sm:text-sm font-bold text-gray-900 flex items-center gap-1.5">
-                          <span>UPI</span>
-                          <span className="text-[10px] font-black italic tracking-tighter text-emerald-600 bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200">
-                            UPI
-                          </span>
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-gray-500 mt-0.5">Pay using any UPI app</p>
-                    </div>
-                  </button>
-                  )}
-
-                  {/* 2. Cards Option */}
-                  {siteSettings.card_enabled && (
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPayment("cards")}
-                    className={`w-full p-3 rounded-xl border text-left transition-all flex items-start gap-3 cursor-pointer ${
-                      effectivePayment === "cards"
-                        ? "border-[#C61821] bg-red-50/25 ring-1 ring-[#C61821]/20"
-                        : "border-gray-200 hover:border-gray-300 bg-white"
-                    }`}
-                  >
-                    <div className="pt-0.5 shrink-0">
-                      <div
-                        className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                          effectivePayment === "cards"
-                            ? "border-[#C61821]"
-                            : "border-gray-300"
-                        }`}
-                      >
-                        {effectivePayment === "cards" && (
+                        {effectivePayment === "online" && (
                           <div className="w-2 h-2 rounded-full bg-[#C61821]" />
                         )}
                       </div>
                     </div>
                     <div className="flex-1 min-w-0">
                       <span className="text-xs sm:text-sm font-bold text-gray-900 block">
-                        Cards
+                        Online Payment
                       </span>
                       <p className="text-[11px] text-gray-500 mt-0.5">
-                        Visa, MasterCard, Rupay
+                        UPI, Cards &amp; NetBanking via PayU
                       </p>
                       {/* Logos */}
-                      <div className="flex items-center gap-1.5 mt-1.5">
+                      <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                        <span className="text-[10px] font-black italic tracking-tighter text-emerald-600 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                          UPI
+                        </span>
                         <span className="text-[9px] font-extrabold text-blue-800 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 leading-none">
                           VISA
                         </span>
@@ -884,7 +909,7 @@ export default function CheckoutPage() {
                   </button>
                   )}
 
-                  {/* 3. Cash on Delivery Option */}
+                  {/* 2. Cash on Delivery Option */}
                   {siteSettings.cod_enabled && (
                   <button
                     type="button"
@@ -932,101 +957,24 @@ export default function CheckoutPage() {
 
                 {/* Right: Active Detail Pane (md:col-span-7) */}
                 <div className="md:col-span-7 bg-gray-50/60 rounded-xl p-4 sm:p-5 border border-gray-150 flex flex-col justify-between">
-                  {/* === UPI Subview === */}
-                  {effectivePayment === "upi" && (
+                  {/* === Online Payment Subview (UPI / Cards / NetBanking, all via PayU) === */}
+                  {effectivePayment === "online" && (
                     <div className="space-y-4">
                       <div>
                         <h3 className="text-xs sm:text-sm font-bold text-gray-900">
-                          Pay using UPI
+                          Pay Online
                         </h3>
                         <p className="text-[11px] text-gray-500">
-                          Scan any UPI QR code or enter UPI ID
+                          Click &quot;Place Order&quot; below — you&apos;ll choose UPI, card or NetBanking and complete payment on PayU&apos;s secure page.
                         </p>
                       </div>
 
-                      {/* QR Code Container with Central Devanagari 'd' Logo Badge */}
-                      <div className="bg-white p-3 rounded-xl border border-gray-250 shadow-2xs inline-block mx-auto relative group">
-                        <div className="relative w-36 h-36 sm:w-44 sm:h-44 mx-auto flex items-center justify-center">
-                          {/* Styled SVG QR Code */}
-                          <svg
-                            viewBox="0 0 100 100"
-                            className="w-full h-full text-gray-900"
-                            fill="currentColor"
-                          >
-                            {/* Top Left Marker */}
-                            <rect x="5" y="5" width="26" height="26" rx="2" fill="#111827" />
-                            <rect x="9" y="9" width="18" height="18" rx="1" fill="#ffffff" />
-                            <rect x="13" y="13" width="10" height="10" rx="1" fill="#C61821" />
-
-                            {/* Top Right Marker */}
-                            <rect x="69" y="5" width="26" height="26" rx="2" fill="#111827" />
-                            <rect x="73" y="9" width="18" height="18" rx="1" fill="#ffffff" />
-                            <rect x="77" y="13" width="10" height="10" rx="1" fill="#C61821" />
-
-                            {/* Bottom Left Marker */}
-                            <rect x="5" y="69" width="26" height="26" rx="2" fill="#111827" />
-                            <rect x="9" y="73" width="18" height="18" rx="1" fill="#ffffff" />
-                            <rect x="13" y="77" width="10" height="10" rx="1" fill="#C61821" />
-
-                            {/* Dense QR Pattern elements */}
-                            <rect x="36" y="8" width="6" height="6" fill="#1F2937" />
-                            <rect x="46" y="8" width="6" height="6" fill="#1F2937" />
-                            <rect x="56" y="8" width="6" height="6" fill="#1F2937" />
-                            <rect x="36" y="18" width="16" height="6" fill="#1F2937" />
-                            <rect x="56" y="18" width="8" height="6" fill="#1F2937" />
-
-                            <rect x="8" y="36" width="6" height="14" fill="#1F2937" />
-                            <rect x="18" y="36" width="12" height="6" fill="#1F2937" />
-                            <rect x="18" y="46" width="8" height="6" fill="#1F2937" />
-
-                            <rect x="74" y="36" width="8" height="8" fill="#1F2937" />
-                            <rect x="86" y="36" width="8" height="16" fill="#1F2937" />
-                            <rect x="74" y="48" width="8" height="6" fill="#1F2937" />
-
-                            <rect x="36" y="68" width="6" height="16" fill="#1F2937" />
-                            <rect x="46" y="74" width="8" height="6" fill="#1F2937" />
-                            <rect x="58" y="68" width="6" height="20" fill="#1F2937" />
-                            <rect x="46" y="84" width="8" height="8" fill="#1F2937" />
-                            <rect x="68" y="74" width="8" height="18" fill="#1F2937" />
-                            <rect x="80" y="74" width="14" height="6" fill="#1F2937" />
-                            <rect x="80" y="84" width="14" height="8" fill="#1F2937" />
-                          </svg>
-
-                          {/* Central Brand Badge exactly as in screenshot: red circle with white 'd' / 'दे' */}
-                          <div className="absolute inset-0 m-auto w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[#C61821] text-white flex items-center justify-center font-bold text-sm sm:text-base border-2 border-white shadow-md">
-                            <span className="font-devanagari leading-none">दे</span>
-                          </div>
-                        </div>
+                      <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-[11px] text-gray-600">
+                        <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>Your payment details are entered directly on PayU&apos;s PCI-compliant secure page — never stored on our site.</span>
                       </div>
 
-                      {/* OR Divider */}
-                      <div className="relative flex items-center justify-center">
-                        <div className="border-t border-gray-250 w-full" />
-                        <span className="bg-gray-50/60 px-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider absolute">
-                          OR
-                        </span>
-                      </div>
-
-                      {/* Enter UPI ID input */}
-                      <div>
-                        <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                          Enter UPI ID
-                        </label>
-                        <div className="relative">
-                          <input
-                            type="text"
-                            value={upiId}
-                            onChange={(e) => setUpiId(e.target.value)}
-                            placeholder="yourname@upi"
-                            className="w-full pl-3 pr-12 py-2 rounded-lg border border-gray-250 focus:outline-none focus:border-[#C61821] focus:ring-1 focus:ring-[#C61821] text-xs bg-white"
-                          />
-                          <div className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-black text-emerald-600 tracking-tight">
-                            UPI
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* UPI Apps Row (GPay, PhonePe, Paytm, BHIM) */}
+                      {/* Payment logos */}
                       <div className="pt-2 flex items-center justify-center gap-2 sm:gap-3 flex-wrap">
                         <span className="px-2 py-1 rounded bg-white border border-gray-200 text-[10px] font-bold text-gray-700 shadow-2xs flex items-center gap-1">
                           <span className="text-blue-500 font-black">G</span>Pay
@@ -1039,87 +987,17 @@ export default function CheckoutPage() {
                           paytm
                         </span>
                         <span className="px-2 py-1 rounded bg-white border border-gray-200 text-[10px] font-bold text-emerald-700 shadow-2xs">
-                          BHIM&gt;
+                          BHIM
                         </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* === Cards Subview === */}
-                  {effectivePayment === "cards" && (
-                    <div className="space-y-3.5">
-                      <div>
-                        <h3 className="text-xs sm:text-sm font-bold text-gray-900">
-                          Credit or Debit Card
-                        </h3>
-                        <p className="text-[11px] text-gray-500">
-                          Safe 256-bit encrypted card checkout
-                        </p>
-                      </div>
-
-                      <div className="space-y-2.5 text-xs">
-                        <div>
-                          <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                            Card Number
-                          </label>
-                          <input
-                            type="text"
-                            value={cardNumber}
-                            onChange={(e) => setCardNumber(e.target.value)}
-                            placeholder="1234 5678 9012 3456"
-                            maxLength={19}
-                            className="w-full px-3 py-2 rounded-lg border border-gray-250 focus:outline-none focus:border-[#C61821] focus:ring-1 focus:ring-[#C61821] text-xs bg-white font-mono"
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                              Valid Thru (MM/YY)
-                            </label>
-                            <input
-                              type="text"
-                              value={cardExpiry}
-                              onChange={(e) => setCardExpiry(e.target.value)}
-                              placeholder="MM/YY"
-                              maxLength={5}
-                              className="w-full px-3 py-2 rounded-lg border border-gray-250 focus:outline-none focus:border-[#C61821] focus:ring-1 focus:ring-[#C61821] text-xs bg-white text-center font-mono"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                              CVV
-                            </label>
-                            <input
-                              type="password"
-                              value={cardCvv}
-                              onChange={(e) => setCardCvv(e.target.value)}
-                              placeholder="123"
-                              maxLength={4}
-                              className="w-full px-3 py-2 rounded-lg border border-gray-250 focus:outline-none focus:border-[#C61821] focus:ring-1 focus:ring-[#C61821] text-xs bg-white text-center font-mono"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                            Name on Card
-                          </label>
-                          <input
-                            type="text"
-                            value={cardName}
-                            onChange={(e) => setCardName(e.target.value)}
-                            placeholder="Enter name as printed on card"
-                            className="w-full px-3 py-2 rounded-lg border border-gray-250 focus:outline-none focus:border-[#C61821] focus:ring-1 focus:ring-[#C61821] text-xs bg-white"
-                          />
-                        </div>
-
-                        <div className="pt-1">
-                          <label className="inline-flex items-center gap-2 text-[11px] text-gray-600 cursor-pointer">
-                            <input type="checkbox" defaultChecked className="rounded text-[#C61821]" />
-                            <span>Save this card securely as per RBI guidelines</span>
-                          </label>
-                        </div>
+                        <span className="text-[9px] font-extrabold text-blue-800 bg-blue-50 px-1.5 py-1 rounded border border-blue-200 leading-none">
+                          VISA
+                        </span>
+                        <span className="text-[9px] font-extrabold text-orange-600 bg-orange-50 px-1.5 py-1 rounded border border-orange-200 leading-none">
+                          MC
+                        </span>
+                        <span className="text-[9px] font-extrabold text-teal-700 bg-teal-50 px-1.5 py-1 rounded border border-teal-200 leading-none">
+                          RuPay
+                        </span>
                       </div>
                     </div>
                   )}
@@ -1158,25 +1036,6 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* Step Navigation in Payment Card */}
-              <div className="pt-4 flex justify-between items-center border-t border-gray-100 mt-4">
-                <button
-                  type="button"
-                  onClick={() => goToStep(2)}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-[#C61821] transition-colors cursor-pointer"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>Back to Address</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => goToStep(4)}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#C61821] hover:bg-[#8F0E15] text-white font-semibold text-xs transition-all active:scale-95 cursor-pointer shadow-xs"
-                >
-                  <span>Review &amp; Place Order</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
             </div>
 
             {/* ---------------------------------------------------- */}
@@ -1447,11 +1306,12 @@ export default function CheckoutPage() {
             {/* PLACE ORDER CTA BUTTON & TERMS                       */}
             {/* ---------------------------------------------------- */}
             <div className="space-y-3">
+              {/* Hidden on mobile — the fixed bottom bar already has this same button there */}
               <button
                 type="button"
                 onClick={handlePlaceOrder}
                 disabled={isSubmitting || activeItems.length === 0}
-                className="w-full py-3.5 sm:py-4 px-6 rounded-xl bg-[#C61821] hover:bg-[#8F0E15] active:scale-98 text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg shadow-red-600/25 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                className="hidden lg:flex w-full py-3.5 sm:py-4 px-6 rounded-xl bg-[#C61821] hover:bg-[#8F0E15] active:scale-98 text-white font-bold text-sm sm:text-base items-center justify-center gap-2 shadow-lg shadow-red-600/25 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <Lock className="w-4 h-4 stroke-[2.5]" />
                 <span>
@@ -1546,7 +1406,7 @@ export default function CheckoutPage() {
                   Fast Delivery
                 </h4>
                 <p className="text-[11px] text-gray-500 mt-0.5 leading-normal">
-                  Delivery on orders above ₹499
+                  Delivery on orders above ₹{siteSettings.free_shipping_threshold}
                 </p>
               </div>
             </div>
@@ -1618,6 +1478,8 @@ export default function CheckoutPage() {
           </button>
         </div>
       </div>
+      </>
+      )}
 
       {/* 5. ORDER PLACED CELEBRATION MODAL */}
       {isOrderSuccess && (
@@ -1659,16 +1521,12 @@ export default function CheckoutPage() {
               <div className="flex justify-between items-center">
                 <span className="text-gray-500">Payment Mode:</span>
                 <span className="font-semibold text-gray-900 uppercase">
-                  {effectivePayment === "upi"
-                    ? "UPI Payment"
-                    : effectivePayment === "cards"
-                    ? "Credit / Debit Card"
-                    : "Cash on Delivery"}
+                  {effectivePayment === "online" ? "Online Payment" : "Cash on Delivery"}
                 </span>
               </div>
               <div className="flex justify-between items-center pt-2 border-t border-gray-200 font-bold text-sm">
                 <span className="text-gray-800">Amount Paid:</span>
-                <span className="text-[#C61821] tabular-nums">₹{finalTotal.toLocaleString()}</span>
+                <span className="text-[#C61821] tabular-nums">₹{placedOrderAmount.toLocaleString()}</span>
               </div>
             </div>
 
@@ -1681,14 +1539,22 @@ export default function CheckoutPage() {
               >
                 <span>Continue Shopping Exam Books</span>
               </Link>
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="w-full py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              <Link
+                href="/account?tab=orders"
+                onClick={() => setIsOrderSuccess(false)}
+                className="w-full py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors"
+              >
+                <Package className="w-3.5 h-3.5" />
+                <span>My Orders</span>
+              </Link>
+              <Link
+                href={`/account/invoice/${placedOrderDbId}`}
+                target="_blank"
+                className="w-full py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Save / Print Order Invoice</span>
-              </button>
+              </Link>
             </div>
           </div>
         </div>

@@ -17,7 +17,7 @@ import { BookData } from "./HeroBook3D";
 import { useCartWishlist } from "@/components/providers/CartWishlistProvider";
 
 export interface BestsellerBook {
-  id: number;
+  id: number | string;
   title: string;
   subtitle?: string;
   author: string;

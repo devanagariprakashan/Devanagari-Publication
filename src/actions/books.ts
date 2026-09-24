@@ -9,6 +9,23 @@ function slugify(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
 }
 
+async function uniqueSlug(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  base: string,
+  excludeId?: string
+): Promise<string> {
+  let candidate = base
+  let suffix = 1
+  for (;;) {
+    let query = supabase.from('books').select('id').eq('slug', candidate).limit(1)
+    if (excludeId) query = query.neq('id', excludeId)
+    const { data } = await query
+    if (!data || data.length === 0) return candidate
+    suffix += 1
+    candidate = `${base}-${suffix}`
+  }
+}
+
 function boolFromForm(formData: FormData, key: string): boolean {
   return formData.get(key) === 'on'
 }
@@ -31,16 +48,15 @@ export async function createBook(_prevState: ActionResult, formData: FormData): 
   const price = parseFloat((formData.get('price') as string) || '0') || 0
   const original_price = (formData.get('original_price') as string) || null
   const discount_percent = parseInt((formData.get('discount_percent') as string) || '0', 10) || 0
-  const rating = parseFloat((formData.get('rating') as string) || '0') || 0
-  const reviews_count = parseInt((formData.get('reviews_count') as string) || '0', 10) || 0
   const pages = (formData.get('pages') as string) || null
 
   let media;
   try { media = mediaFromForm(formData) } catch (error) { return { error: (error as Error).message } }
+  const slug = await uniqueSlug(supabase, slugify(title))
   const { error } = await supabase.from('books').insert({
     ...media,
     id: crypto.randomUUID(),
-    slug: slugify(title),
+    slug,
     title,
     hindi_title: (formData.get('hindi_title') as string) || null,
     subtitle: (formData.get('subtitle') as string) || null,
@@ -54,11 +70,10 @@ export async function createBook(_prevState: ActionResult, formData: FormData): 
     price,
     original_price: original_price ? parseFloat(original_price) : null,
     discount_percent,
-    rating,
-    reviews_count,
     badge: (formData.get('badge') as string) || null,
     badge_color: (formData.get('badge_color') as string) || null,
     image_url: (formData.get('image_url') as string) || null,
+    images: (formData.get('images') as string) ? JSON.parse(formData.get('images') as string) : [],
     description: (formData.get('description') as string) || null,
     highlights: (formData.get('highlights') as string) ? JSON.parse(formData.get('highlights') as string) : null,
     pages: pages ? parseInt(pages, 10) : null,
@@ -88,15 +103,14 @@ export async function updateBook(_prevState: ActionResult, formData: FormData): 
   const price = parseFloat((formData.get('price') as string) || '0') || 0
   const original_price = (formData.get('original_price') as string) || null
   const discount_percent = parseInt((formData.get('discount_percent') as string) || '0', 10) || 0
-  const rating = parseFloat((formData.get('rating') as string) || '0') || 0
-  const reviews_count = parseInt((formData.get('reviews_count') as string) || '0', 10) || 0
   const pages = (formData.get('pages') as string) || null
 
   let media;
   try { media = mediaFromForm(formData) } catch (error) { return { error: (error as Error).message } }
+  const slug = await uniqueSlug(supabase, slugify(title), id)
   const { error } = await supabase.from('books').update({
     ...media,
-    slug: slugify(title),
+    slug,
     title,
     hindi_title: (formData.get('hindi_title') as string) || null,
     subtitle: (formData.get('subtitle') as string) || null,
@@ -110,11 +124,10 @@ export async function updateBook(_prevState: ActionResult, formData: FormData): 
     price,
     original_price: original_price ? parseFloat(original_price) : null,
     discount_percent,
-    rating,
-    reviews_count,
     badge: (formData.get('badge') as string) || null,
     badge_color: (formData.get('badge_color') as string) || null,
     image_url: (formData.get('image_url') as string) || null,
+    images: (formData.get('images') as string) ? JSON.parse(formData.get('images') as string) : [],
     description: (formData.get('description') as string) || null,
     highlights: (formData.get('highlights') as string) ? JSON.parse(formData.get('highlights') as string) : null,
     pages: pages ? parseInt(pages, 10) : null,
@@ -135,8 +148,15 @@ export async function updateBook(_prevState: ActionResult, formData: FormData): 
 
 export async function deleteBook(id: string): Promise<ActionResult> {
   const supabase = await createClient()
+  // Order items and reviews referencing this book would block the delete (foreign key) —
+  // unlink them instead of deleting them, since order history and reviews are still valid.
+  const { error: orderItemsError } = await supabase.from('order_items').update({ book_id: null }).eq('book_id', id)
+  if (orderItemsError) return { error: orderItemsError.message }
+  const { error: reviewsError } = await supabase.from('reviews').update({ book_id: null }).eq('book_id', id)
+  if (reviewsError) return { error: reviewsError.message }
   const { error } = await supabase.from('books').delete().eq('id', id)
   if (error) return { error: error.message }
   revalidatePath('/admin/books')
+  revalidatePath('/')
   return { success: true }
 }

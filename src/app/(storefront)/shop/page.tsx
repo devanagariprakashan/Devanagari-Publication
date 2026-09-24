@@ -17,7 +17,6 @@ import {
   ChevronDown,
   X,
   RotateCcw,
-  Sparkles,
   Flame,
   Truck,
   ShieldCheck,
@@ -27,15 +26,11 @@ import {
   Layers,
   Award,
 } from "lucide-react";
-import {
-  ALL_BOOKS,
-  BookItem,
-  SHOP_CATEGORIES,
-  SHOP_FORMATS,
-  SHOP_LANGUAGES,
-  SHOP_AUTHORS,
-} from "@/data/booksData";
+import { isHexColor, contrastTextColor } from "@/lib/color";
+import { ALL_BOOKS, BookItem } from "@/data/booksData";
 import { fetchCatalogBooks } from "@/lib/catalog";
+import { createClient } from "@/lib/supabase/client";
+import { SITE_DEFAULTS, getSiteSettings } from "@/lib/site-settings";
 import BookModal from "@/components/home/BookModal";
 import { BookData } from "@/components/home/HeroBook3D";
 import { useCartWishlist } from "@/components/providers/CartWishlistProvider";
@@ -54,7 +49,11 @@ function ShopContent() {
     setIsWishlistDrawerOpen,
   } = useCartWishlist();
 
-  const [catalogBooks, setCatalogBooks] = useState<BookItem[]>(ALL_BOOKS);
+  // Starts empty (not the hardcoded ALL_BOOKS demo data) so real DB products never get a flash
+  // of wrong content before the fetch resolves — the demo catalog is only a last-resort fallback
+  // if the DB genuinely returns nothing or the fetch fails.
+  const [catalogBooks, setCatalogBooks] = useState<BookItem[]>([]);
+  const [isLoadingCatalog, setIsLoadingCatalog] = useState(true);
 
   useEffect(() => {
     let active = true;
@@ -65,12 +64,56 @@ function ShopContent() {
       })
       .catch(() => {
         if (active) setCatalogBooks(ALL_BOOKS);
+      })
+      .finally(() => {
+        if (active) setIsLoadingCatalog(false);
       });
 
     return () => {
       active = false;
     };
   }, []);
+
+  const [siteSettings, setSiteSettings] = useState(SITE_DEFAULTS);
+  useEffect(() => {
+    getSiteSettings().then(setSiteSettings);
+  }, []);
+
+  // Real categories straight from the categories table (same source Admin -> Categories manages) —
+  // NOT synthesized from each book's own text fields, so a book with no category assigned never
+  // invents a fake pseudo-category (e.g. from its free-text "exam" field).
+  const [realCategories, setRealCategories] = useState<{ id: string; name: string; slug: string }[]>([]);
+  useEffect(() => {
+    createClient()
+      .from("categories")
+      .select("id,name,slug")
+      .eq("is_active", true)
+      .order("name")
+      .then(({ data }) => {
+        if (data) setRealCategories(data);
+      });
+  }, []);
+
+  // Filter option lists — derived live from the fetched catalog instead of a fixed hardcoded
+  // list, so they always match real categories/formats/languages/authors that actually exist.
+  const categoryOptions = useMemo(() => {
+    return [
+      { id: "all", name: "All Books", count: catalogBooks.length },
+      ...realCategories.map((cat) => ({
+        id: cat.slug,
+        name: cat.name,
+        count: catalogBooks.filter((book) => book.categorySlug === cat.slug).length,
+      })),
+    ];
+  }, [catalogBooks, realCategories]);
+  const languageOptions = useMemo(
+    () => Array.from(new Set(catalogBooks.map((b) => b.language))).sort(),
+    [catalogBooks],
+  );
+  const authorOptions = useMemo(
+    () => Array.from(new Set(catalogBooks.map((b) => b.author))).sort(),
+    [catalogBooks],
+  );
 
   // URL query params
   const paramCategory = searchParams.get("category") || "all";
@@ -85,7 +128,6 @@ function ShopContent() {
   // State
   const [searchQuery, setSearchQuery] = useState(paramSearch);
   const [selectedCategory, setSelectedCategory] = useState(paramCategory);
-  const [selectedFormats, setSelectedFormats] = useState<string[]>([]);
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>(
     paramLanguage ? [paramLanguage] : []
   );
@@ -98,7 +140,6 @@ function ShopContent() {
   );
   const [inStockOnly, setInStockOnly] = useState(false);
   const [bestsellerOnly, setBestsellerOnly] = useState(paramFilter === "bestsellers");
-  const [newReleaseOnly, setNewReleaseOnly] = useState(paramFilter === "new");
   const [offersOnly, setOffersOnly] = useState(paramFilter === "offers" || paramFilter === "featured");
   const [wishlistOnly, setWishlistOnly] = useState(paramView === "wishlist" || paramFilter === "wishlist");
   const [sortBy, setSortBy] = useState<string>("featured");
@@ -115,7 +156,6 @@ function ShopContent() {
     else if (!paramMinPrice) setMinPrice(0);
     if (paramMaxPrice) setMaxPrice(Number(paramMaxPrice));
     if (paramFilter === "bestsellers") setBestsellerOnly(true);
-    if (paramFilter === "new") setNewReleaseOnly(true);
     if (paramFilter === "offers" || paramFilter === "featured") setOffersOnly(true);
     if (paramView === "wishlist" || paramFilter === "wishlist") setWishlistOnly(true);
     if (paramView === "cart") {
@@ -175,13 +215,11 @@ function ShopContent() {
   const handleResetFilters = () => {
     setSelectedCategory("all");
     setSearchQuery("");
-    setSelectedFormats([]);
     setSelectedLanguages([]);
     setSelectedAuthors([]);
     setMaxPrice(1000);
     setInStockOnly(false);
     setBestsellerOnly(false);
-    setNewReleaseOnly(false);
     setOffersOnly(false);
     setWishlistOnly(false);
     setSortBy("featured");
@@ -240,11 +278,6 @@ function ShopContent() {
         }
       }
 
-      // Formats filter
-      if (selectedFormats.length > 0 && !selectedFormats.includes(book.format)) {
-        return false;
-      }
-
       // Languages filter
       if (selectedLanguages.length > 0 && !selectedLanguages.includes(book.language)) {
         return false;
@@ -273,13 +306,8 @@ function ShopContent() {
         return false;
       }
 
-      // New release only
-      if (newReleaseOnly && !book.isNewRelease) {
-        return false;
-      }
-
       // Offers only
-      if (offersOnly && book.discountPercent <= 0) {
+      if (offersOnly && book.discountPercent < 20) {
         return false;
       }
 
@@ -298,20 +326,18 @@ function ShopContent() {
           return (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0) || b.rating - a.rating;
       }
     });
-  }, [catalogBooks, wishlist, wishlistOnly, selectedCategory, searchQuery, selectedFormats, selectedLanguages, selectedAuthors, maxPrice, minPrice, inStockOnly, bestsellerOnly, newReleaseOnly, offersOnly, sortBy]);
+  }, [catalogBooks, wishlist, wishlistOnly, selectedCategory, searchQuery, selectedLanguages, selectedAuthors, maxPrice, minPrice, inStockOnly, bestsellerOnly, offersOnly, sortBy]);
 
   // Active filters count
   const activeFiltersCount =
     (selectedCategory !== "all" ? 1 : 0) +
     (searchQuery ? 1 : 0) +
     (wishlistOnly ? 1 : 0) +
-    selectedFormats.length +
     selectedLanguages.length +
     selectedAuthors.length +
     (maxPrice < 1000 ? 1 : 0) +
     (inStockOnly ? 1 : 0) +
     (bestsellerOnly ? 1 : 0) +
-    (newReleaseOnly ? 1 : 0) +
     (offersOnly ? 1 : 0);
 
   return (
@@ -330,7 +356,7 @@ function ShopContent() {
               <>
                 <span>/</span>
                 <span className="text-[#C61821] font-bold capitalize truncate max-w-[160px]">
-                  {SHOP_CATEGORIES.find((c) => c.id === selectedCategory)?.name}
+                  {categoryOptions.find((c) => c.id === selectedCategory)?.name}
                 </span>
               </>
             )}
@@ -349,11 +375,15 @@ function ShopContent() {
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 <span>100% Authentic</span>
               </div>
-              <span className="w-1 h-1 bg-gray-300 rounded-full" />
-              <div className="flex items-center gap-1.5 text-gray-700">
-                <Truck className="w-4 h-4 text-[#C61821]" />
-                <span>Free Ship Above ₹499</span>
-              </div>
+              {siteSettings.free_shipping_enabled && (
+                <>
+                  <span className="w-1 h-1 bg-gray-300 rounded-full" />
+                  <div className="flex items-center gap-1.5 text-gray-700">
+                    <Truck className="w-4 h-4 text-[#C61821]" />
+                    <span>Free Ship Above ₹{siteSettings.free_shipping_threshold}</span>
+                  </div>
+                </>
+              )}
               <span className="w-1 h-1 bg-gray-300 rounded-full" />
               <div className="flex items-center gap-1.5 text-gray-700">
                 <ShieldCheck className="w-4 h-4 text-blue-600" />
@@ -364,7 +394,7 @@ function ShopContent() {
 
           {/* QUICK CATEGORY CHIPS CAROUSEL */}
           <div className="mt-2.5 sm:mt-4 flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-none">
-            {SHOP_CATEGORIES.map((cat) => {
+            {categoryOptions.map((cat) => {
               const isActive = selectedCategory === cat.id;
               return (
                 <button
@@ -455,17 +485,6 @@ function ShopContent() {
                 <label className="flex items-center gap-2.5 text-xs font-medium text-gray-700 cursor-pointer select-none">
                   <input
                     type="checkbox"
-                    checked={newReleaseOnly}
-                    onChange={(e) => setNewReleaseOnly(e.target.checked)}
-                    className="w-4 h-4 text-[#C61821] rounded border-gray-300 focus:ring-[#C61821]"
-                  />
-                  <Sparkles className="w-3.5 h-3.5 text-blue-500" />
-                  <span>New 2025 Editions</span>
-                </label>
-
-                <label className="flex items-center gap-2.5 text-xs font-medium text-gray-700 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
                     checked={offersOnly}
                     onChange={(e) => setOffersOnly(e.target.checked)}
                     className="w-4 h-4 text-[#C61821] rounded border-gray-300 focus:ring-[#C61821]"
@@ -510,37 +529,29 @@ function ShopContent() {
               </div>
             </div>
 
-            {/* Category Filter */}
+            {/* Category Filter — real categories from Admin -> Categories, same single-select as the chips above */}
             <div className="space-y-2 pt-4 border-t border-gray-100">
               <label className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
                 Category
               </label>
               <div className="space-y-1.5">
-                {SHOP_FORMATS.map((fmt) => {
-                  const isChecked = selectedFormats.includes(fmt);
+                {categoryOptions.filter((cat) => cat.id !== "all").map((cat) => {
+                  const isChecked = selectedCategory === cat.id;
                   return (
                     <label
-                      key={fmt}
+                      key={cat.id}
                       className="flex items-center justify-between text-xs font-medium text-gray-700 cursor-pointer select-none"
                     >
                       <div className="flex items-center gap-2">
                         <input
                           type="checkbox"
                           checked={isChecked}
-                          onChange={() => {
-                            setSelectedFormats((prev) =>
-                              isChecked
-                                ? prev.filter((f) => f !== fmt)
-                                : [...prev, fmt]
-                            );
-                          }}
+                          onChange={() => setSelectedCategory(isChecked ? "all" : cat.id)}
                           className="w-4 h-4 text-[#C61821] rounded border-gray-300 focus:ring-[#C61821]"
                         />
-                        <span>{fmt}</span>
+                        <span>{cat.name}</span>
                       </div>
-                      <span className="text-[10px] text-gray-400">
-                        {catalogBooks.filter((b) => b.format === fmt).length}
-                      </span>
+                      <span className="text-[10px] text-gray-400">{cat.count}</span>
                     </label>
                   );
                 })}
@@ -553,7 +564,7 @@ function ShopContent() {
                 Medium / Language
               </label>
               <div className="space-y-1.5">
-                {SHOP_LANGUAGES.map((lang) => {
+                {languageOptions.map((lang) => {
                   const isChecked = selectedLanguages.includes(lang);
                   return (
                     <label
@@ -591,7 +602,7 @@ function ShopContent() {
                 Authors &amp; Faculty
               </label>
               <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
-                {SHOP_AUTHORS.map((author) => {
+                {authorOptions.map((author) => {
                   const isChecked = selectedAuthors.includes(author);
                   return (
                     <label
@@ -737,7 +748,7 @@ function ShopContent() {
 
                 {selectedCategory !== "all" && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-red-50 text-[#C61821] text-[11px] font-bold border border-red-100">
-                    {SHOP_CATEGORIES.find((c) => c.id === selectedCategory)?.name}
+                    {categoryOptions.find((c) => c.id === selectedCategory)?.name}
                     <button onClick={() => setSelectedCategory("all")} className="hover:opacity-75">
                       <X className="w-3 h-3" />
                     </button>
@@ -757,15 +768,6 @@ function ShopContent() {
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[11px] font-semibold border border-amber-200">
                     Bestsellers
                     <button onClick={() => setBestsellerOnly(false)} className="hover:opacity-75">
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                )}
-
-                {newReleaseOnly && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-[11px] font-semibold border border-blue-200">
-                    New 2025
-                    <button onClick={() => setNewReleaseOnly(false)} className="hover:opacity-75">
                       <X className="w-3 h-3" />
                     </button>
                   </span>
@@ -797,23 +799,6 @@ function ShopContent() {
                     </button>
                   </span>
                 )}
-
-                {selectedFormats.map((fmt) => (
-                  <span
-                    key={fmt}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-100 text-gray-700 text-[11px] font-semibold border border-gray-200"
-                  >
-                    {fmt}
-                    <button
-                      onClick={() =>
-                        setSelectedFormats((p) => p.filter((f) => f !== fmt))
-                      }
-                      className="hover:opacity-75"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
 
                 {selectedLanguages.map((lang) => (
                   <span
@@ -858,8 +843,16 @@ function ShopContent() {
               </div>
             )}
 
+            {/* LOADING STATE */}
+            {isLoadingCatalog && filteredBooks.length === 0 && (
+              <div className="bg-white rounded-2xl border border-gray-200 p-10 text-center space-y-3 my-8">
+                <div className="h-8 w-8 mx-auto animate-spin rounded-full border-2 border-stone-200 border-t-[#C61821]" />
+                <p className="text-sm text-gray-500">Loading books...</p>
+              </div>
+            )}
+
             {/* EMPTY STATE */}
-            {filteredBooks.length === 0 && (
+            {!isLoadingCatalog && filteredBooks.length === 0 && (
               <div className="bg-white rounded-2xl border border-gray-200 p-10 text-center space-y-4 my-8">
                 <div className="w-16 h-16 rounded-2xl bg-red-50 text-[#C61821] flex items-center justify-center mx-auto shadow-inner">
                   <BookOpen className="w-8 h-8" />
@@ -901,15 +894,17 @@ function ShopContent() {
                         <div className="absolute top-2 left-2 right-2 sm:top-3 sm:left-3 sm:right-3 flex items-center justify-between z-10">
                           {book.badge ? (
                             <span
-                              className={`text-[9px] font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wider ${
-                                book.badgeColor || "bg-[#C61821] text-white"
-                              }`}
+                              className="text-[9px] font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wider"
+                              style={{
+                                backgroundColor: isHexColor(book.badgeColor ?? "") ? book.badgeColor : "#C61821",
+                                color: contrastTextColor(isHexColor(book.badgeColor ?? "") ? (book.badgeColor as string) : "#C61821"),
+                              }}
                             >
                               {book.badge}
                             </span>
                           ) : (
                             <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-gray-100 text-gray-600">
-                              {book.format}
+                              {book.category}
                             </span>
                           )}
 
@@ -1071,9 +1066,11 @@ function ShopContent() {
                             </span>
                             {book.badge && (
                               <span
-                                className={`text-[9px] font-bold px-1.5 py-0.2 rounded-md uppercase ${
-                                  book.badgeColor || "bg-gray-800 text-white"
-                                }`}
+                                className="text-[9px] font-bold px-1.5 py-0.2 rounded-md uppercase"
+                                style={{
+                                  backgroundColor: isHexColor(book.badgeColor ?? "") ? book.badgeColor : "#1f2937",
+                                  color: contrastTextColor(isHexColor(book.badgeColor ?? "") ? (book.badgeColor as string) : "#1f2937"),
+                                }}
                               >
                                 {book.badge}
                               </span>
@@ -1292,7 +1289,7 @@ function ShopContent() {
                   )}
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  {SHOP_CATEGORIES.map((cat) => {
+                  {categoryOptions.map((cat) => {
                     const isActive = selectedCategory === cat.id;
                     return (
                       <button
@@ -1356,17 +1353,6 @@ function ShopContent() {
                   <label className="flex items-center gap-2.5 text-xs font-medium text-gray-700 cursor-pointer p-1.5 rounded-lg hover:bg-gray-50 select-none">
                     <input
                       type="checkbox"
-                      checked={newReleaseOnly}
-                      onChange={(e) => setNewReleaseOnly(e.target.checked)}
-                      className="w-4 h-4 text-[#C61821] rounded border-gray-300 focus:ring-[#C61821]"
-                    />
-                    <Sparkles className="w-3.5 h-3.5 text-blue-500" />
-                    <span>New 2025 Editions</span>
-                  </label>
-
-                  <label className="flex items-center gap-2.5 text-xs font-medium text-gray-700 cursor-pointer p-1.5 rounded-lg hover:bg-gray-50 select-none">
-                    <input
-                      type="checkbox"
                       checked={offersOnly}
                       onChange={(e) => setOffersOnly(e.target.checked)}
                       className="w-4 h-4 text-[#C61821] rounded border-gray-300 focus:ring-[#C61821]"
@@ -1413,50 +1399,13 @@ function ShopContent() {
                 </div>
               </div>
 
-              {/* 5. Category */}
-              <div className="space-y-2 pt-4">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-gray-500">
-                  Category
-                </label>
-                <div className="space-y-1.5">
-                  {SHOP_FORMATS.map((fmt) => {
-                    const isChecked = selectedFormats.includes(fmt);
-                    return (
-                      <label
-                        key={fmt}
-                        className="flex items-center justify-between text-xs font-medium text-gray-700 cursor-pointer p-1 rounded-lg hover:bg-gray-50 select-none"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={() => {
-                              setSelectedFormats((prev) =>
-                                isChecked
-                                  ? prev.filter((f) => f !== fmt)
-                                  : [...prev, fmt]
-                              );
-                            }}
-                            className="w-4 h-4 text-[#C61821] rounded border-gray-300 focus:ring-[#C61821]"
-                          />
-                          <span>{fmt}</span>
-                        </div>
-                        <span className="text-[10px] text-gray-400 font-medium">
-                          {catalogBooks.filter((b) => b.format === fmt).length}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-
               {/* 6. Language */}
               <div className="space-y-2 pt-4">
                 <label className="text-[11px] font-bold uppercase tracking-wider text-gray-500">
                   Medium / Language
                 </label>
                 <div className="space-y-1.5">
-                  {SHOP_LANGUAGES.map((lang) => {
+                  {languageOptions.map((lang) => {
                     const isChecked = selectedLanguages.includes(lang);
                     return (
                       <label
@@ -1494,7 +1443,7 @@ function ShopContent() {
                   Authors &amp; Faculty
                 </label>
                 <div className="space-y-1.5">
-                  {SHOP_AUTHORS.map((author) => {
+                  {authorOptions.map((author) => {
                     const isChecked = selectedAuthors.includes(author);
                     return (
                       <label
@@ -1546,6 +1495,8 @@ function ShopContent() {
       <BookModal
         book={selectedBookForModal}
         onClose={() => setSelectedBookForModal(null)}
+        freeShippingEnabled={siteSettings.free_shipping_enabled}
+        freeShippingThreshold={siteSettings.free_shipping_threshold}
       />
     </div>
   );

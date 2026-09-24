@@ -18,9 +18,29 @@ type CategoryRow = {
 
 
 
-function toBestseller(b: BookRow): BestsellerBook {
+type RatingSummary = { average: number; count: number };
+
+function buildRatingMap(reviews: { book_id: string | null; rating: number | null }[]): Map<string, RatingSummary> {
+  const totals = new Map<string, { sum: number; count: number }>();
+  for (const review of reviews) {
+    if (!review.book_id) continue;
+    const entry = totals.get(review.book_id) ?? { sum: 0, count: 0 };
+    entry.sum += review.rating ?? 0;
+    entry.count += 1;
+    totals.set(review.book_id, entry);
+  }
+  const ratingMap = new Map<string, RatingSummary>();
+  for (const [bookId, { sum, count }] of totals) {
+    ratingMap.set(bookId, { average: sum / count, count });
+  }
+  return ratingMap;
+}
+
+// Real average/count from approved customer reviews, not the admin-entered rating/reviews_count columns.
+function toBestseller(b: BookRow, ratingMap: Map<string, RatingSummary>): BestsellerBook {
+  const summary = ratingMap.get(String(b.id));
   return {
-    id: Number(b.id),
+    id: b.id,
     title: b.title,
     subtitle: b.subtitle ?? undefined,
     author: b.author ?? "Devanagari Publications",
@@ -29,17 +49,18 @@ function toBestseller(b: BookRow): BestsellerBook {
     price: b.price ?? 0,
     originalPrice: b.original_price ?? b.price ?? 0,
     discountPercent: b.discount_percent ?? 0,
-    rating: b.rating ?? 0,
-    reviewsCount: b.reviews_count ?? 0,
+    rating: summary?.average ?? 0,
+    reviewsCount: summary?.count ?? 0,
     badge: b.badge ?? undefined,
     image: b.image_url ?? "/images/books/image-2.png",
     edition: b.edition ?? undefined,
   };
 }
 
-function toHandpicked(b: BookRow): HandpickedBook {
+function toHandpicked(b: BookRow, ratingMap: Map<string, RatingSummary>): HandpickedBook {
+  const summary = ratingMap.get(String(b.id));
   return {
-    id: Number(b.id),
+    id: b.id,
     title: b.title,
     subtitle: b.subtitle ?? undefined,
     author: b.author ?? "Devanagari Publications",
@@ -49,8 +70,8 @@ function toHandpicked(b: BookRow): HandpickedBook {
     price: b.price ?? 0,
     originalPrice: b.original_price ?? b.price ?? 0,
     discountPercent: b.discount_percent ?? 0,
-    rating: b.rating ?? 0,
-    reviewsCount: b.reviews_count ?? 0,
+    rating: summary?.average ?? 0,
+    reviewsCount: summary?.count ?? 0,
     badge: b.badge ?? undefined,
     image: b.image_url ?? "/images/books/image-2.png",
     edition: b.edition ?? undefined,
@@ -66,7 +87,7 @@ export default async function Home() {
     rating: Number(item.rating), reviewsCount: Number(item.reviewsCount),
   }));
 
-  const [categoriesRes, bestsellersRes, handpickedRes, siteSettingsRes] =
+  const [categoriesRes, bestsellersRes, handpickedRes, siteSettingsRes, reviewsRes] =
     await Promise.all([
       supabase
         .from("categories")
@@ -88,6 +109,7 @@ export default async function Home() {
         .order("id")
         .limit(10),
       supabase.from("site_settings").select("*").eq("id", 1).maybeSingle(),
+      supabase.from("reviews").select("book_id, rating").eq("is_approved", true),
     ]);
 
   const categories: FeaturedCategory[] = (categoriesRes.data ?? []).map(
@@ -99,8 +121,9 @@ export default async function Home() {
     }),
   );
 
-  const bestsellers = (bestsellersRes.data ?? []).map(toBestseller);
-  const handpicked = (handpickedRes.data ?? []).map(toHandpicked);
+  const ratingMap = buildRatingMap(reviewsRes.data ?? []);
+  const bestsellers = (bestsellersRes.data ?? []).map((b) => toBestseller(b, ratingMap));
+  const handpicked = (handpickedRes.data ?? []).map((b) => toHandpicked(b, ratingMap));
   const siteSettings: SiteSettings = { ...SITE_DEFAULTS, ...(siteSettingsRes.data ?? {}) };
   const heroStats = heroStatsFromSettings(siteSettings);
 
@@ -113,6 +136,7 @@ export default async function Home() {
       categories={categories}
       bestsellers={bestsellers}
       handpicked={handpicked}
+      whatsNewEnabled={siteSettings.whats_new_enabled}
     />
   );
 }

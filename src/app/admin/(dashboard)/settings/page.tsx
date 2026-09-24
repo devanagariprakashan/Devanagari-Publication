@@ -45,6 +45,7 @@ async function saveSiteSettings(formData: FormData) {
       cod_max_order: numOrNull("cod_max_order"),
       upi_enabled: bool("upi_enabled"),
       card_enabled: bool("card_enabled"),
+      whats_new_enabled: bool("whats_new_enabled"),
       hero_stat1_value: str("hero_stat1_value") ?? SITE_DEFAULTS.hero_stat1_value,
       hero_stat1_label: str("hero_stat1_label") ?? SITE_DEFAULTS.hero_stat1_label,
       hero_stat2_value: str("hero_stat2_value") ?? SITE_DEFAULTS.hero_stat2_value,
@@ -70,6 +71,22 @@ export default async function SettingsPage() {
     <div className="space-y-6">
       <h1 className={pageTitle}>Settings</h1>
       <form action={saveSiteSettings} className="space-y-6">
+        <div className={card + " border-2 border-brand-200 p-6"}>
+          <h2 className="mb-1 text-lg font-semibold text-gray-900">Homepage Sections</h2>
+          <p className="mb-4 text-xs text-gray-500">Show or hide optional sections on the homepage.</p>
+          <label className="flex items-center justify-between gap-4 rounded-md border border-gray-200 bg-gray-50 p-4">
+            <span className="text-sm font-medium text-gray-900">
+              &quot;What&apos;s New&quot; carousel &amp; Latest Updates panel
+            </span>
+            <input
+              type="checkbox"
+              name="whats_new_enabled"
+              defaultChecked={s.whats_new_enabled}
+              className="h-6 w-11 shrink-0 cursor-pointer appearance-none rounded-full bg-gray-300 transition-colors checked:bg-brand-600 relative before:absolute before:left-0.5 before:top-0.5 before:h-5 before:w-5 before:rounded-full before:bg-white before:transition-transform checked:before:translate-x-5"
+            />
+          </label>
+        </div>
+
         <div className={card + " p-6"}>
           <h2 className="mb-4 text-lg font-semibold text-gray-900">Manage Profile</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

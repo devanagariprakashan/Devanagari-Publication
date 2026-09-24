@@ -25,12 +25,16 @@ export default function Footer() {
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [site, setSite] = useState<SiteSettings>(SITE_DEFAULTS);
+  const [categories, setCategories] = useState<{ name: string; slug: string }[]>([]);
 
   // ponytail: client fetch like TopBanner, no context/store until >2 consumers need sync
   useEffect(() => {
     let cancelled = false;
     createClient().from("site_settings").select("*").eq("id", 1).maybeSingle().then(({ data }) => {
       if (!cancelled && data) setSite({ ...SITE_DEFAULTS, ...data });
+    });
+    createClient().from("categories").select("name, slug").eq("is_active", true).order("sort_order").limit(6).then(({ data }) => {
+      if (!cancelled && data) setCategories(data);
     });
     return () => { cancelled = true; };
   }, []);
@@ -51,7 +55,7 @@ export default function Footer() {
   };
 
   return (
-    <footer className="relative bg-[#0B0F17] text-gray-300 overflow-hidden border-t border-gray-800 selection:bg-[#C61821] selection:text-white">
+    <footer className="relative bg-[#0B0F17] text-gray-300 overflow-hidden border-t border-gray-800 selection:bg-[#C61821] selection:text-white print:hidden">
       {/* Background Subtle Gradient & Glow */}
       <div
         className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-64 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(198,24,33,0.18),rgba(11,15,23,0))] pointer-events-none"
@@ -63,7 +67,7 @@ export default function Footer() {
       {/* ============================================================ */}
       <div className="border-b border-gray-800/80 bg-[#0E131F]/90 backdrop-blur-sm relative z-10">
         <div className="max-w-[1450px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
             {/* Feature 1 */}
             <div className="flex items-center gap-3.5 p-3 sm:p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.05] hover:border-red-500/30 transition-all duration-300 group">
               <div className="w-11 h-11 rounded-xl bg-red-500/10 text-[#EF4444] flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:bg-[#C61821] group-hover:text-white transition-all duration-300 shadow-sm">
@@ -74,7 +78,7 @@ export default function Footer() {
                   Free Delivery
                 </h4>
                 <p className="text-[11px] sm:text-xs text-gray-400 truncate mt-0.5">
-                  On all orders above ₹499
+                  On all orders above ₹{site.free_shipping_threshold}
                 </p>
               </div>
             </div>
@@ -256,60 +260,29 @@ export default function Footer() {
               <span>Exam Categories</span>
             </h4>
             <ul className="space-y-2.5 text-xs sm:text-[13px] text-gray-400">
-              <li>
-                <Link
-                  href="/shop?search=MPPSC"
-                  className="hover:text-white hover:translate-x-1 inline-flex items-center gap-1.5 transition-all duration-150"
-                >
-                  <ChevronRight className="w-3.5 h-3.5 text-red-500/70" />
-                  <span>MPPSC Prelims &amp; Mains</span>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/shop?search=Civil+Judge"
-                  className="hover:text-white hover:translate-x-1 inline-flex items-center gap-1.5 transition-all duration-150"
-                >
-                  <ChevronRight className="w-3.5 h-3.5 text-red-500/70" />
-                  <span>Civil Judge &amp; Judiciary</span>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/shop?search=Law"
-                  className="hover:text-white hover:translate-x-1 inline-flex items-center gap-1.5 transition-all duration-150"
-                >
-                  <ChevronRight className="w-3.5 h-3.5 text-red-500/70" />
-                  <span>BNS, BNSS &amp; BSA Law</span>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/shop?search=Hindi"
-                  className="hover:text-white hover:translate-x-1 inline-flex items-center gap-1.5 transition-all duration-150"
-                >
-                  <ChevronRight className="w-3.5 h-3.5 text-red-500/70" />
-                  <span>Hindi Grammar &amp; Sahitya</span>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/shop?search=Nibandh"
-                  className="hover:text-white hover:translate-x-1 inline-flex items-center gap-1.5 transition-all duration-150"
-                >
-                  <ChevronRight className="w-3.5 h-3.5 text-red-500/70" />
-                  <span>Essay &amp; Draft Writing (Nibandh)</span>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/shop?search=General+Studies"
-                  className="hover:text-white hover:translate-x-1 inline-flex items-center gap-1.5 transition-all duration-150"
-                >
-                  <ChevronRight className="w-3.5 h-3.5 text-red-500/70" />
-                  <span>General Studies Handbooks</span>
-                </Link>
-              </li>
+              {categories.length === 0 ? (
+                <li>
+                  <Link
+                    href="/shop"
+                    className="hover:text-white hover:translate-x-1 inline-flex items-center gap-1.5 transition-all duration-150"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5 text-red-500/70" />
+                    <span>Browse All Books</span>
+                  </Link>
+                </li>
+              ) : (
+                categories.map((cat) => (
+                  <li key={cat.slug}>
+                    <Link
+                      href={`/shop?category=${cat.slug}`}
+                      className="hover:text-white hover:translate-x-1 inline-flex items-center gap-1.5 transition-all duration-150"
+                    >
+                      <ChevronRight className="w-3.5 h-3.5 text-red-500/70" />
+                      <span>{cat.name}</span>
+                    </Link>
+                  </li>
+                ))
+              )}
             </ul>
           </div>
 
@@ -333,7 +306,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/#authors"
+                  href="/authors"
                   className="hover:text-white hover:translate-x-1 inline-flex items-center gap-1.5 transition-all duration-150"
                 >
                   <ChevronRight className="w-3.5 h-3.5 text-red-500/70" />
@@ -453,11 +426,11 @@ export default function Footer() {
           </div>
 
           <div className="flex items-center gap-4">
-            <Link href="/contact" className="hover:text-white transition-colors text-xs">
+            <Link href="/privacy" className="hover:text-white transition-colors text-xs">
               Privacy Policy
             </Link>
             <span>•</span>
-            <Link href="/contact" className="hover:text-white transition-colors text-xs">
+            <Link href="/terms" className="hover:text-white transition-colors text-xs">
               Terms &amp; Conditions
             </Link>
             <span>•</span>

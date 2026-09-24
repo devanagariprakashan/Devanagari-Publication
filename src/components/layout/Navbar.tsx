@@ -25,14 +25,15 @@ import {
   Package,
   MapPin,
   LogOut,
+  Languages,
 } from "lucide-react";
 import CategoryMegaMenu, {
-  CATEGORY_GROUPS,
-  MEGA_CATEGORIES,
+  type NavCategory,
 } from "@/components/layout/CategoryMegaMenu";
+import { DEFAULT_NAV_COLOR, DEFAULT_NAV_ICON, NAV_COLORS, NAV_GROUPS, NAV_ICONS } from "@/data/categoryNav";
+import { SITE_DEFAULTS, firstPhone, getSiteSettings } from "@/lib/site-settings";
 import BooksMegaMenu, {
   POPULAR_LINKS,
-  LANGUAGE_LINKS,
   PRICE_LINKS,
 } from "@/components/layout/BooksMegaMenu";
 import { useCartWishlist } from "@/components/providers/CartWishlistProvider";
@@ -75,6 +76,12 @@ export default function Navbar({
   // ponytail: no read-state persistence, bell just shows latest 2; add read tracking when needed
   const [isBellOpen, setIsBellOpen] = useState(false);
   const [announcements, setAnnouncements] = useState<{ id: string; text: string }[]>([]);
+  const [categories, setCategories] = useState<NavCategory[]>([]);
+  const [languages, setLanguages] = useState<string[]>([]);
+  const [bookCount, setBookCount] = useState(0);
+  const [hasBestseller, setHasBestseller] = useState(false);
+  const [hasNewRelease, setHasNewRelease] = useState(false);
+  const [siteSettings, setSiteSettings] = useState(SITE_DEFAULTS);
   const [isLoggedIn, setIsLoggedIn] = useState(false); // Login state
   const [userProfile, setUserProfile] = useState({
     name: "User",
@@ -162,6 +169,63 @@ export default function Navbar({
         if (data) setAnnouncements(data);
       });
   }, [pathname]);
+
+  useEffect(() => {
+    createClient()
+      .from("categories")
+      .select("id,name,slug,hindi_name,nav_group,nav_icon,nav_badge,nav_color")
+      .eq("is_active", true)
+      .order("sort_order")
+      .order("name")
+      .then(({ data }) => {
+        if (data) setCategories(data);
+      });
+  }, []);
+
+  useEffect(() => {
+    getSiteSettings().then(setSiteSettings);
+  }, []);
+
+  useEffect(() => {
+    createClient()
+      .from("books")
+      .select("language")
+      .eq("is_active", true)
+      .not("language", "is", null)
+      .then(({ data }) => {
+        if (!data) return;
+        const unique = Array.from(new Set(data.map((row) => row.language).filter(Boolean))) as string[];
+        setLanguages(unique.sort());
+      });
+  }, []);
+
+  useEffect(() => {
+    createClient()
+      .from("books")
+      .select("id", { count: "exact", head: true })
+      .eq("is_active", true)
+      .then(({ count }) => {
+        if (count != null) setBookCount(count);
+      });
+  }, []);
+
+  // "New"/"Bestseller" badges in the Books menu should only show up when true right now —
+  // checked against the real flags instead of being permanently on.
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("books")
+      .select("id", { count: "exact", head: true })
+      .eq("is_active", true)
+      .eq("is_bestseller", true)
+      .then(({ count }) => setHasBestseller(!!count));
+    supabase
+      .from("books")
+      .select("id", { count: "exact", head: true })
+      .eq("is_active", true)
+      .eq("is_new_release", true)
+      .then(({ count }) => setHasNewRelease(!!count));
+  }, []);
 
   const handleLogout = () => {
     if (typeof window !== "undefined") {
@@ -275,7 +339,7 @@ export default function Navbar({
 
   return (
     <>
-    <header className={`${isMobileMenuOpen ? "fixed inset-x-0 top-0" : "sticky top-0"} z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-xs transition-all`}>
+    <header className={`${isMobileMenuOpen ? "fixed inset-x-0 top-0" : "sticky top-0"} z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-xs transition-all print:hidden`}>
       <div className="max-w-[1450px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20 gap-3 lg:gap-6">
           {/* ======================================================== */}
@@ -743,7 +807,10 @@ export default function Navbar({
         <BooksMegaMenu
           isOpen={isBooksMenuOpen}
           onClose={() => setIsBooksMenuOpen(false)}
+          languages={languages}
           onSelect={handleSubCategorySelect}
+          hasBestseller={hasBestseller}
+          hasNewRelease={hasNewRelease}
         />
       </div>
 
@@ -754,6 +821,12 @@ export default function Navbar({
         <CategoryMegaMenu
           isOpen={isMegaMenuOpen}
           onClose={() => setIsMegaMenuOpen(false)}
+          categories={categories}
+          bookCount={bookCount}
+          phone={firstPhone(siteSettings.phones)}
+          whatsappUrl={siteSettings.whatsapp_url}
+          freeShippingEnabled={siteSettings.free_shipping_enabled}
+          freeShippingThreshold={siteSettings.free_shipping_threshold}
           onSelectSubCategory={handleSubCategorySelect}
         />
       </div>
@@ -814,70 +887,72 @@ export default function Navbar({
               </Link>
             </div>
 
-            {/* Scrollable Category Groups - Compact 2-Column Grid */}
+            {/* Scrollable Category Groups - Compact 2-Column Grid (live from Admin → Categories) */}
             <div
               data-lenis-prevent
               className="p-3 overflow-y-auto space-y-3 flex-1 min-h-0 overscroll-contain"
               style={{ WebkitOverflowScrolling: "touch" }}
             >
-              {CATEGORY_GROUPS.map((group) => (
-                <div key={group.id} className="space-y-1.5">
-                  <div className="flex items-center gap-1.5 px-1">
-                    <span className="text-[10.5px] font-bold tracking-wider uppercase text-[#C61821]">
-                      {group.name}
-                    </span>
-                    {group.hindiName && (
-                      <span className="text-[9.5px] text-gray-400 font-devanagari">
-                        ({group.hindiName})
+              {NAV_GROUPS.map((group) => {
+                const items = categories.filter((category) => category.nav_group === group.id);
+                if (items.length === 0) return null;
+                return (
+                  <div key={group.id} className="space-y-1.5">
+                    <div className="flex items-center gap-1.5 px-1">
+                      <span className="text-[10.5px] font-bold tracking-wider uppercase text-[#C61821]">
+                        {group.label}
                       </span>
-                    )}
-                    <div className="h-px flex-1 bg-red-100/80" />
-                  </div>
+                      <span className="text-[9.5px] text-gray-400 font-devanagari">
+                        ({group.hindiLabel})
+                      </span>
+                      <div className="h-px flex-1 bg-red-100/80" />
+                    </div>
 
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {group.items.map((item) => {
-                      const Icon = item.icon;
-                      return (
-                        <Link
-                          key={item.title}
-                          href={item.href}
-                          onClick={() => setIsMobileCategoriesOpen(false)}
-                          className="flex items-center gap-2 p-2 rounded-xl bg-gray-50/90 hover:bg-red-50/80 border border-gray-200/60 hover:border-red-200 active:scale-[0.98] transition-all shadow-2xs min-w-0"
-                        >
-                          <div
-                            className={`w-7 h-7 rounded-lg ${item.iconBg} ${item.iconColor} flex items-center justify-center shrink-0 shadow-2xs`}
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {items.map((category) => {
+                        const Icon = NAV_ICONS[category.nav_icon ?? DEFAULT_NAV_ICON] ?? NAV_ICONS[DEFAULT_NAV_ICON];
+                        const colors = NAV_COLORS[category.nav_color ?? DEFAULT_NAV_COLOR] ?? NAV_COLORS[DEFAULT_NAV_COLOR];
+                        return (
+                          <Link
+                            key={category.id}
+                            href={`/shop?category=${category.slug}`}
+                            onClick={() => setIsMobileCategoriesOpen(false)}
+                            className="flex items-center gap-2 p-2 rounded-xl bg-gray-50/90 hover:bg-red-50/80 border border-gray-200/60 hover:border-red-200 active:scale-[0.98] transition-all shadow-2xs min-w-0"
                           >
-                            <Icon className="w-3.5 h-3.5" />
-                          </div>
-                          <div className="flex flex-col min-w-0 flex-1 justify-center">
-                            <span className="text-[11.5px] font-bold text-gray-900 leading-snug truncate">
-                              {item.title}
-                            </span>
-                            {item.hindiTitle && (
-                              <span className="text-[10px] text-gray-500 font-devanagari leading-normal block pt-0.5 truncate">
-                                {item.hindiTitle}
+                            <div className={`w-7 h-7 rounded-lg ${colors.iconBg} ${colors.iconColor} flex items-center justify-center shrink-0 shadow-2xs`}>
+                              <Icon className="w-3.5 h-3.5" />
+                            </div>
+                            <div className="flex flex-col min-w-0 flex-1 justify-center">
+                              <span className="text-[11.5px] font-bold text-gray-900 leading-snug truncate">
+                                {category.name}
                               </span>
-                            )}
-                            {item.badge && (
-                              <span
-                                className={`text-[7.5px] font-bold px-1.5 py-0.2 rounded-full uppercase tracking-wider self-start mt-1 truncate max-w-full ${item.badgeColor}`}
-                              >
-                                {item.badge}
-                              </span>
-                            )}
-                          </div>
-                        </Link>
-                      );
-                    })}
+                              {category.hindi_name && (
+                                <span className="text-[10px] text-gray-500 font-devanagari leading-normal block pt-0.5 truncate">
+                                  {category.hindi_name}
+                                </span>
+                              )}
+                              {category.nav_badge && (
+                                <span className={`text-[7.5px] font-bold px-1.5 py-0.2 rounded-full uppercase tracking-wider self-start mt-1 truncate max-w-full ${colors.badgeColor}`}>
+                                  {category.nav_badge}
+                                </span>
+                              )}
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
+              {categories.every((category) => category.nav_group == null) && (
+                <p className="px-1 text-sm text-gray-500">No categories yet.</p>
+              )}
             </div>
 
             {/* Bottom Support Button - Compact */}
             <div className="p-2.5 border-t border-gray-100 bg-white shrink-0">
               <a
-                href="https://wa.me/919876543210"
+                href={siteSettings.whatsapp_url}
                 target="_blank"
                 rel="noreferrer"
                 className="w-full py-2 rounded-xl bg-[#084C38] hover:bg-[#063b2c] text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors"
@@ -965,28 +1040,25 @@ export default function Navbar({
                           </div>
                         </div>
 
-                        {/* Language */}
+                        {/* Language (live from Books data) */}
                         <div>
                           <span className="text-[10px] font-bold uppercase tracking-wider text-[#C61821] px-1">
                             Language
                           </span>
                           <div className="grid grid-cols-3 gap-1.5 mt-1.5">
-                            {LANGUAGE_LINKS.map((item) => {
-                              const Icon = item.icon;
-                              return (
-                                <Link
-                                  key={item.title}
-                                  href={item.href}
-                                  onClick={() => setIsMobileMenuOpen(false)}
-                                  className="flex flex-col items-center text-center p-2 bg-white rounded-lg border border-gray-100 hover:border-red-200 text-[11px] font-medium text-gray-800"
-                                >
-                                  <div className={`w-6 h-6 rounded-md ${item.iconBg} ${item.iconColor} flex items-center justify-center mb-1`}>
-                                    <Icon className="w-3.5 h-3.5" />
-                                  </div>
-                                  <span className="truncate w-full">{item.title}</span>
-                                </Link>
-                              );
-                            })}
+                            {languages.map((language) => (
+                              <Link
+                                key={language}
+                                href={`/shop?language=${encodeURIComponent(language)}`}
+                                onClick={() => setIsMobileMenuOpen(false)}
+                                className="flex flex-col items-center text-center p-2 bg-white rounded-lg border border-gray-100 hover:border-red-200 text-[11px] font-medium text-gray-800"
+                              >
+                                <div className="w-6 h-6 rounded-md bg-rose-50 text-rose-600 flex items-center justify-center mb-1">
+                                  <Languages className="w-3.5 h-3.5" />
+                                </div>
+                                <span className="truncate w-full">{language}</span>
+                              </Link>
+                            ))}
                           </div>
                         </div>
 
@@ -1040,44 +1112,52 @@ export default function Navbar({
 
                     {isMobileCategoriesAccordionOpen && (
                       <div className="bg-gray-50/80 p-2.5 pt-1 border-t border-gray-100 space-y-2.5 animate-in fade-in duration-150">
-                        {CATEGORY_GROUPS.map((group) => (
-                          <div key={`drawer-cat-${group.id}`} className="space-y-1.5">
-                            <div className="flex items-center gap-1.5 px-1 pt-1">
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-[#C61821]">
-                                {group.name} {group.hindiName && `(${group.hindiName})`}
-                              </span>
-                              <div className="h-px flex-1 bg-red-100" />
-                            </div>
+                        {NAV_GROUPS.map((group) => {
+                          const items = categories.filter((category) => category.nav_group === group.id);
+                          if (items.length === 0) return null;
+                          return (
+                            <div key={`drawer-cat-${group.id}`} className="space-y-1.5">
+                              <div className="flex items-center gap-1.5 px-1 pt-1">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-[#C61821]">
+                                  {group.label} ({group.hindiLabel})
+                                </span>
+                                <div className="h-px flex-1 bg-red-100" />
+                              </div>
 
-                            <div className="grid grid-cols-2 gap-1.5">
-                              {group.items.map((item) => {
-                                const Icon = item.icon;
-                                return (
-                                  <Link
-                                    key={`drawer-item-${item.title}`}
-                                    href={item.href}
-                                    onClick={() => setIsMobileMenuOpen(false)}
-                                    className="flex items-center gap-2 p-2 bg-white rounded-lg border border-gray-100 hover:border-red-200 text-xs font-medium text-gray-800 transition-colors min-h-[46px]"
-                                  >
-                                    <div className={`w-6 h-6 rounded-md ${item.iconBg} ${item.iconColor} flex items-center justify-center shrink-0`}>
-                                      <Icon className="w-3.5 h-3.5" />
-                                    </div>
-                                    <div className="flex flex-col min-w-0 flex-1 justify-center">
-                                      <span className="text-[11px] font-bold text-gray-900 truncate leading-snug">
-                                        {item.title}
-                                      </span>
-                                      {item.hindiTitle && (
-                                        <span className="text-[10px] text-gray-500 font-devanagari truncate leading-normal block pt-0.5">
-                                          {item.hindiTitle}
+                              <div className="grid grid-cols-2 gap-1.5">
+                                {items.map((category) => {
+                                  const Icon = NAV_ICONS[category.nav_icon ?? DEFAULT_NAV_ICON] ?? NAV_ICONS[DEFAULT_NAV_ICON];
+                                  const colors = NAV_COLORS[category.nav_color ?? DEFAULT_NAV_COLOR] ?? NAV_COLORS[DEFAULT_NAV_COLOR];
+                                  return (
+                                    <Link
+                                      key={`drawer-item-${category.id}`}
+                                      href={`/shop?category=${category.slug}`}
+                                      onClick={() => setIsMobileMenuOpen(false)}
+                                      className="flex items-center gap-2 p-2 bg-white rounded-lg border border-gray-100 hover:border-red-200 text-xs font-medium text-gray-800 transition-colors min-h-[46px]"
+                                    >
+                                      <div className={`w-6 h-6 rounded-md ${colors.iconBg} ${colors.iconColor} flex items-center justify-center shrink-0`}>
+                                        <Icon className="w-3.5 h-3.5" />
+                                      </div>
+                                      <div className="flex flex-col min-w-0 flex-1 justify-center">
+                                        <span className="text-[11px] font-bold text-gray-900 truncate leading-snug">
+                                          {category.name}
                                         </span>
-                                      )}
-                                    </div>
-                                  </Link>
-                                );
-                              })}
+                                        {category.hindi_name && (
+                                          <span className="text-[10px] text-gray-500 font-devanagari truncate leading-normal block pt-0.5">
+                                            {category.hindi_name}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </Link>
+                                  );
+                                })}
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
+                        {categories.every((category) => category.nav_group == null) && (
+                          <p className="px-1 text-xs text-gray-500">No categories yet.</p>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1205,7 +1285,7 @@ export default function Navbar({
               <div className="pt-4 border-t border-gray-100 text-xs text-gray-500">
                 <div className="flex items-center gap-1.5 text-emerald-600 font-semibold mb-1">
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Free Shipping on orders above ₹499</span>
+                  <span>Free Shipping on orders above ₹{siteSettings.free_shipping_threshold}</span>
                 </div>
                 <p className="font-semibold text-[#C61821]">
                   देवनागरी पब्लिकेशन प्रा. लि.

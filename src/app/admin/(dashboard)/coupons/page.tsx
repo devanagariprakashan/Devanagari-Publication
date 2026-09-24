@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { deleteCoupon, updateCoupon, updateCouponStatus } from "@/actions/coupons";
 import { CouponForm } from "@/components/admin/CouponForm";
+import { EditCouponButton } from "@/components/admin/EditCouponButton";
 import { DeleteButton } from "@/components/admin/DeleteButton";
 import { StatusSelect } from "@/components/admin/StatusSelect";
 import { card, pageTitle, tableTd, tableTh } from "@/components/admin/ui";
@@ -65,14 +66,7 @@ export default async function CouponsPage() {
                   </td>
                   <td className={tableTd}>
                     <div className="flex items-center gap-2">
-                      <details className="relative">
-                        <summary className="cursor-pointer rounded-md bg-gray-800 px-3 py-1.5 text-xs font-semibold text-white hover:bg-gray-900">
-                          Edit
-                        </summary>
-                        <div className={card + " absolute z-10 mt-2 w-96 p-4"}>
-                          <CouponForm action={updateCoupon} coupon={c} />
-                        </div>
-                      </details>
+                      <EditCouponButton action={updateCoupon} coupon={c} />
                       <DeleteButton action={deleteCoupon} id={c.id} />
                     </div>
                   </td>

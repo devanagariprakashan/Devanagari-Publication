@@ -9,20 +9,34 @@ type BookRow = Database["public"]["Tables"]["books"]["Row"];
 
 const FALLBACKS = ["from-red-500 to-amber-600","from-blue-600 to-cyan-600","from-emerald-600 to-teal-700","from-purple-600 to-indigo-700","from-amber-600 to-orange-700","from-slate-700 to-slate-900"];
 
+function normalizeAuthorName(name: string): string {
+  return name.trim().toLowerCase().replace(/^(mr|mrs|ms|dr|prof|adv)\.?\s+/, "");
+}
+
 export default async function AuthorsPage() {
   const supabase = await createClient();
-  const { data: rows } = await supabase.from("authors").select("*").eq("is_active", true).order("created_at");
+  const [{ data: rows }, { data: allBooks }] = await Promise.all([
+    supabase.from("authors").select("*").eq("is_active", true).order("created_at"),
+    supabase.from("books").select("*").eq("is_active", true),
+  ]);
+  const booksByAuthor = new Map<string, BookRow[]>();
+  for (const b of (allBooks as BookRow[] | null) ?? []) {
+    if (!b.author) continue;
+    const key = normalizeAuthorName(b.author);
+    if (!booksByAuthor.has(key)) booksByAuthor.set(key, []);
+    booksByAuthor.get(key)!.push(b);
+  }
   const authors: AuthorItem[] = [];
   for (let i = 0; i < (rows ?? []).length; i++) {
     const a: AuthorRow = (rows as AuthorRow[])[i];
-    const { data: books } = await supabase.from("books").select("*").eq("author", a.name).eq("is_active", true).limit(4);
+    const books = (booksByAuthor.get(normalizeAuthorName(a.name)) ?? []).slice(0, 4);
     authors.push({
       id: a.id, name: a.name, role: a.role ?? "", shortRole: a.short_role ?? a.role ?? "",
-      category: "all", booksCount: (books ?? []).length,
+      category: "all", booksCount: books.length,
       image: a.image_url ?? "/images/authors/default-author.jpg",
       fallbackGradient: FALLBACKS[i % FALLBACKS.length], experience: "", bio: a.bio ?? "",
       youtubeUrl: a.youtube_url ?? "", linkedinUrl: a.linkedin_url ?? "", twitterUrl: a.twitter_url ?? "", instagramUrl: a.instagram_url ?? "",
-      books: (books ?? []).map((b: BookRow) => ({ id: Number(b.id), title: b.title, category: b.exam ?? b.category_id ?? "", price: b.price ?? 0, image: b.image_url ?? "/images/books/image-2.png" })),
+      books: books.map((b: BookRow) => ({ id: b.id, title: b.title, category: b.exam ?? b.category_id ?? "", price: b.price ?? 0, image: b.image_url ?? "/images/books/image-2.png" })),
     });
   }
   return (
@@ -42,7 +56,7 @@ export default async function AuthorsPage() {
         </div>
       </section>
       <div className="py-6 sm:py-8">
-        <TopAuthorsSection authors={authors.length ? authors : undefined} />
+        <TopAuthorsSection authors={authors} />
       </div>
       <div className="max-w-[1450px] mx-auto px-4 sm:px-6 lg:px-8 pb-12">
         <div className="rounded-2xl bg-gradient-to-r from-gray-900 to-slate-900 text-white p-6 sm:p-8 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-6 border border-gray-800">

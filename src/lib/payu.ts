@@ -53,10 +53,8 @@ export function verifyPayuResponseHash(data: Record<string, string>) {
   const sequence = [
     salt,
     data.status || "",
-    "",
-    "",
-    "",
-    "",
+    // udf10, udf9, udf8, udf7, udf6 — always empty (we only ever send udf1-udf5), but PayU's
+    // response hash formula still reserves exactly these 5 slots before udf5.
     "",
     "",
     "",

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
   Heart,
@@ -27,6 +27,7 @@ import { ALL_BOOKS } from "@/data/booksData";
 import BookModal from "@/components/home/BookModal";
 import { BookData } from "@/components/home/HeroBook3D";
 import { useCartWishlist } from "@/components/providers/CartWishlistProvider";
+import { SITE_DEFAULTS, getSiteSettings } from "@/lib/site-settings";
 
 type SortOption = "recent" | "price-low" | "price-high" | "rating" | "savings";
 type ViewMode = "grid" | "list";
@@ -52,6 +53,11 @@ export default function WishlistPage() {
   const [selectedBookForModal, setSelectedBookForModal] = useState<BookData | null>(null);
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [copiedShareLink, setCopiedShareLink] = useState(false);
+  const [siteSettings, setSiteSettings] = useState(SITE_DEFAULTS);
+
+  useEffect(() => {
+    getSiteSettings().then(setSiteSettings);
+  }, []);
 
   // Merge wishlist items with catalog books for full specifications
   const enrichedWishlist = useMemo(() => {
@@ -743,6 +749,8 @@ export default function WishlistPage() {
       <BookModal
         book={selectedBookForModal}
         onClose={() => setSelectedBookForModal(null)}
+        freeShippingEnabled={siteSettings.free_shipping_enabled}
+        freeShippingThreshold={siteSettings.free_shipping_threshold}
       />
     </main>
   );

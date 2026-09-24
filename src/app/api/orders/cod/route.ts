@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     const { error: itemsError } = await admin.from("order_items").insert(items.map((item) => ({ id: crypto.randomUUID(), order_id: order.id, book_id: item.id, product_name: byId.get(item.id)?.title, product_sku: item.id, quantity: item.quantity, unit_price: Number(byId.get(item.id)?.price) })));
     if (itemsError) { await admin.from("orders").delete().eq("id", order.id); throw itemsError; }
     await createIthinkShipment(order.id);
-    return NextResponse.json({ orderId: order.id, orderNumber: order.order_number });
+    return NextResponse.json({ orderId: order.id, orderNumber: order.order_number, totalAmount: order.total_amount });
   } catch (error) {
     console.error("COD order creation failed", error);
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to create COD order" }, { status: 500 });

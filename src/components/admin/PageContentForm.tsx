@@ -5,14 +5,116 @@ import { ArrowDown, ArrowUp, Plus } from "lucide-react";
 import { savePageContent } from "@/actions/page-content";
 import { contentDefaults, HERO_ITEM_DEFAULT, type PageKind } from "@/lib/page-content-shared";
 import { HERO_BOOKS } from "@/data/heroContent";
+import { createClient } from "@/lib/supabase/client";
 import ImageUploadField from "./ImageUploadField";
 import { btnDanger, btnPrimary, btnSecondary, card, inputCls, labelCls, tableTd, tableTh } from "./ui";
 
 type Content = { settings: Record<string, string>; items: Record<string, string>[] };
 const gradients = ["from-red-600 to-amber-700", "from-blue-700 to-indigo-900", "from-emerald-700 to-teal-900", "from-purple-700 to-violet-950", "from-amber-600 to-rose-700", "from-slate-700 to-zinc-900", "from-amber-600 to-orange-800", "from-rose-600 to-red-900"];
-const labels: Record<string, string> = { dept: "Department", bio: "Biography", id: "Article ID", imageBg: "Banner colour", gradient: "Banner colour", bgColor: "Cover background", coverType: "Cover artwork", ctaHref: "Button URL", ctaLabel: "Button text", ctaBadge: "Section badge", ctaTitle: "Section title", ctaDescription: "Section description", badge1: "First badge", badge2: "Second badge", badge3: "Third badge" };
+const GRADIENT_NAMES: Record<string, string> = {
+  "from-[#8B151B] via-[#A81820] to-[#5C0A0E]": "Deep Red",
+  "from-[#084C38] via-[#0E6248] to-[#04281E]": "Forest Green",
+  "from-[#0F2B5C] via-[#1A3F82] to-[#081836]": "Royal Blue",
+  "from-[#78350F] via-[#9A3412] to-[#451A03]": "Burnt Orange",
+  "from-[#4C1D95] via-[#6B21A8] to-[#2E1065]": "Royal Purple",
+  "from-[#4A0E13] via-[#681820] to-[#2A0609]": "Maroon",
+  "from-[#0E4E49] via-[#14726B] to-[#062B28]": "Teal",
+  "from-[#14532D] via-[#18753E] to-[#082C15]": "Emerald Green",
+  "from-[#1E3A8A] via-[#2563EB] to-[#0F1D45]": "Ocean Blue",
+};
+const gradientLabel = (value: string) => GRADIENT_NAMES[value] ?? value;
+const labels: Record<string, string> = { dept: "Department", bio: "Biography", id: "Article ID", imageBg: "Banner colour", gradient: "Banner colour", bgColor: "Cover background", coverType: "Cover artwork", ctaHref: "Button URL", ctaLabel: "Button text", ctaBadge: "Section badge", ctaTitle: "Section title", ctaDescription: "Section description", badge1: "First badge", badge2: "Second badge", badge3: "Third badge", content: "Full article", excerpt: "Excerpt (shown on the blog list)" };
 const label = (key: string) => labels[key] ?? key.replace(/([A-Z])/g, " $1").replace(/^./, c => c.toUpperCase());
 const numericFields = ["price", "originalPrice", "rating", "reviewsCount"];
+
+function ProductPicker({ id, value, onChange, products }: { id: string; value: string; onChange: (value: string) => void; products: { id: string; title: string }[] }) {
+  const selected = products.find(p => String(p.id) === String(value));
+  const [query, setQuery] = useState(selected ? selected.title : value);
+  const [open, setOpen] = useState(false);
+
+  // Products load asynchronously after mount — once they arrive, resolve the title for the id we already have.
+  const [syncedProducts, setSyncedProducts] = useState(products);
+  if (products !== syncedProducts) {
+    setSyncedProducts(products);
+    setQuery(selected ? selected.title : value);
+  }
+
+  const q = query.trim().toLowerCase();
+  const filtered = (q ? products.filter(p => p.title.toLowerCase().includes(q) || String(p.id).includes(q)) : products).slice(0, 20);
+
+  return (
+    <div className="relative">
+      <input
+        id={id}
+        className={inputCls + " mt-1"}
+        value={query}
+        onChange={event => { setQuery(event.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        placeholder="Search a book by title or ID..."
+        autoComplete="off"
+      />
+      {open && filtered.length > 0 && (
+        <ul className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
+          {filtered.map(p => (
+            <li key={p.id}>
+              <button
+                type="button"
+                onMouseDown={() => { onChange(String(p.id)); setQuery(p.title); setOpen(false); }}
+                className="block w-full px-3 py-2 text-left text-sm hover:bg-brand-50"
+              >
+                <span className="font-medium text-gray-900">{p.title}</span>{" "}
+                <span className="text-gray-400">#{p.id}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {value && !selected && (
+        <p className="mt-1 text-xs text-amber-600">No book found with ID &ldquo;{value}&rdquo; — the cover won&apos;t link to a real product page.</p>
+      )}
+    </div>
+  );
+}
+
+function SelectOrOther({ id, value, onChange, options }: { id: string; value: string; onChange: (value: string) => void; options: string[] }) {
+  const isKnown = value === "" || options.includes(value);
+  const [mode, setMode] = useState<"list" | "other">(isKnown ? "list" : "other");
+
+  // Options load asynchronously after mount — once they arrive, re-check whether the current value is in the list.
+  const [syncedOptions, setSyncedOptions] = useState(options);
+  if (options !== syncedOptions) {
+    setSyncedOptions(options);
+    setMode(value === "" || options.includes(value) ? "list" : "other");
+  }
+
+  if (mode === "other") {
+    return (
+      <div className="mt-1 space-y-1.5">
+        <input id={id} className={inputCls} value={value} onChange={event => onChange(event.target.value)} placeholder="Type a custom value..." />
+        <button type="button" onClick={() => { setMode("list"); onChange(""); }} className="text-xs font-medium text-brand-600 hover:underline">
+          Choose from list instead
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <select
+      id={id}
+      className={inputCls + " mt-1"}
+      value={value}
+      onChange={event => {
+        if (event.target.value === "__other__") { setMode("other"); onChange(""); return; }
+        onChange(event.target.value);
+      }}
+    >
+      <option value="">None</option>
+      {options.map(option => <option key={option} value={option}>{option}</option>)}
+      <option value="__other__">Other (type manually)</option>
+    </select>
+  );
+}
 
 export default function PageContentForm({ kind, initial }: { kind: PageKind; initial: Content }) {
   const [content, setContent] = useState(initial);
@@ -25,6 +127,18 @@ export default function PageContentForm({ kind, initial }: { kind: PageKind; ini
   const title = entryLabel[0].toUpperCase() + entryLabel.slice(1);
   const secondaryKey = kind === "team" ? "role" : "category";
   const active = selected === null ? null : content.items[selected];
+
+  const [products, setProducts] = useState<{ id: string; title: string }[]>([]);
+  const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
+  const [authorOptions, setAuthorOptions] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (kind !== "hero") return;
+    const supabase = createClient();
+    supabase.from("books").select("id, title").order("title").then(({ data }) => setProducts(data ?? []));
+    supabase.from("categories").select("name").eq("is_active", true).order("sort_order").then(({ data }) => setCategoryOptions((data ?? []).map(c => c.name)));
+    supabase.from("authors").select("name").eq("is_active", true).order("name").then(({ data }) => setAuthorOptions((data ?? []).map(a => a.name)));
+  }, [kind]);
 
   // Guard against losing unsaved edits (e.g. a delete) by closing the tab or reloading.
   useEffect(() => {
@@ -69,13 +183,25 @@ export default function PageContentForm({ kind, initial }: { kind: PageKind; ini
     else if (selected !== null && selected > index) setSelected(selected - 1);
   }
   function field(key: string, value: string, update: (value: string) => void, id: string) {
-    if (key === "image" || key === "bannerImage") return <ImageUploadField key={key} id={id} label={key === "bannerImage" ? "Banner image" : kind === "team" ? "Photo (optional)" : "Cover image (optional)"} value={value} onChange={update} />;
+    if (key === "image" || key === "bannerImage") return <ImageUploadField key={id} id={id} label={key === "bannerImage" ? "Banner image" : kind === "team" ? "Photo (optional)" : "Cover image (optional)"} value={value} onChange={update} />;
+    if (kind === "hero" && key === "id") return <div key={id}>
+      <label className={labelCls} htmlFor={id}>Linked product</label>
+      <ProductPicker id={id} value={value} onChange={update} products={products} />
+    </div>;
+    if (kind === "hero" && key === "category") return <div key={id}>
+      <label className={labelCls} htmlFor={id}>{label(key)}</label>
+      <SelectOrOther id={id} value={value} onChange={update} options={categoryOptions} />
+    </div>;
+    if (kind === "hero" && key === "author") return <div key={id}>
+      <label className={labelCls} htmlFor={id}>{label(key)}</label>
+      <SelectOrOther id={id} value={value} onChange={update} options={authorOptions} />
+    </div>;
     const choices = key === "bgColor" ? HERO_BOOKS.map(book => book.bgColor) : key === "coverType" ? ["hindi", "polity", "essay", "history", "constitution", "law", "gk", "economy", "science", "geography"] : gradients;
     const isSelect = ["gradient", "imageBg", "bgColor", "coverType"].includes(key);
-    const multiline = ["bio", "excerpt", "ctaDescription"].includes(key);
-    return <div key={key} className={multiline ? "md:col-span-2" : ""}>
-      <label className={labelCls} htmlFor={id}>{kind === "hero" && key === "id" ? "Linked product ID" : label(key)}</label>
-      {isSelect ? <select id={id} className={inputCls + " mt-1"} value={value} onChange={event => update(event.target.value)}>{Array.from(new Set([...choices, value])).map(colour => <option key={colour} value={colour}>{colour}</option>)}</select> : multiline ? <textarea id={id} className={inputCls + " mt-1"} rows={3} value={value} onChange={event => update(event.target.value)} /> : <input id={id} className={inputCls + " mt-1"} type={numericFields.includes(key) ? "number" : "text"} min={numericFields.includes(key) ? 0 : undefined} max={key === "rating" ? 5 : undefined} step={key === "reviewsCount" ? 1 : "any"} value={value} onChange={event => update(event.target.value)} />}
+    const multiline = ["bio", "excerpt", "ctaDescription", "content"].includes(key);
+    return <div key={id} className={multiline ? "md:col-span-2" : ""}>
+      <label className={labelCls} htmlFor={id}>{label(key)}</label>
+      {isSelect ? <select id={id} className={inputCls + " mt-1"} value={value} onChange={event => update(event.target.value)}>{Array.from(new Set([...choices, value])).map(colour => <option key={colour} value={colour}>{key === "bgColor" ? gradientLabel(colour) : colour}</option>)}</select> : multiline ? <textarea id={id} className={inputCls + " mt-1"} rows={key === "content" ? 10 : 3} value={value} onChange={event => update(event.target.value)} /> : <input id={id} className={inputCls + " mt-1"} type={numericFields.includes(key) ? "number" : "text"} min={numericFields.includes(key) ? 0 : undefined} max={key === "rating" ? 5 : undefined} step={key === "reviewsCount" ? 1 : "any"} value={value} onChange={event => update(event.target.value)} />}
     </div>;
   }
 

@@ -57,7 +57,6 @@ interface CartWishlistContextType {
   cartTotal: number;
   cartOriginalTotal: number;
   cartSavings: number;
-  freeDeliveryThreshold: number;
   addToCart: (
     item: {
       id: number | string;
@@ -114,7 +113,6 @@ const CartWishlistContext = createContext<CartWishlistContextType | null>(null);
 
 const CART_STORAGE_KEY = "devanagari_cart_v2";
 const WISHLIST_STORAGE_KEY = "devanagari_wishlist_v2";
-const FREE_DELIVERY_THRESHOLD = 499;
 
 // Default initial items - empty by default
 const INITIAL_CART: CartItem[] = [];
@@ -503,7 +501,6 @@ export function CartWishlistProvider({
       cartTotal,
       cartOriginalTotal,
       cartSavings,
-      freeDeliveryThreshold: FREE_DELIVERY_THRESHOLD,
       addToCart,
       removeFromCart,
       updateQuantity,

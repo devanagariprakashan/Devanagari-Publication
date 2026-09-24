@@ -10,7 +10,7 @@ const text = z.string().max(10000);
 const imageUrl = text.refine(value => value === "" || /^\/(?!\/)/.test(value) || /^https?:\/\//.test(value), "Use a site path or HTTP(S) image URL");
 const requiredImageUrl = text.min(1).refine(value => /^\/(?!\/)/.test(value) || /^https?:\/\//.test(value), "Use a site path or HTTP(S) image URL");
 const teamItem = z.object({ image: imageUrl.default(""), name: text.min(1), role: text, dept: text, experience: text, qualification: text, bio: text, gradient: text });
-const blogItem = z.object({ image: imageUrl.default(""), id: text.min(1), title: text.min(1), excerpt: text, category: text.min(1), author: text, authorRole: text, readTime: text, date: text, imageBg: text });
+const blogItem = z.object({ image: imageUrl.default(""), id: text.min(1), title: text.min(1), excerpt: text, content: text.default(""), category: text.min(1), author: text, authorRole: text, readTime: text, date: text, imageBg: text });
 const safeHref = text.refine(value => /^\/(?!\/)/.test(value) || /^https?:\/\//.test(value), "Use a site path or an HTTP(S) URL");
 const settingsSchema = (defaults: Record<string, string>) => z.object(Object.fromEntries(Object.keys(defaults).map(key => [key, key === "ctaHref" ? safeHref : text])));
 const numericText = z.string().refine(value => value.trim() !== "" && Number.isFinite(Number(value)) && Number(value) >= 0, "Use a non-negative number");

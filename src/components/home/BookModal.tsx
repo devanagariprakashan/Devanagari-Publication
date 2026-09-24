@@ -13,6 +13,8 @@ interface BookModalProps {
   onBuyNow?: (book: BookData) => void;
   isWishlisted?: boolean;
   onToggleWishlist?: (book: BookData) => void;
+  freeShippingEnabled?: boolean;
+  freeShippingThreshold?: number;
 }
 
 export default function BookModal({
@@ -22,6 +24,8 @@ export default function BookModal({
   onBuyNow,
   isWishlisted: propIsWishlisted,
   onToggleWishlist,
+  freeShippingEnabled,
+  freeShippingThreshold,
 }: BookModalProps) {
   const {
     isInWishlist,
@@ -208,7 +212,11 @@ export default function BookModal({
               <div className="grid grid-cols-2 gap-2.5 mt-3.5 text-xs text-gray-700">
                 <div className="flex items-center gap-2 p-2 rounded-xl bg-gray-50/80 border border-gray-100">
                   <Truck className="w-3.5 h-3.5 text-[#C61821] shrink-0" />
-                  <span className="font-medium truncate">Free Express Delivery</span>
+                  <span className="font-medium truncate">
+                    {freeShippingEnabled
+                      ? `Free Delivery Above ₹${freeShippingThreshold}`
+                      : "Nationwide Delivery"}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 p-2 rounded-xl bg-gray-50/80 border border-gray-100">
                   <ShieldCheck className="w-3.5 h-3.5 text-[#C61821] shrink-0" />

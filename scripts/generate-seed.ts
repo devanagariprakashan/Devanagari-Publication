@@ -1,4 +1,4 @@
-import { ALL_BOOKS, SHOP_CATEGORIES } from "../src/data/booksData.ts";
+import { ALL_BOOKS } from "../src/data/booksData.ts";
 import fs from "node:fs";
 
 const HERO_IDS = new Set(["101", "102", "105", "106", "109", "110", "112", "115", "116"]);
@@ -49,8 +49,10 @@ function bool(v: boolean): string {
 let sql = "-- Devanagari Publications seed data\n";
 
 sql += "\n-- categories\n";
-for (const c of SHOP_CATEGORIES.filter((c) => c.id !== "all")) {
-  sql += `insert into public.categories (id, name, slug, is_active) values (${esc(c.id)}, ${esc(c.name)}, ${esc(c.id)}, true) on conflict (id) do nothing;\n`;
+const categories = new Map<string, string>();
+for (const b of ALL_BOOKS) categories.set(b.categorySlug, b.category);
+for (const [id, name] of categories) {
+  sql += `insert into public.categories (id, name, slug, is_active) values (${esc(id)}, ${esc(name)}, ${esc(id)}, true) on conflict (id) do nothing;\n`;
 }
 
 sql += "\n-- authors\n";

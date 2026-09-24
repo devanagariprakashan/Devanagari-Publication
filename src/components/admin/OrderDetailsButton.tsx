@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { X, Eye, ExternalLink, Truck, Zap } from "lucide-react";
+import { CreateShipmentButton } from "./CreateShipmentButton";
+import { TrackShipmentButton } from "./TrackShipmentButton";
 
 type OrderItem = {
   id: string;
@@ -142,6 +144,10 @@ export function OrderDetailsButton({ order }: { order: Order }) {
                 {order.shipment_error && (
                   <p className="text-xs text-red-600">Error: {order.shipment_error}</p>
                 )}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <CreateShipmentButton orderId={order.id} shipmentStatus={order.shipment_status} />
+                  {order.awb_number && <TrackShipmentButton awb={order.awb_number} />}
+                </div>
               </div>
             </div>
 

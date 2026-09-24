@@ -28,14 +28,18 @@ function normalizeLanguage(value?: string | null): BookItem["language"] {
     : "Hindi";
 }
 
+export type RatingSummary = { average: number; count: number };
+
 export function mapBookRowToItem(
   book: BookRow,
   categoryMap: Map<string, Pick<CategoryRow, "name" | "slug">> = new Map(),
+  ratingMap: Map<string, RatingSummary> = new Map(),
 ): BookItem {
   const category = categoryMap.get(book.category_id ?? "") ?? null;
   const categoryName = category?.name ?? book.exam ?? "General";
   const categorySlug = category?.slug ?? slugify(categoryName);
   const examName = book.exam ?? categoryName;
+  const ratingSummary = ratingMap.get(String(book.id));
 
   return {
     id: book.id,
@@ -53,11 +57,13 @@ export function mapBookRowToItem(
     price: Number(book.price ?? 0),
     originalPrice: Number(book.original_price ?? book.price ?? 0),
     discountPercent: Number(book.discount_percent ?? 0),
-    rating: Number(book.rating ?? 0),
-    reviewsCount: Number(book.reviews_count ?? 0),
+    // Real average/count from approved customer reviews, not an admin-entered number.
+    rating: ratingSummary?.average ?? 0,
+    reviewsCount: ratingSummary?.count ?? 0,
     badge: book.badge ?? undefined,
     badgeColor: book.badge_color ?? undefined,
     image: book.image_url ?? "/images/books/image-2.png",
+    sampleImages: Array.isArray(book.images) ? book.images.map((value) => String(value)) : [],
     demoFileUrl: book.demo_file_url ?? undefined,
     demoVideoUrl: book.demo_video_url ?? undefined,
     edition: book.edition ?? "Latest Edition",
@@ -82,17 +88,35 @@ export function mapBookRowToItem(
   };
 }
 
+function buildRatingMap(reviews: { book_id: string | null; rating: number | null }[]): Map<string, RatingSummary> {
+  const totals = new Map<string, { sum: number; count: number }>();
+  for (const review of reviews) {
+    if (!review.book_id) continue;
+    const entry = totals.get(review.book_id) ?? { sum: 0, count: 0 };
+    entry.sum += review.rating ?? 0;
+    entry.count += 1;
+    totals.set(review.book_id, entry);
+  }
+  const ratingMap = new Map<string, RatingSummary>();
+  for (const [bookId, { sum, count }] of totals) {
+    ratingMap.set(bookId, { average: sum / count, count });
+  }
+  return ratingMap;
+}
+
 export async function fetchCatalogBooks(): Promise<BookItem[]> {
   const supabase = createClient();
 
-  const [booksRes, categoriesRes] = await Promise.all([
+  const [booksRes, categoriesRes, reviewsRes] = await Promise.all([
     supabase.from("books").select("*").eq("is_active", true).order("created_at", { ascending: false }),
     supabase.from("categories").select("id, name, slug").eq("is_active", true),
+    supabase.from("reviews").select("book_id, rating").eq("is_approved", true),
   ]);
 
   const categories = (categoriesRes.data ?? []) as CategoryRow[];
   const categoryMap = new Map(categories.map((category) => [category.id, { name: category.name, slug: category.slug }]));
+  const ratingMap = buildRatingMap(reviewsRes.data ?? []);
 
   const books = (booksRes.data ?? []) as BookRow[];
-  return books.length > 0 ? books.map((book) => mapBookRowToItem(book, categoryMap)) : [];
+  return books.length > 0 ? books.map((book) => mapBookRowToItem(book, categoryMap, ratingMap)) : [];
 }

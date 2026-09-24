@@ -26,6 +26,8 @@ import {
 } from "lucide-react";
 import { useCartWishlist } from "@/components/providers/CartWishlistProvider";
 import { createClient } from "@/lib/supabase/client";
+import { getSiteSettings, SITE_DEFAULTS } from "@/lib/site-settings";
+import TrackShipmentInline from "@/components/TrackShipmentInline";
 
 // Define Address Interface
 interface UserAddress {
@@ -42,6 +44,16 @@ interface UserAddress {
 }
 
 // Define Order Interface
+interface AccountOrderItem {
+  id: string;
+  bookId: string | null;
+  title: string;
+  sku: string | null;
+  quantity: number;
+  unitPrice: number;
+  image: string;
+}
+
 interface AccountOrder {
   id: string;
   orderNumber: string;
@@ -52,13 +64,18 @@ interface AccountOrder {
   price: number;
   originalPrice?: number;
   status: "Delivered" | "Shipped" | "Processing" | "Cancelled";
+  orderStatus: string;
   image: string;
   author: string;
   pages?: number;
   itemsCount: number;
+  items: AccountOrderItem[];
   trackingNumber: string;
   courier: string;
   estimatedDelivery?: string;
+  confirmedAt: string | null;
+  shippedAt: string | null;
+  deliveredAt: string | null;
   deliveredDate?: string;
   shipTo: {
     name: string;
@@ -68,6 +85,27 @@ interface AccountOrder {
     city: string;
     state: string;
     pincode: string;
+  };
+  payment: {
+    method: string;
+    gateway: string | null;
+    status: string;
+    gatewayOrderId: string | null;
+    paymentId: string | null;
+  };
+  shipment: {
+    status: string;
+    method: "express" | "standard";
+    awbNumber: string | null;
+    error: string | null;
+  };
+  pricing: {
+    hasBreakdown: boolean;
+    subtotal: number;
+    discount: number;
+    couponCode: string | null;
+    shippingCharge: number;
+    codFee: number;
   };
 }
 
@@ -81,24 +119,36 @@ const ORDER_STATUS_MAP: Record<string, AccountOrder["status"]> = {
 };
 
 // Real orders placed via checkout (COD/PayU), fetched by the signed-in email —
-// order_items/books are joined for the thumbnail, title and author shown on each card.
-async function fetchAccountOrders(email: string): Promise<AccountOrder[]> {
+// mirrors every field the admin order-details view shows, so customers see the same a-to-z detail.
+async function fetchAccountOrders(email: string, standardDeliveryDays: string): Promise<AccountOrder[]> {
   if (!email) return [];
   const { data, error } = await createClient()
     .from("orders")
-    .select("*, order_items(quantity, product_name, unit_price, books(image_url, author))")
+    .select("*, order_items(id, book_id, quantity, product_name, product_sku, unit_price, books(image_url, author))")
     .eq("customer_email", email.toLowerCase())
     .order("created_at", { ascending: false });
   if (error || !data) return [];
 
   return data.map((order) => {
-    const items = (order.order_items ?? []) as Array<{
+    const rawItems = (order.order_items ?? []) as Array<{
+      id: string;
+      book_id: string | null;
       quantity: number;
       product_name: string;
+      product_sku: string | null;
       unit_price: number;
       books: { image_url: string | null; author: string | null } | null;
     }>;
-    const first = items[0];
+    const items: AccountOrderItem[] = rawItems.map((item) => ({
+      id: item.id,
+      bookId: item.book_id,
+      title: item.product_name,
+      sku: item.product_sku,
+      quantity: item.quantity,
+      unitPrice: Number(item.unit_price),
+      image: item.books?.image_url ?? "/images/books/image-2.png",
+    }));
+    const first = rawItems[0];
     const extraCount = items.length - 1;
     const createdDate = new Date(order.created_at as string);
 
@@ -110,13 +160,20 @@ async function fetchAccountOrders(email: string): Promise<AccountOrder[]> {
       rawDate: order.created_at as string,
       price: Number(order.total_amount),
       status: ORDER_STATUS_MAP[order.order_status as string] ?? "Processing",
+      orderStatus: (order.order_status as string) ?? "pending",
       image: first?.books?.image_url ?? "/images/books/image-2.png",
       author: first?.books?.author ?? "Devanagari Publications",
       itemsCount: items.reduce((sum, item) => sum + item.quantity, 0),
+      items,
       trackingNumber: (order.awb_number as string | null) ?? "Not yet assigned",
       courier: order.shipment_id ? "iThink Logistics" : "Not yet dispatched",
-      deliveredDate: order.order_status === "delivered" ? createdDate.toLocaleDateString("en-IN") : undefined,
-      estimatedDelivery: order.order_status === "delivered" || order.order_status === "cancelled" ? undefined : "Estimated delivery in 3-5 days",
+      confirmedAt: (order.confirmed_at as string | null) ?? null,
+      shippedAt: (order.shipped_at as string | null) ?? null,
+      deliveredAt: (order.delivered_at as string | null) ?? null,
+      deliveredDate: order.delivered_at
+        ? new Date(order.delivered_at as string).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+        : undefined,
+      estimatedDelivery: order.order_status === "delivered" || order.order_status === "cancelled" ? undefined : `Estimated delivery in ${standardDeliveryDays}`,
       shipTo: {
         name: (order.customer_name as string | null) ?? "—",
         phone: (order.customer_phone as string | null) ?? "—",
@@ -125,6 +182,27 @@ async function fetchAccountOrders(email: string): Promise<AccountOrder[]> {
         city: (order.city as string | null) ?? "—",
         state: (order.state as string | null) ?? "",
         pincode: (order.pincode as string | null) ?? "",
+      },
+      payment: {
+        method: (order.payment_method as string | null) ?? (order.payment_gateway ? "online" : "—"),
+        gateway: (order.payment_gateway as string | null) ?? null,
+        status: (order.payment_status as string) ?? "pending",
+        gatewayOrderId: (order.gateway_order_id as string | null) ?? null,
+        paymentId: (order.payment_id as string | null) ?? null,
+      },
+      shipment: {
+        status: (order.shipment_status as string | null) ?? "pending",
+        method: (order.shipping_method as string) === "express" ? "express" : "standard",
+        awbNumber: (order.awb_number as string | null) ?? null,
+        error: (order.shipment_error as string | null) ?? null,
+      },
+      pricing: {
+        hasBreakdown: order.subtotal_amount != null,
+        subtotal: Number(order.subtotal_amount ?? order.total_amount ?? 0),
+        discount: Number(order.discount_amount ?? 0),
+        couponCode: (order.coupon_code as string | null) ?? null,
+        shippingCharge: Number(order.shipping_charge ?? 0),
+        codFee: Number(order.cod_fee ?? 0),
       },
     };
   });
@@ -237,8 +315,11 @@ function AccountPageContent() {
     }
 
     // 3. Orders — real orders placed via checkout, matched by email
-    fetchAccountOrders(currentEmail).then((fetched) => {
-      if (!cancelled) setOrders(fetched);
+    getSiteSettings().then((settings) => {
+      if (cancelled) return;
+      fetchAccountOrders(currentEmail, settings.standard_delivery_days || SITE_DEFAULTS.standard_delivery_days).then((fetched) => {
+        if (!cancelled) setOrders(fetched);
+      });
     });
 
     // 4. Reviews (starts at 24)
@@ -1027,7 +1108,7 @@ function AccountPageContent() {
                               onClick={() => setSelectedOrder(order)}
                               className="px-3.5 py-1.5 rounded-lg border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all cursor-pointer"
                             >
-                              Track Shipment
+                              See Details
                             </button>
                             <button
                               type="button"
@@ -1683,13 +1764,14 @@ function AccountPageContent() {
       {/* ============================================================ */}
       {selectedOrder && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-gray-100 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 sm:p-7 shadow-2xl border border-gray-100 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-5">
               <div>
                 <span className="text-xs font-semibold text-gray-400">Order Details</span>
                 <h3 className="text-base font-bold text-gray-900">
                   #{selectedOrder.orderNumber}
                 </h3>
+                <p className="text-[11px] text-gray-400 mt-0.5">Placed on {selectedOrder.date}</p>
               </div>
               <button
                 type="button"
@@ -1700,108 +1782,192 @@ function AccountPageContent() {
               </button>
             </div>
 
-            {/* Book Info */}
-            <div className="flex items-center gap-3.5 p-3.5 bg-gray-50 rounded-xl mb-6">
-              <div className="w-12 h-16 relative bg-white rounded border border-gray-200 shrink-0 overflow-hidden">
-                <Image
-                  src={selectedOrder.image}
-                  alt={selectedOrder.title}
-                  fill
-                  className="object-cover"
-                  sizes="60px"
-                />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h4 className="text-xs sm:text-sm font-bold text-gray-900 uppercase truncate">
-                  {selectedOrder.title}
-                </h4>
-                <p className="text-xs text-gray-500 font-medium mt-0.5">
-                  Ordered on {selectedOrder.date}
-                </p>
-                <p className="text-xs font-bold text-[#C61821] mt-1">₹{selectedOrder.price}</p>
-              </div>
-            </div>
-
-            {/* Shipment Progress Tracker */}
+            {/* Shipment Progress Tracker — built from the real order_status and per-step timestamps
+                the admin sets; falls back to generic text only if a step's timestamp wasn't recorded. */}
             <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-4">
               Tracking Timeline
             </h4>
-            <div className="space-y-4 pl-2 mb-6">
-              {[
-                {
-                  step: "Order Placed",
-                  date: `${selectedOrder.date}, 10:15 AM`,
-                  done: true,
-                },
-                {
-                  step: "Packed & Invoiced",
-                  date: `${selectedOrder.date}, 02:20 PM`,
-                  done: true,
-                },
-                {
-                  step: "Dispatched via " + selectedOrder.courier,
-                  date: `AWB: ${selectedOrder.trackingNumber}`,
-                  done: selectedOrder.status !== "Processing",
-                },
-                {
-                  step: "Delivered",
-                  date: selectedOrder.deliveredDate || "Estimated: In 2 days",
-                  done: selectedOrder.status === "Delivered",
-                },
-              ].map((item, idx, arr) => (
-                <div key={idx} className="flex gap-3 relative">
-                  {idx !== arr.length - 1 && (
+            {selectedOrder.orderStatus === "cancelled" || selectedOrder.orderStatus === "payment_failed" ? (
+              <div className="flex items-center gap-2.5 p-3.5 rounded-xl bg-red-50 border border-red-100 mb-6">
+                <X className="w-4 h-4 text-red-600 shrink-0" />
+                <p className="text-xs font-bold text-red-700">
+                  {selectedOrder.orderStatus === "payment_failed" ? "Payment failed — this order was not confirmed." : "This order was cancelled."}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4 pl-2 mb-6">
+                {(() => {
+                  const isConfirmed = ["confirmed", "shipped", "delivered"].includes(selectedOrder.orderStatus);
+                  const isShipped = ["shipped", "delivered"].includes(selectedOrder.orderStatus);
+                  const isDelivered = selectedOrder.orderStatus === "delivered";
+                  const fmt = (iso: string) =>
+                    new Date(iso).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+                  const placedAt = fmt(selectedOrder.rawDate);
+                  return [
+                    { step: "Order Placed", date: placedAt, done: true },
+                    {
+                      step: "Confirmed",
+                      date: isConfirmed
+                        ? (selectedOrder.confirmedAt ? fmt(selectedOrder.confirmedAt) : "Confirmed by our team")
+                        : "Awaiting confirmation",
+                      done: isConfirmed,
+                    },
+                    {
+                      step: "Dispatched via " + selectedOrder.courier,
+                      date: isShipped
+                        ? `${selectedOrder.shippedAt ? fmt(selectedOrder.shippedAt) : "Dispatched"} · AWB: ${selectedOrder.trackingNumber}`
+                        : `AWB: ${selectedOrder.trackingNumber}`,
+                      done: isShipped,
+                    },
+                    {
+                      step: "Delivered",
+                      date: isDelivered
+                        ? (selectedOrder.deliveredAt ? fmt(selectedOrder.deliveredAt) : "Delivered")
+                        : (selectedOrder.estimatedDelivery ?? "Awaiting dispatch"),
+                      done: isDelivered,
+                    },
+                  ];
+                })().map((item, idx, arr) => (
+                  <div key={idx} className="flex gap-3 relative">
+                    {idx !== arr.length - 1 && (
+                      <div
+                        className={`absolute left-2.5 top-6 bottom-0 w-0.5 ${
+                          item.done ? "bg-[#C61821]" : "bg-gray-200"
+                        }`}
+                      />
+                    )}
                     <div
-                      className={`absolute left-2.5 top-6 bottom-0 w-0.5 ${
-                        item.done ? "bg-[#C61821]" : "bg-gray-200"
+                      className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 z-10 ${
+                        item.done
+                          ? "bg-[#C61821] text-white shadow-2xs"
+                          : "bg-gray-200 text-gray-400"
                       }`}
-                    />
-                  )}
-                  <div
-                    className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 z-10 ${
-                      item.done
-                        ? "bg-[#C61821] text-white shadow-2xs"
-                        : "bg-gray-200 text-gray-400"
-                    }`}
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <h5 className="text-xs font-bold text-gray-900 leading-tight">
+                        {item.step}
+                      </h5>
+                      <p className="text-[11px] text-gray-400 font-medium">{item.date}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h5 className="text-xs font-bold text-gray-900 leading-tight">
-                      {item.step}
-                    </h5>
-                    <p className="text-[11px] text-gray-400 font-medium">{item.date}</p>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            )}
+
+            {/* Delivery + Payment + Shipment info grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+              <div className="p-3.5 rounded-xl border border-gray-100 bg-[#FBFBFC] text-xs space-y-1">
+                <span className="font-bold text-gray-800 block mb-1">Delivery Address</span>
+                <p className="text-gray-600">
+                  {selectedOrder.shipTo.name} ({selectedOrder.shipTo.phone})
+                </p>
+                <p className="text-gray-500">
+                  {selectedOrder.shipTo.street}
+                  {selectedOrder.shipTo.landmark ? `, ${selectedOrder.shipTo.landmark}` : ""}, {selectedOrder.shipTo.city}
+                  {selectedOrder.shipTo.state ? `, ${selectedOrder.shipTo.state}` : ""}
+                  {selectedOrder.shipTo.pincode ? ` - ${selectedOrder.shipTo.pincode}` : ""}
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl border border-gray-100 bg-[#FBFBFC] text-xs space-y-1">
+                <span className="font-bold text-gray-800 block mb-1">Payment</span>
+                <p className="text-gray-600">
+                  Method: <span className="font-semibold text-gray-900 capitalize">{selectedOrder.payment.method === "cod" ? "Cash on Delivery" : selectedOrder.payment.method}</span>
+                  {selectedOrder.payment.gateway ? ` (${selectedOrder.payment.gateway})` : ""}
+                </p>
+                <p className="text-gray-600">Status: <span className="font-semibold text-gray-900 capitalize">{selectedOrder.payment.status}</span></p>
+                {selectedOrder.payment.gatewayOrderId && (
+                  <p className="text-gray-400 truncate">Txn: {selectedOrder.payment.gatewayOrderId}</p>
+                )}
+                {selectedOrder.payment.paymentId && (
+                  <p className="text-gray-400 truncate">Payment ID: {selectedOrder.payment.paymentId}</p>
+                )}
+              </div>
+
+              <div className="p-3.5 rounded-xl border border-gray-100 bg-[#FBFBFC] text-xs space-y-1 sm:col-span-2">
+                <span className="font-bold text-gray-800 block mb-1">Shipment</span>
+                <p className="text-gray-600">
+                  Delivery type: <span className="font-semibold text-gray-900 capitalize">{selectedOrder.shipment.method}</span>
+                  <span className="mx-1.5 text-gray-300">•</span>
+                  Status: <span className="font-semibold text-gray-900 capitalize">{selectedOrder.shipment.status}</span>
+                </p>
+                <p className="text-gray-600">AWB: {selectedOrder.shipment.awbNumber ?? "Not yet assigned"}</p>
+                {selectedOrder.shipment.error && (
+                  <p className="text-red-600">Error: {selectedOrder.shipment.error}</p>
+                )}
+                {selectedOrder.shipment.awbNumber && (
+                  <TrackShipmentInline awb={selectedOrder.shipment.awbNumber} />
+                )}
+              </div>
             </div>
 
-            {/* Delivery Details */}
-            <div className="p-3.5 rounded-xl border border-gray-100 bg-[#FBFBFC] text-xs space-y-1 mb-6">
-              <span className="font-bold text-gray-800 block mb-1">Delivery Address:</span>
-              <p className="text-gray-600">
-                {selectedOrder.shipTo.name} ({selectedOrder.shipTo.phone})
-              </p>
-              <p className="text-gray-500">
-                {selectedOrder.shipTo.street}
-                {selectedOrder.shipTo.landmark ? `, ${selectedOrder.shipTo.landmark}` : ""}, {selectedOrder.shipTo.city}
-                {selectedOrder.shipTo.state ? `, ${selectedOrder.shipTo.state}` : ""}
-                {selectedOrder.shipTo.pincode ? ` - ${selectedOrder.shipTo.pincode}` : ""}
-              </p>
+            {/* All items in this order */}
+            <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-3">
+              Items ({selectedOrder.items.length})
+            </h4>
+            <div className="rounded-xl border border-gray-100 divide-y divide-gray-50 mb-6">
+              {selectedOrder.items.length === 0 ? (
+                <p className="p-3.5 text-xs text-gray-400">No items recorded for this order.</p>
+              ) : (
+                selectedOrder.items.map((item) => (
+                  <div key={item.id} className="flex items-center gap-3 p-3">
+                    <div className="w-10 h-13 relative bg-gray-50 rounded border border-gray-100 shrink-0 overflow-hidden">
+                      <Image src={item.image} alt={item.title} fill className="object-cover" sizes="40px" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      {item.bookId ? (
+                        <Link href={`/product/${item.bookId}`} target="_blank" className="text-xs font-bold text-gray-900 hover:text-[#C61821] hover:underline truncate block">
+                          {item.title}
+                        </Link>
+                      ) : (
+                        <p className="text-xs font-bold text-gray-900 truncate">{item.title}</p>
+                      )}
+                      <p className="text-[11px] text-gray-400 mt-0.5">
+                        {item.sku ? `SKU: ${item.sku} · ` : ""}Qty {item.quantity} × ₹{item.unitPrice}
+                      </p>
+                    </div>
+                    <p className="text-xs font-bold text-gray-900 shrink-0">₹{item.unitPrice * item.quantity}</p>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Price breakdown */}
+            <div className="p-3.5 rounded-xl border border-gray-100 bg-[#FBFBFC] text-xs space-y-1.5 mb-6">
+              {selectedOrder.pricing.hasBreakdown ? (
+                <>
+                  <div className="flex justify-between text-gray-600"><span>Subtotal</span><span>₹{selectedOrder.pricing.subtotal}</span></div>
+                  {selectedOrder.pricing.discount > 0 && (
+                    <div className="flex justify-between text-emerald-600">
+                      <span>Discount{selectedOrder.pricing.couponCode ? ` (${selectedOrder.pricing.couponCode})` : ""}</span>
+                      <span>-₹{selectedOrder.pricing.discount}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-gray-600"><span>Shipping</span><span>{selectedOrder.pricing.shippingCharge > 0 ? `₹${selectedOrder.pricing.shippingCharge}` : "Free"}</span></div>
+                  {selectedOrder.pricing.codFee > 0 && (
+                    <div className="flex justify-between text-gray-600"><span>COD Handling Fee</span><span>₹{selectedOrder.pricing.codFee}</span></div>
+                  )}
+                </>
+              ) : (
+                <p className="text-gray-400">Price breakdown wasn&apos;t recorded for this order.</p>
+              )}
+              <div className="flex justify-between text-sm font-extrabold text-gray-900 pt-1.5 border-t border-gray-100">
+                <span>Total</span><span className="text-[#C61821]">₹{selectedOrder.price}</span>
+              </div>
             </div>
 
             {/* Modal Actions */}
             <div className="flex items-center justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  triggerToast("Invoice downloaded to your device!");
-                }}
+              <Link
+                href={`/account/invoice/${selectedOrder.id}`}
+                target="_blank"
                 className="inline-flex items-center gap-1.5 px-4 py-2 border border-gray-200 text-gray-700 hover:bg-gray-50 text-xs font-bold rounded-xl transition-all cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Invoice</span>
-              </button>
+              </Link>
               <button
                 type="button"
                 onClick={() => setSelectedOrder(null)}

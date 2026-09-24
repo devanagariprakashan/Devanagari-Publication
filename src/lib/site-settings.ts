@@ -25,6 +25,8 @@ export type SiteSettings = {
   // Online payments
   upi_enabled: boolean;
   card_enabled: boolean;
+  // Homepage sections
+  whats_new_enabled: boolean;
   // Homepage hero stats bar
   hero_stat1_value: string;
   hero_stat1_label: string;
@@ -60,6 +62,7 @@ export const SITE_DEFAULTS: SiteSettings = {
   cod_max_order: null,
   upi_enabled: true,
   card_enabled: true,
+  whats_new_enabled: true,
   hero_stat1_value: "10+",
   hero_stat1_label: "Exam Oriented Titles",
   hero_stat2_value: "25K+",

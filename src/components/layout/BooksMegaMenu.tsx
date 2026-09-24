@@ -8,8 +8,6 @@ import {
   Sparkles,
   Award,
   Languages,
-  BookA,
-  Layers,
   Tag,
   IndianRupee,
   ShoppingBag,
@@ -17,14 +15,24 @@ import {
   ArrowRight,
   Percent,
 } from "lucide-react";
-import { FEATURED_OFFER } from "@/data/featuredOffer";
 import { useFeaturedCoupon } from "@/components/providers/FeaturedCouponProvider";
 import { couponHeadline } from "@/lib/coupon-shared";
 
 interface BooksMegaMenuProps {
   isOpen: boolean;
   onClose: () => void;
+  languages: string[];
   onSelect?: (href: string) => void;
+  hasBestseller?: boolean;
+  hasNewRelease?: boolean;
+}
+
+// "New" only means something if it's actually true right now — computed from real book flags
+// by the caller, not baked into the static link list below.
+export function popularLinkBadge(href: string, hasBestseller: boolean, hasNewRelease: boolean) {
+  if (href.includes("filter=bestsellers")) return hasBestseller ? { label: "New", color: "bg-amber-500 text-white" } : null;
+  if (href.includes("filter=new")) return hasNewRelease ? { label: "New", color: "bg-emerald-600 text-white" } : null;
+  return null;
 }
 
 export interface MenuItem {
@@ -51,18 +59,14 @@ export const POPULAR_LINKS: MenuItem[] = [
     title: "Bestsellers",
     hindiTitle: "सर्वाधिक बिकने वाली",
     href: "/shop?filter=bestsellers",
-    badge: "New",
-    badgeColor: "bg-amber-500 text-white",
     icon: Flame,
     iconBg: "bg-amber-50",
     iconColor: "text-amber-600",
   },
   {
     title: "New Releases",
-    hindiTitle: "नवीनतम संस्करण 2025",
+    hindiTitle: "नवीनतम संस्करण",
     href: "/shop?filter=new",
-    badge: "New",
-    badgeColor: "bg-emerald-600 text-white",
     icon: Sparkles,
     iconBg: "bg-emerald-50",
     iconColor: "text-emerald-600",
@@ -74,35 +78,6 @@ export const POPULAR_LINKS: MenuItem[] = [
     icon: Award,
     iconBg: "bg-indigo-50",
     iconColor: "text-indigo-600",
-  },
-];
-
-export const LANGUAGE_LINKS: MenuItem[] = [
-  {
-    title: "Hindi Books",
-    hindiTitle: "हिंदी माध्यम",
-    href: "/shop?language=Hindi",
-    icon: Languages,
-    iconBg: "bg-rose-50",
-    iconColor: "text-rose-600",
-  },
-  {
-    title: "English Books",
-    hindiTitle: "English Medium",
-    href: "/shop?language=English",
-    icon: BookA,
-    iconBg: "bg-sky-50",
-    iconColor: "text-sky-600",
-  },
-  {
-    title: "Bilingual (द्विभाषी)",
-    hindiTitle: "Hindi + English",
-    href: "/shop?language=Bilingual",
-    badge: "Popular",
-    badgeColor: "bg-purple-600 text-white",
-    icon: Layers,
-    iconBg: "bg-purple-50",
-    iconColor: "text-purple-600",
   },
 ];
 
@@ -133,10 +108,8 @@ export const PRICE_LINKS: MenuItem[] = [
   },
   {
     title: "Above ₹1000",
-    hindiTitle: "संपूर्ण कॉम्बो पैक",
+    hindiTitle: "प्रीमियम पुस्तकें",
     href: "/shop?minPrice=1000",
-    badge: "Combos",
-    badgeColor: "bg-[#C61821] text-white",
     icon: Crown,
     iconBg: "bg-red-50",
     iconColor: "text-[#C61821]",
@@ -146,11 +119,14 @@ export const PRICE_LINKS: MenuItem[] = [
 export default function BooksMegaMenu({
   isOpen,
   onClose,
+  languages,
   onSelect,
+  hasBestseller = false,
+  hasNewRelease = false,
 }: BooksMegaMenuProps) {
   const coupon = useFeaturedCoupon();
-  const offerTitle = coupon ? couponHeadline(coupon) : FEATURED_OFFER.title;
-  const offerCode = coupon?.code ?? FEATURED_OFFER.code;
+  const offerTitle = coupon ? couponHeadline(coupon) : "";
+  const offerCode = coupon?.code ?? "";
 
   if (!isOpen) return null;
 
@@ -172,7 +148,7 @@ export default function BooksMegaMenu({
           {/* ======================================================== */}
           {/* COL 1: POPULAR */}
           {/* ======================================================== */}
-          <div className="col-span-3">
+          <div className={coupon ? "col-span-3" : "col-span-4"}>
             <div className="flex items-center gap-2 mb-3">
               <span className="text-[11px] font-bold tracking-wider uppercase text-[#C61821]">
                 POPULAR
@@ -183,6 +159,7 @@ export default function BooksMegaMenu({
             <div className="space-y-1">
               {POPULAR_LINKS.map((item) => {
                 const Icon = item.icon;
+                const badge = popularLinkBadge(item.href, hasBestseller, hasNewRelease);
                 return (
                   <Link
                     key={item.title}
@@ -208,11 +185,11 @@ export default function BooksMegaMenu({
                       </div>
                     </div>
 
-                    {item.badge && (
+                    {badge && (
                       <span
-                        className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider ${item.badgeColor}`}
+                        className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider ${badge.color}`}
                       >
-                        {item.badge}
+                        {badge.label}
                       </span>
                     )}
                   </Link>
@@ -224,7 +201,7 @@ export default function BooksMegaMenu({
           {/* ======================================================== */}
           {/* COL 2: LANGUAGE */}
           {/* ======================================================== */}
-          <div className="col-span-3">
+          <div className={coupon ? "col-span-3" : "col-span-4"}>
             <div className="flex items-center gap-2 mb-3">
               <span className="text-[11px] font-bold tracking-wider uppercase text-[#C61821]">
                 LANGUAGE
@@ -233,40 +210,24 @@ export default function BooksMegaMenu({
             </div>
 
             <div className="space-y-1">
-              {LANGUAGE_LINKS.map((item) => {
-                const Icon = item.icon;
+              {languages.length === 0 && <p className="text-xs text-gray-400">None yet</p>}
+              {languages.map((language) => {
+                const href = `/shop?language=${encodeURIComponent(language)}`;
                 return (
                   <Link
-                    key={item.title}
-                    href={item.href}
-                    onClick={() => handleLinkClick(item.href)}
+                    key={language}
+                    href={href}
+                    onClick={() => handleLinkClick(href)}
                     className="group flex items-center justify-between p-2 rounded-lg hover:bg-red-50/70 transition-all duration-150"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div
-                        className={`w-7 h-7 rounded-md ${item.iconBg} ${item.iconColor} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform`}
-                      >
-                        <Icon className="w-3.5 h-3.5" />
+                      <div className="w-7 h-7 rounded-md bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                        <Languages className="w-3.5 h-3.5" />
                       </div>
-                      <div className="flex flex-col truncate">
-                        <span className="text-[13px] font-medium text-gray-800 group-hover:text-[#C61821] transition-colors leading-tight">
-                          {item.title}
-                        </span>
-                        {item.hindiTitle && (
-                          <span className="text-[10px] text-gray-400 font-normal leading-none mt-0.5">
-                            {item.hindiTitle}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {item.badge && (
-                      <span
-                        className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider ${item.badgeColor}`}
-                      >
-                        {item.badge}
+                      <span className="text-[13px] font-medium text-gray-800 group-hover:text-[#C61821] transition-colors leading-tight truncate">
+                        {language}
                       </span>
-                    )}
+                    </div>
                   </Link>
                 );
               })}
@@ -276,7 +237,7 @@ export default function BooksMegaMenu({
           {/* ======================================================== */}
           {/* COL 3: BY PRICE */}
           {/* ======================================================== */}
-          <div className="col-span-3">
+          <div className={coupon ? "col-span-3" : "col-span-4"}>
             <div className="flex items-center gap-2 mb-3">
               <span className="text-[11px] font-bold tracking-wider uppercase text-[#C61821]">
                 BY PRICE
@@ -326,47 +287,49 @@ export default function BooksMegaMenu({
           </div>
 
           {/* ======================================================== */}
-          {/* COL 4: FEATURED PROMO CARD */}
+          {/* COL 4: FEATURED PROMO CARD - only shown while a coupon is marked "Featured" in Admin → Coupons */}
           {/* ======================================================== */}
-          <div className="col-span-3">
-            <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-rose-50/90 via-red-50/50 to-orange-50/40 border border-red-100/80 p-4 flex flex-col justify-between h-full min-h-[170px] shadow-2xs">
-              {/* Background watermark badge */}
-              <div className="absolute -right-3 -bottom-3 opacity-10 text-[#C61821] pointer-events-none">
-                <Percent className="w-24 h-24 stroke-[1.5]" />
-              </div>
-
-              <div className="relative z-10">
-                <div className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[#C61821] mb-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#C61821] animate-pulse" />
-                  {FEATURED_OFFER.label}
+          {coupon && (
+            <div className="col-span-3">
+              <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-rose-50/90 via-red-50/50 to-orange-50/40 border border-red-100/80 p-4 flex flex-col justify-between h-full min-h-[170px] shadow-2xs">
+                {/* Background watermark badge */}
+                <div className="absolute -right-3 -bottom-3 opacity-10 text-[#C61821] pointer-events-none">
+                  <Percent className="w-24 h-24 stroke-[1.5]" />
                 </div>
 
-                <h4 className="text-[15px] font-bold text-gray-900 leading-snug tracking-tight font-serif">
-                  {offerTitle}
-                </h4>
-                <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">
-                  Use code <span
-  onClick={() => navigator.clipboard.writeText(offerCode)}
-  className="font-bold text-gray-800 bg-white/80 px-1 py-0.5 rounded border border-red-100 cursor-pointer hover:bg-gray-50"
-  title="Click to copy"
->
-  {offerCode}
-</span> at checkout.
-                </p>
-              </div>
+                <div className="relative z-10">
+                  <div className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[#C61821] mb-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#C61821] animate-pulse" />
+                    Featured Offer
+                  </div>
 
-              <div className="relative z-10 mt-3 pt-2">
-                <Link
-                  href={FEATURED_OFFER.ctaHref}
-                  onClick={() => handleLinkClick(FEATURED_OFFER.ctaHref)}
-                  className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 bg-[#C61821] hover:bg-[#A81119] text-white text-xs font-bold rounded-full shadow-xs hover:shadow-sm transition-all group cursor-pointer"
-                >
-                  <span>{FEATURED_OFFER.ctaLabel}</span>
-                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                </Link>
+                  <h4 className="text-[15px] font-bold text-gray-900 leading-snug tracking-tight font-serif">
+                    {offerTitle}
+                  </h4>
+                  <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">
+                    Use code <span
+    onClick={() => navigator.clipboard.writeText(offerCode)}
+    className="font-bold text-gray-800 bg-white/80 px-1 py-0.5 rounded border border-red-100 cursor-pointer hover:bg-gray-50"
+    title="Click to copy"
+  >
+    {offerCode}
+  </span> at checkout.
+                  </p>
+                </div>
+
+                <div className="relative z-10 mt-3 pt-2">
+                  <Link
+                    href="/shop"
+                    onClick={() => handleLinkClick("/shop")}
+                    className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 bg-[#C61821] hover:bg-[#A81119] text-white text-xs font-bold rounded-full shadow-xs hover:shadow-sm transition-all group cursor-pointer"
+                  >
+                    <span>Shop now</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  </Link>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ShoppingBag,
@@ -25,14 +25,16 @@ import {
   Zap,
 } from "lucide-react";
 import { useCartWishlist } from "@/components/providers/CartWishlistProvider";
-import { ALL_BOOKS } from "@/data/booksData";
-import BookModal from "@/components/home/BookModal";
-import { BookData } from "@/components/home/HeroBook3D";
 import { createClient } from "@/lib/supabase/client";
 import { Coupon, couponDiscount, couponDiscountLabel } from "@/lib/coupon-shared";
 import { computeShippingCharge, getSiteSettings, SITE_DEFAULTS, type SiteSettings } from "@/lib/site-settings";
 
 const COUPON_STORAGE_KEY = "devanagari_coupon_v1";
+// Rolls forward automatically each year instead of a hardcoded "2025-26".
+const currentExamYear = (() => {
+  const year = new Date().getFullYear();
+  return `${year}-${String(year + 1).slice(-2)}`;
+})();
 
 export default function CartPage() {
   const {
@@ -44,7 +46,6 @@ export default function CartPage() {
     updateQuantity,
     removeFromCart,
     clearCart,
-    addToCart,
     toggleWishlist,
     isInWishlist,
   } = useCartWishlist();
@@ -56,7 +57,6 @@ export default function CartPage() {
   const [couponSuccess, setCouponSuccess] = useState<string | null>(null);
   const [availableCoupons, setAvailableCoupons] = useState<Coupon[]>([]);
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
-  const [selectedBookForModal, setSelectedBookForModal] = useState<BookData | null>(null);
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(SITE_DEFAULTS);
 
   // Load active coupons from the database
@@ -142,37 +142,6 @@ export default function CartPage() {
       edition: item.edition,
     });
     removeFromCart(item.id);
-  };
-
-  // Recommended books (not already in cart)
-  const recommendedBooks = useMemo(() => {
-    const cartIds = new Set(cart.map((c) => c.id));
-    return ALL_BOOKS.filter((b) => !cartIds.has(b.id)).slice(0, 4);
-  }, [cart]);
-
-  // Convert book to BookData for modal preview
-  const openModalForItem = (item: (typeof ALL_BOOKS)[0]) => {
-    const modalBook: BookData = {
-      id: item.id,
-      title: item.title,
-      subtitle: item.hindiTitle || item.subtitle,
-      subject: item.category || "Competitive Exams",
-      category: item.category || "General",
-      price: item.price,
-      originalPrice: item.originalPrice || item.price,
-      rating: item.rating || 4.8,
-      reviewsCount: item.reviewsCount || 100,
-      image: item.image,
-      edition: item.edition,
-      coverType: "hindi",
-      bgColor: "from-[#C61821] to-[#8F0E15]",
-      accentColor: "#C61821",
-      textColor: "text-white",
-      description: item.description,
-      highlights: item.highlights,
-      isbn: item.isbn,
-    };
-    setSelectedBookForModal(modalBook);
   };
 
   return (
@@ -307,9 +276,6 @@ export default function CartPage() {
                   <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider">
                     Books in your cart ({cartCount})
                   </h3>
-                  <span className="text-xs text-gray-400 font-medium">
-                    Standard Paperback Edition
-                  </span>
                 </div>
 
                 {/* Compact Modern Product Rows */}
@@ -350,9 +316,6 @@ export default function CartPage() {
                                     {item.edition}
                                   </span>
                                 )}
-                                <span className="hidden sm:inline-flex text-[9.5px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100/60">
-                                  In Stock
-                                </span>
                               </div>
                               <h4 className="font-bold text-xs sm:text-sm text-gray-900 leading-snug line-clamp-1 group-hover:text-[#C61821] transition-colors">
                                 {item.title}
@@ -459,7 +422,7 @@ export default function CartPage() {
                 </div>
                 <div className="bg-white rounded-xl border border-gray-200/80 p-3 text-center flex flex-col items-center justify-center gap-1 shadow-2xs">
                   <Sparkles className="w-5 h-5 text-[#C61821]" />
-                  <span className="text-xs font-bold text-gray-900">Latest 2025-26</span>
+                  <span className="text-xs font-bold text-gray-900">Latest {currentExamYear}</span>
                   <span className="text-[10px] text-gray-400">Updated Exam Pattern</span>
                 </div>
               </div>
@@ -681,27 +644,6 @@ export default function CartPage() {
             </div>
           </div>
         </div>
-      )}
-
-      {/* 6. Quick Preview Modal */}
-      {selectedBookForModal && (
-        <BookModal
-          book={selectedBookForModal}
-          onClose={() => setSelectedBookForModal(null)}
-          onAddToCart={(b) => {
-            addToCart({
-              id: b.id,
-              title: b.title,
-              subtitle: b.subtitle,
-              category: b.category,
-              price: b.price,
-              originalPrice: b.originalPrice,
-              image: b.image,
-              edition: b.edition,
-            });
-            setSelectedBookForModal(null);
-          }}
-        />
       )}
 
       {/* 7. Mobile Sticky Bottom Checkout Bar */}

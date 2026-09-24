@@ -37,6 +37,9 @@ import {
 import { ALL_BOOKS, BookItem } from "@/data/booksData";
 import { fetchCatalogBooks } from "@/lib/catalog";
 import { useCartWishlist } from "@/components/providers/CartWishlistProvider";
+import { useFeaturedCoupon } from "@/components/providers/FeaturedCouponProvider";
+import { couponDiscountLabel } from "@/lib/coupon-shared";
+import { SITE_DEFAULTS, getSiteSettings } from "@/lib/site-settings";
 import SampleReaderModal from "@/components/product/SampleReaderModal";
 import BookReviews from "@/components/product/BookReviews";
 
@@ -53,18 +56,30 @@ export default function ProductDetailClient({ id }: ProductDetailClientProps) {
     isInCart,
     setIsCartDrawerOpen,
   } = useCartWishlist();
+  const coupon = useFeaturedCoupon();
+  const [siteSettings, setSiteSettings] = useState(SITE_DEFAULTS);
 
-  const [catalogBooks, setCatalogBooks] = useState<BookItem[]>(ALL_BOOKS);
+  useEffect(() => {
+    getSiteSettings().then(setSiteSettings);
+  }, []);
+
+  const [catalogBooks, setCatalogBooks] = useState<BookItem[]>([]);
+  const [isLoadingCatalog, setIsLoadingCatalog] = useState(true);
 
   useEffect(() => {
     let active = true;
     fetchCatalogBooks()
       .then((books) => {
         if (!active) return;
+        // Only fall back to the static demo catalog if the DB genuinely has nothing (or the fetch failed) —
+        // never show it as a flash of wrong data before the real fetch resolves.
         setCatalogBooks(books.length > 0 ? books : ALL_BOOKS);
       })
       .catch(() => {
         if (active) setCatalogBooks(ALL_BOOKS);
+      })
+      .finally(() => {
+        if (active) setIsLoadingCatalog(false);
       });
 
     return () => {
@@ -72,6 +87,9 @@ export default function ProductDetailClient({ id }: ProductDetailClientProps) {
     };
   }, []);
 
+  // Safe non-empty fallback so the memos below never read from an empty array; the loading
+  // gate further down (before any content renders) is what actually keeps the wrong/demo
+  // book from ever being shown on screen.
   const activeBooks = catalogBooks.length > 0 ? catalogBooks : ALL_BOOKS;
 
   // Find book by id or fallback to Nibandh Sanhita (id: 102)
@@ -85,29 +103,19 @@ export default function ProductDetailClient({ id }: ProductDetailClientProps) {
     return found || activeBooks.find((b) => String(b.id) === String(102)) || activeBooks[0];
   }, [activeBooks, id]);
 
-  // Gallery items
+  // Gallery items: the book's real cover, plus whatever extra photos were uploaded for it in Admin -> Books.
   const galleryItems = useMemo(() => {
     const items = [
       {
         id: "cover",
-        title: "Front Cover",
+        title: book.title,
         image: book.image || "/images/books/image-3.png",
       },
-      {
-        id: "sample-1",
-        title: "विषय सूची (Table of Contents)",
-        image: "/images/books/sample-page-1.svg",
-      },
-      {
-        id: "sample-2",
-        title: "आदर्श निबंध प्रारूप (Model Essay)",
-        image: "/images/books/sample-page-2.svg",
-      },
-      {
-        id: "sample-3",
-        title: "विगत वर्ष प्रश्न (PYQ Analysis)",
-        image: "/images/books/sample-page-3.svg",
-      },
+      ...(book.sampleImages ?? []).map((image, index) => ({
+        id: `gallery-${index}`,
+        title: book.title,
+        image,
+      })),
     ];
     return items;
   }, [book]);
@@ -117,6 +125,9 @@ export default function ProductDetailClient({ id }: ProductDetailClientProps) {
   const [isSampleModalOpen, setIsSampleModalOpen] = useState(false);
   const [sampleModalInitialPage, setSampleModalInitialPage] = useState(0);
   const [isCopied, setIsCopied] = useState(false);
+  // book.rating/book.reviewsCount already come from fetchCatalogBooks as the real average/count
+  // from approved customer reviews (see lib/catalog.ts) — not admin-entered numbers.
+  const ratingSummary = { average: book.rating, count: book.reviewsCount };
 
   const isWishlisted = isInWishlist(book.id);
   const isCarted = isInCart(book.id);
@@ -278,6 +289,17 @@ export default function ProductDetailClient({ id }: ProductDetailClientProps) {
     }
   };
 
+  if (isLoadingCatalog) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#FBFBFC]">
+        <div className="flex flex-col items-center gap-3 text-stone-400">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-200 border-t-[#C61821]" />
+          <p className="text-sm">Loading product...</p>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-[#FBFBFC] text-[#1D2129] pb-24 lg:pb-16 pt-3 sm:pt-5">
       <div className="max-w-[1450px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
@@ -296,17 +318,17 @@ export default function ProductDetailClient({ id }: ProductDetailClientProps) {
           </Link>
           <ChevronRight size={14} className="text-stone-400 shrink-0" />
           <Link
-            href={`/shop?category=${book.categorySlug || "mppsc"}`}
+            href={`/shop?category=${book.categorySlug}`}
             className="hover:text-stone-900 transition-colors font-medium"
           >
-            {book.category || "MPPSC"}
+            {book.category}
           </Link>
           <ChevronRight size={14} className="text-stone-400 shrink-0" />
           <Link
-            href={`/shop?category=${book.categorySlug || "mppsc"}&exam=${book.examSlug || "mppsc"}`}
+            href={`/shop?category=${book.categorySlug}&exam=${book.examSlug}`}
             className="hover:text-stone-900 transition-colors font-medium"
           >
-            {book.exam || "MPPSC Prarambhik Pariksha"}
+            {book.exam}
           </Link>
           <ChevronRight size={14} className="text-stone-400 shrink-0" />
           <span className="text-stone-900 font-semibold truncate max-w-[200px] sm:max-w-none">
@@ -379,12 +401,14 @@ export default function ProductDetailClient({ id }: ProductDetailClientProps) {
 
             {/* Main Image Showcase Container */}
             <div className="flex-1 relative rounded-[5px] bg-[#FCF6F6] p-4 sm:p-6 md:p-8 flex items-center justify-center border border-rose-100/70 shadow-sm min-h-[280px] sm:min-h-[350px] md:min-h-[440px] overflow-hidden group w-full">
-              {/* Bestseller Badge */}
-              <div className="absolute top-2.5 left-3 z-10">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-[5px] bg-[#C61821] text-white text-[11px] sm:text-xs font-bold shadow-sm tracking-wide">
-                  {book.badge || "Bestseller"}
-                </span>
-              </div>
+              {/* Badge (only if one is actually set on the book) */}
+              {book.badge && (
+                <div className="absolute top-2.5 left-3 z-10">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-[5px] bg-[#C61821] text-white text-[11px] sm:text-xs font-bold shadow-sm tracking-wide">
+                    {book.badge}
+                  </span>
+                </div>
+              )}
 
               {/* Wishlist Quick Toggle Button */}
               <button
@@ -457,7 +481,7 @@ export default function ProductDetailClient({ id }: ProductDetailClientProps) {
           <div className="lg:col-span-7 flex flex-col">
             {/* Category / Exam Red Tag */}
             <span className="text-xs font-bold text-[#C61821] uppercase tracking-wider mb-1.5 block">
-              {book.category || "MPPSC"}
+              {book.category}
             </span>
 
             {/* Title */}
@@ -472,24 +496,28 @@ export default function ProductDetailClient({ id }: ProductDetailClientProps) {
                 href={`/shop?search=${encodeURIComponent(book.author)}`}
                 className="text-[#C61821] font-semibold hover:underline"
               >
-                {book.author || "Mr. Mayank Jagdish Sharma"}
+                {book.author}
               </Link>
             </div>
 
-            {/* Rating & Review Counter */}
-            <div className="flex items-center gap-2 text-sm text-stone-600 flex-wrap">
-              <div className="flex items-center gap-1 font-bold text-stone-900 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/80">
-                <Star size={15} className="fill-amber-400 text-amber-400" />
-                <span>{book.rating || 4.9}</span>
-                <span className="text-stone-500 font-normal">
-                  ({book.reviewsCount || 728})
+            {/* Rating & Review Counter — real average/count from approved reviews */}
+            {ratingSummary.count > 0 ? (
+              <div className="flex items-center gap-2 text-sm text-stone-600 flex-wrap">
+                <div className="flex items-center gap-1 font-bold text-stone-900 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/80">
+                  <Star size={15} className="fill-amber-400 text-amber-400" />
+                  <span>{ratingSummary.average.toFixed(1)}</span>
+                  <span className="text-stone-500 font-normal">
+                    ({ratingSummary.count})
+                  </span>
+                </div>
+                <span className="text-stone-300">|</span>
+                <span className="text-stone-500">
+                  {ratingSummary.count} review{ratingSummary.count === 1 ? "" : "s"}
                 </span>
               </div>
-              <span className="text-stone-300">|</span>
-              <span className="text-stone-500">
-                {book.reviewsCount || 728} reviews
-              </span>
-            </div>
+            ) : (
+              <p className="text-sm text-stone-400">No reviews yet</p>
+            )}
 
             {/* BUY BOX CARD (Positioned directly under Product Info)    */}
             <div className="mt-2 p-2 sm:p-3">
@@ -577,10 +605,20 @@ export default function ProductDetailClient({ id }: ProductDetailClientProps) {
                 </div>
               </div>
 
-              <div className="mt-3 flex flex-wrap items-center gap-2.5" aria-label="Book demos">
-                {book.demoFileUrl ? <a href={book.demoFileUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-[5px] border border-red-200 bg-red-50 px-4 py-2.5 text-xs sm:text-sm font-semibold text-[#C61821] hover:bg-red-100"><FileText size={16} />Demo File</a> : <button type="button" onClick={() => openSampleModal(1)} className="inline-flex items-center justify-center gap-2 rounded-[5px] border border-red-200 bg-red-50 px-4 py-2.5 text-xs sm:text-sm font-semibold text-[#C61821] hover:bg-red-100"><FileText size={16} />Demo File</button>}
-                {book.demoVideoUrl ? <a href={book.demoVideoUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-[5px] border border-stone-200 bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-stone-700 hover:border-red-200 hover:text-[#C61821]"><PlayCircle size={16} />Demo Video</a> : <button type="button" disabled title="Demo video is not available for this book yet" className="inline-flex items-center justify-center gap-2 rounded-[5px] border border-stone-200 px-4 py-2.5 text-xs sm:text-sm font-semibold text-stone-400 cursor-not-allowed"><PlayCircle size={16} />Demo Video</button>}
-              </div>
+              {(book.demoFileUrl || book.demoVideoUrl) && (
+                <div className="mt-3 flex flex-wrap items-center gap-2.5" aria-label="Book demos">
+                  {book.demoFileUrl && (
+                    <a href={book.demoFileUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-[5px] border border-red-200 bg-red-50 px-4 py-2.5 text-xs sm:text-sm font-semibold text-[#C61821] hover:bg-red-100">
+                      <FileText size={16} />Demo File
+                    </a>
+                  )}
+                  {book.demoVideoUrl && (
+                    <a href={book.demoVideoUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-[5px] border border-stone-200 bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-stone-700 hover:border-red-200 hover:text-[#C61821]">
+                      <PlayCircle size={16} />Demo Video
+                    </a>
+                  )}
+                </div>
+              )}
               {/* Bottom: Wishlist + Share Micro Actions */}
               <div className="flex items-center justify-between pt-4 mt-4 border-t border-stone-100 text-xs text-stone-500">
                 <button
@@ -623,8 +661,7 @@ export default function ProductDetailClient({ id }: ProductDetailClientProps) {
 
             {/* Short Tagline / Hindi Summary */}
             <p className="text-sm text-stone-600 leading-relaxed mb-2 font-normal">
-              {book.shortSummary ||
-                `'${book.title}' MPPSC प्रारंभिक एवं मुख्य परीक्षा के लिए निबंध लेखन की सर्वोत्तम पुस्तक। 250+ निबंध, समसामयिक विषय और अद्यतन आँकड़ों के साथ।`}
+              {book.shortSummary || book.description}
             </p>
 
             {/* 4 Quick Spec Badges */}
@@ -639,9 +676,7 @@ export default function ProductDetailClient({ id }: ProductDetailClientProps) {
                     Edition
                   </div>
                   <div className="text-xs font-bold text-stone-900 truncate mt-0.5">
-                    {book.edition?.includes("2025")
-                      ? "2025"
-                      : book.edition || "2025"}
+                    {book.edition}
                   </div>
                 </div>
               </div>
@@ -671,7 +706,7 @@ export default function ProductDetailClient({ id }: ProductDetailClientProps) {
                     Pages
                   </div>
                   <div className="text-xs font-bold text-stone-900 truncate mt-0.5">
-                    {book.pages || 456}
+                    {book.pages || "—"}
                   </div>
                 </div>
               </div>
@@ -756,7 +791,7 @@ export default function ProductDetailClient({ id }: ProductDetailClientProps) {
                 <div className="py-2.5 flex items-center justify-between">
                   <span className="text-stone-500 font-medium">Author</span>
                   <span className="text-stone-900 font-semibold text-right">
-                    {book.author || "Mr. Mayank Jagdish Sharma"}
+                    {book.author}
                   </span>
                 </div>
                 <div className="py-2.5 flex items-center justify-between">
@@ -764,13 +799,13 @@ export default function ProductDetailClient({ id }: ProductDetailClientProps) {
                     Publication
                   </span>
                   <span className="text-stone-900 font-semibold text-right">
-                    {book.publication || "Dnyanagari Prakashan"}
+                    {book.publication || "Devanagari Publications"}
                   </span>
                 </div>
                 <div className="py-2.5 flex items-center justify-between">
                   <span className="text-stone-500 font-medium">Edition</span>
                   <span className="text-stone-900 font-semibold text-right">
-                    {book.edition || "2025 (Latest Edition)"}
+                    {book.edition}
                   </span>
                 </div>
                 <div className="py-2.5 flex items-center justify-between">
@@ -782,7 +817,7 @@ export default function ProductDetailClient({ id }: ProductDetailClientProps) {
                 <div className="py-2.5 flex items-center justify-between">
                   <span className="text-stone-500 font-medium">Pages</span>
                   <span className="text-stone-900 font-semibold text-right">
-                    {book.pages || 456}
+                    {book.pages || "—"}
                   </span>
                 </div>
                 <div className="py-2.5 flex items-center justify-between">
@@ -794,7 +829,7 @@ export default function ProductDetailClient({ id }: ProductDetailClientProps) {
                 <div className="py-2.5 flex items-center justify-between">
                   <span className="text-stone-500 font-medium">ISBN</span>
                   <span className="text-stone-900 font-semibold text-right font-mono text-xs sm:text-sm">
-                    {book.isbn || "978-93-12345-678-9"}
+                    {book.isbn || "—"}
                   </span>
                 </div>
               </div>
@@ -802,35 +837,39 @@ export default function ProductDetailClient({ id }: ProductDetailClientProps) {
               {/* 2 Trust & Coupon Cards */}
               <div className="lg:col-span-5 space-y-3 pt-2 ">
                 {/* Free Delivery */}
-                <div className=" flex items-center gap-3.5 p-2 rounded-[5px] bg-[#F4FAF7] border border-[#D8F0E5]">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-                    <Truck size={20} />
-                  </div>
-                  <div>
-                    <div className="font-bold text-stone-900 text-sm">
-                      Free Delivery
+                {siteSettings.free_shipping_enabled && (
+                  <div className=" flex items-center gap-3.5 p-2 rounded-[5px] bg-[#F4FAF7] border border-[#D8F0E5]">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                      <Truck size={20} />
                     </div>
-                    <div className="text-xs text-stone-500">
-                      On orders above ₹499
+                    <div>
+                      <div className="font-bold text-stone-900 text-sm">
+                        Free Delivery
+                      </div>
+                      <div className="text-xs text-stone-500">
+                        On orders above ₹{siteSettings.free_shipping_threshold}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
-                {/* Promo Coupon */}
-                <div className="flex items-center gap-3.5 p-2 rounded-[5px] bg-[#FFF5F5] border border-[#FFE0E0]">
-                  <div className="w-10 h-10 rounded-xl bg-red-100 text-[#C61821] flex items-center justify-center shrink-0">
-                    <Tag size={20} />
-                  </div>
-                  <div>
-                    <div className="font-bold text-stone-900 text-sm">
-                      Use code{" "}
-                      <span className="text-[#C61821] font-black">READ20</span>
+                {/* Promo Coupon — only the real active/featured coupon from Admin -> Coupons */}
+                {coupon && (
+                  <div className="flex items-center gap-3.5 p-2 rounded-[5px] bg-[#FFF5F5] border border-[#FFE0E0]">
+                    <div className="w-10 h-10 rounded-xl bg-red-100 text-[#C61821] flex items-center justify-center shrink-0">
+                      <Tag size={20} />
                     </div>
-                    <div className="text-xs text-stone-500">
-                      Get extra 20% off
+                    <div>
+                      <div className="font-bold text-stone-900 text-sm">
+                        Use code{" "}
+                        <span className="text-[#C61821] font-black">{coupon.code}</span>
+                      </div>
+                      <div className="text-xs text-stone-500">
+                        Get extra {couponDiscountLabel(coupon)} off
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 {/* Secure Packaging */}
                 <div className="flex items-center gap-3.5 p-2 rounded-[5px] bg-[#F4F7FC] border border-[#DCE6F8]">
@@ -896,9 +935,13 @@ export default function ProductDetailClient({ id }: ProductDetailClientProps) {
                     <div>
                       {/* Top Bar: Badge & Wishlist Heart */}
                       <div className="flex items-center justify-between gap-1 mb-1 sm:mb-1.5">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-[4px] bg-[#C61821] text-white text-[9px] sm:text-[10px] font-black tracking-wider uppercase shadow-xs">
-                          {item.badge || "BESTSELLER"}
-                        </span>
+                        {item.badge ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-[4px] bg-[#C61821] text-white text-[9px] sm:text-[10px] font-black tracking-wider uppercase shadow-xs">
+                            {item.badge}
+                          </span>
+                        ) : (
+                          <span />
+                        )}
 
                         <button
                           type="button"
@@ -941,7 +984,7 @@ export default function ProductDetailClient({ id }: ProductDetailClientProps) {
 
                       {/* Exam / Category Red Tag */}
                       <span className="text-[9px] sm:text-[11px] font-black text-[#C61821] uppercase tracking-wider block mb-0.5">
-                        {item.exam || item.category || "MPPSC"}
+                        {item.exam || item.category}
                       </span>
 
                       {/* Title */}
@@ -951,22 +994,24 @@ export default function ProductDetailClient({ id }: ProductDetailClientProps) {
 
                       {/* Author */}
                       <p className="text-[10px] sm:text-xs text-stone-500 line-clamp-1 mt-0.5">
-                        by {item.author || "Mr. Mayank Jagdish Sharma"}
+                        by {item.author}
                       </p>
 
-                      {/* Rating Row */}
-                      <div className="flex items-center gap-1 mt-1 text-xs">
-                        <Star
-                          size={12}
-                          className="fill-amber-400 text-amber-400 shrink-0"
-                        />
-                        <span className="font-bold text-stone-900 text-[10px] sm:text-xs">
-                          {item.rating || 4.9}
-                        </span>
-                        <span className="text-stone-400 text-[9px] sm:text-[10px]">
-                          ({item.reviewsCount || 728})
-                        </span>
-                      </div>
+                      {/* Rating Row — real average/count, only shown once the book actually has reviews */}
+                      {item.reviewsCount > 0 && (
+                        <div className="flex items-center gap-1 mt-1 text-xs">
+                          <Star
+                            size={12}
+                            className="fill-amber-400 text-amber-400 shrink-0"
+                          />
+                          <span className="font-bold text-stone-900 text-[10px] sm:text-xs">
+                            {item.rating.toFixed(1)}
+                          </span>
+                          <span className="text-stone-400 text-[9px] sm:text-[10px]">
+                            ({item.reviewsCount})
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Bottom Pricing & Circular Cart Button */}

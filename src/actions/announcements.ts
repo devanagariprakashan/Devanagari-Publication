@@ -29,6 +29,14 @@ export async function updateAnnouncement(_prevState: ActionResult, formData: For
   redirect('/admin/announcements')
 }
 
+export async function updateAnnouncementStatus(id: string, status: string): Promise<ActionResult> {
+  const supabase = await createClient()
+  const { error } = await supabase.from('announcements').update({ is_active: status === 'active' }).eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/announcements')
+  return { success: true }
+}
+
 export async function deleteAnnouncement(id: string): Promise<ActionResult> {
   const supabase = await createClient()
   const { error } = await supabase.from('announcements').delete().eq('id', id)

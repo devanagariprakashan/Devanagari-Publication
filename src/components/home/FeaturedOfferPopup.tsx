@@ -11,7 +11,6 @@ import {
   Truck,
   Star,
 } from "lucide-react";
-import { FEATURED_OFFER } from "@/data/featuredOffer";
 import { useFeaturedCoupon } from "@/components/providers/FeaturedCouponProvider";
 import { couponDiscountLabel, couponHeadline } from "@/lib/coupon-shared";
 
@@ -30,16 +29,17 @@ export default function FeaturedOfferPopup() {
   const closeRef = useRef<HTMLButtonElement>(null);
   const coupon = useFeaturedCoupon();
 
-  const code = coupon?.code ?? FEATURED_OFFER.code;
-  const discount = coupon ? couponDiscountLabel(coupon) : FEATURED_OFFER.discount;
-  const title = coupon ? couponHeadline(coupon) : FEATURED_OFFER.title;
+  const code = coupon?.code ?? "";
+  const discount = coupon ? couponDiscountLabel(coupon) : "";
+  const title = coupon ? couponHeadline(coupon) : "";
   const [titleBefore, titleAfter] = title.split(discount);
   const highlightsDiscount = titleAfter !== undefined;
 
   useEffect(() => {
+    if (!coupon) return;
     const timer = setTimeout(() => setOpen(true), 1200);
     return () => clearTimeout(timer);
-  }, []);
+  }, [coupon]);
 
   useEffect(() => {
     if (!open) return;
@@ -87,7 +87,7 @@ export default function FeaturedOfferPopup() {
       <div
         role="dialog"
         aria-modal="true"
-        aria-label={FEATURED_OFFER.label}
+        aria-label="Featured Offer"
         className={`relative flex max-h-[92vh] w-[min(960px,94vw)] flex-col overflow-y-auto overflow-x-hidden rounded-2xl bg-white shadow-2xl transition-all duration-200 md:min-h-[600px] ${
           shown ? "scale-100 opacity-100" : "scale-[0.98] opacity-0"
         }`}
@@ -123,7 +123,7 @@ export default function FeaturedOfferPopup() {
             <div className="relative z-10">
               <div className="mb-2 inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-[#C61821]">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#C61821]" />
-                {FEATURED_OFFER.label}
+                Featured Offer
               </div>
 
               <h2 className="font-serif text-[26px] font-bold leading-[1.1] tracking-tight text-gray-900 sm:text-3xl md:text-[34px]">
@@ -152,10 +152,10 @@ export default function FeaturedOfferPopup() {
               </p>
 
               <Link
-                href={FEATURED_OFFER.ctaHref}
+                href="/shop"
                 className="group mt-4 inline-flex items-center gap-2 rounded-full bg-[#C61821] px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-[#A81119] active:scale-95"
               >
-                <span>{FEATURED_OFFER.ctaLabel}</span>
+                <span>Shop now</span>
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </Link>
             </div>

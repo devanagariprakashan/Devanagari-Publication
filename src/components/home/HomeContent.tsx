@@ -16,6 +16,7 @@ import HeroSection from "@/components/home/HeroSection";
 import FeaturedCategories, { FeaturedCategory } from "@/components/home/FeaturedCategories";
 import HandpickedSection, { HandpickedBook } from "@/components/home/HandpickedSection";
 import BestsellersSection, { BestsellerBook } from "@/components/home/BestsellersSection";
+import WhatsNewSection from "@/components/home/WhatsNewSection";
 import TestimonialsSection from "@/components/home/TestimonialsSection";
 import HeroBook3D, { BookData } from "@/components/home/HeroBook3D";
 import FeaturedOfferPopup from "@/components/home/FeaturedOfferPopup";
@@ -39,6 +40,7 @@ interface HomeContentProps {
   categories?: FeaturedCategory[];
   bestsellers?: BestsellerBook[];
   handpicked?: HandpickedBook[];
+  whatsNewEnabled?: boolean;
 }
 
 const STATIC_TICKER_ITEMS = [
@@ -104,6 +106,7 @@ export default function HomeContent({
   categories,
   bestsellers,
   handpicked,
+  whatsNewEnabled = true,
 }: HomeContentProps) {
   const router = useRouter();
   const tickerItems = buildTickerItems(heroStats);
@@ -199,6 +202,9 @@ export default function HomeContent({
 
       {/* 2. FEATURED EXAM CATEGORIES */}
       <FeaturedCategories categories={categories} />
+
+      {/* 3. WHAT'S NEW — toggled from Admin > Settings > Homepage Sections */}
+      {whatsNewEnabled && <WhatsNewSection />}
 
       {/* 4. ASPIRANTS' MOST LOVED BOOKS (reuses Bestsellers) */}
       <BestsellersSection
