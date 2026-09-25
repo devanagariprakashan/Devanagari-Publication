@@ -489,6 +489,11 @@ export default function ProductDetailClient({ id }: ProductDetailClientProps) {
               {book.title}
             </h1>
 
+            {/* Subtitle */}
+            {book.subtitle && (
+              <p className="text-base font-semibold text-stone-500 leading-relaxed mb-3">{book.subtitle}</p>
+            )}
+
             {/* Author */}
             <div className="text-sm text-stone-600 mb-3">
               <span>by </span>
