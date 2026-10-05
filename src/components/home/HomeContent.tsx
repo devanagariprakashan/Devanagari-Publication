@@ -17,6 +17,7 @@ import FeaturedCategories, { FeaturedCategory } from "@/components/home/Featured
 import HandpickedSection, { HandpickedBook } from "@/components/home/HandpickedSection";
 import BestsellersSection, { BestsellerBook } from "@/components/home/BestsellersSection";
 import WhatsNewSection from "@/components/home/WhatsNewSection";
+import type { WhatsNewSlideRow, WhatsNewUpdateRow } from "@/components/admin/WhatsNewForms";
 import TestimonialsSection from "@/components/home/TestimonialsSection";
 import HeroBook3D, { BookData } from "@/components/home/HeroBook3D";
 import FeaturedOfferPopup from "@/components/home/FeaturedOfferPopup";
@@ -41,6 +42,8 @@ interface HomeContentProps {
   bestsellers?: BestsellerBook[];
   handpicked?: HandpickedBook[];
   whatsNewEnabled?: boolean;
+  whatsNewSlides?: WhatsNewSlideRow[];
+  latestUpdates?: WhatsNewUpdateRow[];
 }
 
 const STATIC_TICKER_ITEMS = [
@@ -107,6 +110,8 @@ export default function HomeContent({
   bestsellers,
   handpicked,
   whatsNewEnabled = true,
+  whatsNewSlides = [],
+  latestUpdates = [],
 }: HomeContentProps) {
   const router = useRouter();
   const tickerItems = buildTickerItems(heroStats);
@@ -204,7 +209,7 @@ export default function HomeContent({
       <FeaturedCategories categories={categories} />
 
       {/* 3. WHAT'S NEW — toggled from Admin > Settings > Homepage Sections */}
-      {whatsNewEnabled && <WhatsNewSection />}
+      {whatsNewEnabled && <WhatsNewSection slideRows={whatsNewSlides} updateRows={latestUpdates} />}
 
       {/* 4. ASPIRANTS' MOST LOVED BOOKS (reuses Bestsellers) */}
       <BestsellersSection

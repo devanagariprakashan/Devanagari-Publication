@@ -14,6 +14,8 @@ import { DeleteButton } from "@/components/admin/DeleteButton";
 import { card, tableTd, tableTh } from "@/components/admin/ui";
 import { EmptyRow, PageHeader, Pill, StatCards } from "@/components/admin/PageHeader";
 import { Eye, Newspaper, Sparkles } from "lucide-react";
+import { WhatsNewVisibilityToggle } from "@/components/admin/WhatsNewVisibilityToggle";
+import { SITE_DEFAULTS } from "@/lib/site-settings";
 
 export default async function WhatsNewAdminPage({
   searchParams,
@@ -23,10 +25,12 @@ export default async function WhatsNewAdminPage({
   const { edit } = await searchParams;
   const supabase = await createClient();
 
-  const [slidesRes, updatesRes] = await Promise.all([
+  const [slidesRes, updatesRes, settingsRes] = await Promise.all([
     supabase.from("whats_new_slides").select("*").order("sort"),
     supabase.from("latest_updates").select("*").order("sort"),
+    supabase.from("site_settings").select("whats_new_enabled").eq("id", 1).maybeSingle(),
   ]);
+  const whatsNewEnabled = settingsRes.data?.whats_new_enabled ?? SITE_DEFAULTS.whats_new_enabled;
 
   const slides = (slidesRes.data ?? []) as WhatsNewSlideRow[];
   const updates = (updatesRes.data ?? []) as WhatsNewUpdateRow[];
@@ -40,6 +44,8 @@ export default async function WhatsNewAdminPage({
         title="What's New & Latest Updates"
         description="The featured carousel and the Latest Updates panel on the homepage. You can hide the whole section from Settings."
       />
+
+      <WhatsNewVisibilityToggle enabled={whatsNewEnabled} />
 
       <StatCards
         id="whatsnew"

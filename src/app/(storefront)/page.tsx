@@ -118,7 +118,7 @@ export default async function Home() {
     rating: Number(item.rating), reviewsCount: Number(item.reviewsCount),
   }));
 
-  const [categoriesRes, bestsellersRes, handpickedRes, heroFlaggedRes, siteSettingsRes, reviewsRes] =
+  const [categoriesRes, bestsellersRes, handpickedRes, heroFlaggedRes, siteSettingsRes, reviewsRes, slidesRes, updatesRes] =
     await Promise.all([
       supabase
         .from("categories")
@@ -148,6 +148,8 @@ export default async function Home() {
         .limit(10),
       supabase.from("site_settings").select("*").eq("id", 1).maybeSingle(),
       supabase.from("reviews").select("book_id, rating").eq("is_approved", true),
+      supabase.from("whats_new_slides").select("*").eq("is_active", true).order("sort"),
+      supabase.from("latest_updates").select("*").eq("is_active", true).order("sort"),
     ]);
 
   const categories: FeaturedCategory[] = (categoriesRes.data ?? []).map(
@@ -183,6 +185,8 @@ export default async function Home() {
       bestsellers={bestsellers}
       handpicked={handpicked}
       whatsNewEnabled={siteSettings.whats_new_enabled}
+      whatsNewSlides={slidesRes.data ?? []}
+      latestUpdates={updatesRes.data ?? []}
     />
   );
 }

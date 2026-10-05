@@ -51,8 +51,6 @@ export function CreateShipmentButton({
   const [ratesError, setRatesError] = useState<string | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
-  if (shipmentStatus === "created") return null;
-
   const lowestRate = useMemo(() => {
     if (!rates || rates.length === 0) return null;
     return Math.min(...rates.map((r) => r.rate));
@@ -134,6 +132,9 @@ export function CreateShipmentButton({
       }
     });
   };
+
+  // After every hook, so the hook count never changes between renders.
+  if (shipmentStatus === "created") return null;
 
   return (
     <>

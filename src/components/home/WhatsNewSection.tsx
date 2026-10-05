@@ -1,116 +1,18 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronUp, ChevronDown, ChevronRight } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import type { WhatsNewSlideRow, WhatsNewUpdateRow } from "@/components/admin/WhatsNewForms";
 
 const NAVY = "#16263F";
 const RED = "#C61821";
 
-// ponytail: slide covers are stand-in renders until the real Kashi artwork ships.
-// Swap the `cover` path in FALLBACK_SLIDES (and update thumb #1) — one-line change.
-const FALLBACK_SLIDES = [
-  {
-    id: 1,
-    badge: "NEW RELEASE",
-    kicker: "नई पुस्तक रिलीज़",
-    title: "काशी अनादि अनन्त",
-    subtitle: "आस्था, इतिहास और संस्कृति का अद्भुत संगम",
-    cta: "देखें विवरण",
-    href: "/shop?filter=new",
-    cover: "/images/books/image-2.png",
-    bg: "linear-gradient(120deg, #F9EDDC 0%, #F3DFC4 55%, #EAD3AF 100%)",
-  },
-  {
-    id: 2,
-    badge: "NEW EDITION",
-    kicker: "नवीन आपराधिक कानून",
-    title: "भारतीय न्याय संहिता",
-    subtitle: "BNS 2023/2024 — नई धाराओं की सरल व्याख्या",
-    cta: "पुस्तक देखें",
-    href: "/product/106",
-    cover: "/images/books/image-5.png",
-    bg: "linear-gradient(120deg, #F8ECD8 0%, #F0D8B4 55%, #E3C498 100%)",
-  },
-  {
-    id: 3,
-    badge: "2025-26 EDITION",
-    kicker: "परीक्षा विशेष",
-    title: "मध्य प्रदेश सामान्य ज्ञान",
-    subtitle: "मानचित्र, सारणी एवं तथ्यों का संपूर्ण संकलन",
-    cta: "पुस्तक देखें",
-    href: "/product/105",
-    cover: "/images/books/image-4.png",
-    bg: "linear-gradient(120deg, #FAEFDE 0%, #F2DFC0 55%, #E8CEA6 100%)",
-  },
-  {
-    id: 4,
-    badge: "BESTSELLER",
-    kicker: "संपूर्ण अध्ययन सामग्री",
-    title: "आधुनिक हिन्दी व्याकरण",
-    subtitle: "व्याकरण, रचना एवं भाषा चिंतन की मानक पुस्तक",
-    cta: "पुस्तक देखें",
-    href: "/product/103",
-    cover: "/images/books/image-12.png",
-    bg: "linear-gradient(120deg, #F6EADC 0%, #EED8B9 55%, #DFC093 100%)",
-  },
-];
-
-const FALLBACK_UPDATES = [
-  {
-    title: "नई पुस्तक रिलीज़: काशी अनादि अनन्त",
-    date: "12 Sep 2025",
-    image: "/images/books/image-2.png",
-    href: "/shop?filter=new",
-  },
-  {
-    title: "लेखक परिचय: भारतीय संस्कृति और आधुनिक समाज",
-    date: "08 Sep 2025",
-    image: "/images/authors/mayank-sharma.jpg",
-    href: "/authors",
-  },
-  {
-    title: "आगामी प्रकाशन",
-    desc: "जल्द आ रही हैं नई पुस्तकें",
-    date: "05 Sep 2025",
-    image: "/images/books/image-10.png",
-    href: "/shop?filter=coming-soon",
-  },
-  {
-    title: "पुस्तक मेला 2025",
-    desc: "हम नई दिल्ली विश्व पुस्तक मेले में भाग ले रहे हैं",
-    date: "01 Sep 2025",
-    image: "/books.png",
-    href: "/announcements",
-  },
-  {
-    title: "नवीन संस्करण: सामान्य हिन्दी एवं व्याकरण",
-    desc: "तीसरा संस्करण 2025-26 अब उपलब्ध",
-    date: "28 Aug 2025",
-    image: "/images/books/image-3.png",
-    href: "/product/101",
-  },
-  {
-    title: "MP GK 2025-26 का नया संस्करण आया",
-    desc: "नवीनतम मानचित्र एवं आंकड़ों सहित",
-    date: "22 Aug 2025",
-    image: "/images/books/image-4.png",
-    href: "/product/105",
-  },
-  {
-    title: "BNS 2023/2024 पर विशेष लेख शृंखला",
-    desc: "नई धाराओं की सरल व्याख्या — भाग 1",
-    date: "15 Aug 2025",
-    image: "/images/books/image-5.png",
-    href: "/product/106",
-  },
-  {
-    title: "UPSC प्रिलिम्स मास्टर गाइड उपलब्ध",
-    desc: "15 वर्षों के हल प्रश्नपत्र हिंदी माध्यम में",
-    date: "10 Aug 2025",
-    image: "/images/books/upsc-master.png",
-    href: "/product/109",
-  },
+// Warm backdrop gradients, cycled by slide position. The slides and updates themselves come from the admin panel.
+const SLIDE_BGS = [
+  "linear-gradient(120deg, #F9EDDC 0%, #F3DFC4 55%, #EAD3AF 100%)",
+  "linear-gradient(120deg, #F8ECD8 0%, #F0D8B4 55%, #E3C498 100%)",
+  "linear-gradient(120deg, #FAEFDE 0%, #F2DFC0 55%, #E8CEA6 100%)",
+  "linear-gradient(120deg, #F6EADC 0%, #EED8B9 55%, #DFC093 100%)",
 ];
 
 // ponytail: feed rotates one row at a time (30s), circular window over the pool.
@@ -119,15 +21,53 @@ const FEED_STEP_MS = 30_000;
 const FEED_FADE_MS = 650;
 const FEED_SIZE = 4;
 
-// Per-slide warm gradients, cycled by index for DB rows.
-const SLIDE_BGS = FALLBACK_SLIDES.map((s) => s.bg);
+type SlideView = {
+  id: string;
+  badge: string;
+  kicker: string;
+  title: string;
+  subtitle: string;
+  cta: string;
+  href: string;
+  cover: string;
+  bg: string;
+};
+type UpdateView = { id: string; title: string; desc?: string; date: string; image: string; href: string };
 
-type SlideView = (typeof FALLBACK_SLIDES)[number];
-type UpdateView = (typeof FALLBACK_UPDATES)[number];
-
-export default function WhatsNewSection() {
-  const [slides, setSlides] = useState<SlideView[]>(FALLBACK_SLIDES);
-  const [updates, setUpdates] = useState<UpdateView[]>(FALLBACK_UPDATES);
+export default function WhatsNewSection({
+  slideRows,
+  updateRows,
+}: {
+  slideRows: WhatsNewSlideRow[];
+  updateRows: WhatsNewUpdateRow[];
+}) {
+  const slides: SlideView[] = useMemo(
+    () =>
+      slideRows.map((row, i) => ({
+        id: row.id,
+        badge: row.badge ?? "NEW RELEASE",
+        kicker: row.kicker ?? "",
+        title: row.title,
+        subtitle: row.subtitle ?? "",
+        cta: row.cta ?? "पुस्तक देखें",
+        href: row.href ?? "/shop",
+        cover: row.cover ?? "/images/books/image-2.png",
+        bg: SLIDE_BGS[i % SLIDE_BGS.length],
+      })),
+    [slideRows],
+  );
+  const updates: UpdateView[] = useMemo(
+    () =>
+      updateRows.map((row) => ({
+        id: row.id,
+        title: row.title,
+        desc: row.note ?? undefined,
+        date: row.date_text ?? "",
+        image: row.image ?? "/images/books/image-2.png",
+        href: row.href ?? "/shop",
+      })),
+    [updateRows],
+  );
   const [active, setActive] = useState(0);
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
@@ -147,49 +87,7 @@ export default function WhatsNewSection() {
   const shown = Array.from({ length: feedSize }, (_, k) => updates[(start + k) % updates.length]);
 
   useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      const supabase = createClient();
-      const [slidesRes, updatesRes] = await Promise.all([
-        supabase.from("whats_new_slides").select("*").eq("is_active", true).order("sort"),
-        supabase.from("latest_updates").select("*").eq("is_active", true).order("sort"),
-      ]);
-      if (cancelled) return;
-      if (!slidesRes.error && slidesRes.data && slidesRes.data.length > 0) {
-        setSlides(
-          slidesRes.data.map((row, i) => ({
-            id: row.id,
-            badge: row.badge ?? "NEW RELEASE",
-            kicker: row.kicker ?? "",
-            title: row.title,
-            subtitle: row.subtitle ?? "",
-            cta: row.cta ?? "पुस्तक देखें",
-            href: row.href ?? "/shop",
-            cover: row.cover ?? "/images/books/image-2.png",
-            bg: SLIDE_BGS[i % SLIDE_BGS.length],
-          }))
-        );
-        setActive((a) => (a >= slidesRes.data!.length ? 0 : a));
-      }
-      if (!updatesRes.error && updatesRes.data && updatesRes.data.length > 0) {
-        setUpdates(
-          updatesRes.data.map((row) => ({
-            title: row.title,
-            desc: row.note ?? undefined,
-            date: row.date_text ?? "",
-            image: row.image ?? "/images/books/image-2.png",
-            href: row.href ?? "/shop",
-          }))
-        );
-      }
-    };
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
+    if (updates.length < 2) return;
     const t = setInterval(() => {
       setFadingOut(true);
       setTimeout(() => {
@@ -199,6 +97,8 @@ export default function WhatsNewSection() {
     }, FEED_STEP_MS);
     return () => clearInterval(t);
   }, [updates.length]);
+
+  if (slides.length === 0 && updates.length === 0) return null;
 
   return (
     <section className="py-6 sm:py-8 bg-white">
@@ -223,8 +123,9 @@ export default function WhatsNewSection() {
         </div>
 
         {/* ===== Two-column content ===== */}
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_440px] gap-6 lg:gap-8">
+        <div className={`grid grid-cols-1 gap-6 lg:gap-8 ${slides.length > 0 && updates.length > 0 ? "lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_440px]" : ""}`}>
           {/* ---------- Left: featured release carousel ---------- */}
+          {slides.length > 0 && (
           <div
             role="region"
             aria-label="Featured releases"
@@ -329,7 +230,10 @@ export default function WhatsNewSection() {
             </div>
           </div>
 
+          )}
+
           {/* ---------- Right: Latest Updates panel ---------- */}
+          {updates.length > 0 && (
           <aside className="rounded-2xl border border-gray-200 bg-white shadow-[0_2px_12px_rgba(0,0,0,0.04)] p-4 sm:p-5 flex flex-col lg:h-full">
             <div className="flex items-center justify-between gap-3 mb-2 sm:mb-3">
               <div>
@@ -351,7 +255,7 @@ export default function WhatsNewSection() {
             <ul className="divide-y divide-gray-100 flex-1">
               {shown.map((u, i) => (
                 <li
-                  key={u.title}
+                  key={u.id}
                   className={
                     i === 0 && fadingOut
                       ? "row-feed-out"
@@ -378,6 +282,7 @@ export default function WhatsNewSection() {
               ))}
             </ul>
           </aside>
+          )}
         </div>
       </div>
     </section>
