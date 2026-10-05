@@ -1,11 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-import { btnPrimary, card, inputCls, labelCls } from "@/components/admin/ui";
+import { card, inputCls, labelCls } from "@/components/admin/ui";
+import { SettingsForm, type SettingsState } from "@/components/admin/SettingsForm";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { SITE_DEFAULTS } from "@/lib/site-settings";
 
 // ponytail: one upsert (id=1), no per-field actions/validation lib until admin needs it
-async function saveSiteSettings(formData: FormData) {
+async function saveSiteSettings(_prev: SettingsState, formData: FormData): Promise<SettingsState> {
   "use server";
   const supabase = await createClient();
   const str = (k: string) => ((formData.get(k) as string) || "").trim() || null;
@@ -58,9 +59,10 @@ async function saveSiteSettings(formData: FormData) {
     },
     { onConflict: "id" }
   );
-  if (error) throw new Error(error.message);
+  if (error) return { error: `Could not save settings: ${error.message}`, at: Date.now() };
   revalidatePath("/", "layout");
   revalidatePath("/admin/settings");
+  return { success: "Settings saved. The changes are live on the store.", at: Date.now() };
 }
 
 export default async function SettingsPage() {
@@ -74,7 +76,7 @@ export default async function SettingsPage() {
         title="Settings"
         description="Your contact details, shipping, payments and homepage options. Changes apply to the whole store once you save."
       />
-      <form action={saveSiteSettings} className="space-y-6">
+      <SettingsForm action={saveSiteSettings}>
         <div className={card + " border-2 border-brand-200 p-6"}>
           <h2 className="mb-1 text-lg font-semibold text-gray-900">Homepage Sections</h2>
           <p className="mb-4 text-xs text-gray-500">Show or hide optional sections on the homepage.</p>
@@ -263,11 +265,7 @@ export default async function SettingsPage() {
           </div>
         </div>
 
-        <div className="sticky bottom-0 -mx-4 flex items-center justify-between gap-3 border-t border-gray-200 bg-white/90 px-4 py-3 backdrop-blur-md lg:-mx-8 lg:px-8">
-          <p className="text-sm text-gray-500">Remember to save after making changes.</p>
-          <button type="submit" className={btnPrimary}>Save settings</button>
-        </div>
-      </form>
+      </SettingsForm>
     </div>
   );
 }

@@ -121,6 +121,7 @@ export default function PageContentForm({ kind, initial }: { kind: PageKind; ini
   const [selected, setSelected] = useState<number | null>(null);
   const [message, setMessage] = useState<{ error?: string; success?: string }>({});
   const [dirty, setDirty] = useState(false);
+  const [newItems, setNewItems] = useState<number[]>([]); // rows added in this session and not saved yet
   const [pending, startTransition] = useTransition();
   const editorRef = useRef<HTMLDivElement>(null);
   const entryLabel = kind === "hero" ? "book" : kind === "team" ? "member" : "article";
@@ -163,11 +164,14 @@ export default function PageContentForm({ kind, initial }: { kind: PageKind; ini
   function add() {
     const item = kind === "hero" ? { ...HERO_ITEM_DEFAULT } : Object.fromEntries(Object.keys(contentDefaults[kind].items[0]).map(key => [key, key === "gradient" || key === "imageBg" ? gradients[0] : key === "id" ? crypto.randomUUID() : ""]));
     change(previous => ({ ...previous, items: [...previous.items, item] }));
+    setNewItems(previous => [...previous, content.items.length]);
     edit(content.items.length);
   }
   function move(index: number, direction: number) {
     const destination = index + direction;
     if (destination < 0 || destination >= content.items.length) return;
+    // Keep the "new, not saved yet" marker attached to the right row after reordering.
+    setNewItems(previous => previous.map(i => i === index ? destination : i === destination ? index : i));
     change(previous => {
       const items = [...previous.items];
       [items[index], items[destination]] = [items[destination], items[index]];
@@ -179,6 +183,7 @@ export default function PageContentForm({ kind, initial }: { kind: PageKind; ini
   function remove(index: number) {
     if (!window.confirm(`Remove this ${entryLabel}? Save changes to apply.`)) return;
     change(previous => ({ ...previous, items: previous.items.filter((_, i) => i !== index) }));
+    setNewItems(previous => previous.filter(i => i !== index).map(i => i > index ? i - 1 : i));
     if (selected === index) setSelected(null);
     else if (selected !== null && selected > index) setSelected(selected - 1);
   }
@@ -211,7 +216,9 @@ export default function PageContentForm({ kind, initial }: { kind: PageKind; ini
       try {
         const result = await savePageContent(kind, JSON.stringify(content));
         setMessage(result);
-        if (result.success) setDirty(false);
+        if (result.success) { setDirty(false); setNewItems([]); }
+        // Open the entry that failed validation so the empty field is right there.
+        else if (typeof result.itemIndex === "number") edit(result.itemIndex);
       } catch { setMessage({ error: "Changes could not be saved. Please try again." }); }
     });
   }}>
@@ -224,8 +231,8 @@ export default function PageContentForm({ kind, initial }: { kind: PageKind; ini
       {message.error && <div role="alert" className="rounded-md bg-red-50 p-3 text-sm text-red-700">{message.error}</div>}
       {message.success && <div role="status" className="rounded-md bg-green-50 p-3 text-sm text-green-700">{message.success}</div>}
       {active && selected !== null && <div ref={editorRef} className={card + " scroll-mt-6 p-6"}>
-        <div className="mb-4 flex items-center justify-between gap-3"><h2 className="text-lg font-semibold text-gray-900">Edit {title}</h2><button type="button" onClick={() => setSelected(null)} className={btnSecondary}>Close editor</button></div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">{Object.entries(active).map(([key, value]) => field(key, value, value => change(previous => ({ ...previous, items: previous.items.map((item, index) => index === selected ? { ...item, [key]: value } : item) })), `item-${selected}-${key}`))}</div>
+        <div className="mb-4 flex items-center justify-between gap-3"><h2 className="text-lg font-semibold text-gray-900">{newItems.includes(selected) ? "Add" : "Edit"} {title}</h2><button type="button" onClick={() => setSelected(null)} className={btnSecondary}>Close editor</button></div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">{Object.entries(active).filter(([key]) => kind === "hero" || key !== "id").map(([key, value]) => field(key, value, value => change(previous => ({ ...previous, items: previous.items.map((item, index) => index === selected ? { ...item, [key]: value } : item) })), `item-${selected}-${key}`))}</div>
         <p className="mt-4 text-sm text-gray-500">Use Save changes to publish your edits.</p>
       </div>}
       <div className={card}>
