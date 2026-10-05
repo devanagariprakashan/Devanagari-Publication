@@ -27,7 +27,7 @@ import {
   Award,
 } from "lucide-react";
 import { isHexColor, contrastTextColor } from "@/lib/color";
-import { ALL_BOOKS, BookItem } from "@/data/booksData";
+import type { BookItem } from "@/data/booksData";
 import { fetchCatalogBooks } from "@/lib/catalog";
 import { createClient } from "@/lib/supabase/client";
 import { SITE_DEFAULTS, getSiteSettings } from "@/lib/site-settings";
@@ -49,9 +49,7 @@ function ShopContent() {
     setIsWishlistDrawerOpen,
   } = useCartWishlist();
 
-  // Starts empty (not the hardcoded ALL_BOOKS demo data) so real DB products never get a flash
-  // of wrong content before the fetch resolves — the demo catalog is only a last-resort fallback
-  // if the DB genuinely returns nothing or the fetch fails.
+  // Always the real database catalog — an empty or failed fetch shows an empty shop, never demo books.
   const [catalogBooks, setCatalogBooks] = useState<BookItem[]>([]);
   const [isLoadingCatalog, setIsLoadingCatalog] = useState(true);
 
@@ -60,10 +58,10 @@ function ShopContent() {
     fetchCatalogBooks()
       .then((books) => {
         if (!active) return;
-        setCatalogBooks(books.length > 0 ? books : ALL_BOOKS);
+        setCatalogBooks(books);
       })
       .catch(() => {
-        if (active) setCatalogBooks(ALL_BOOKS);
+        if (active) setCatalogBooks([]);
       })
       .finally(() => {
         if (active) setIsLoadingCatalog(false);

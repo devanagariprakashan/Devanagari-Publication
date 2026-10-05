@@ -19,9 +19,15 @@ export async function checkRatesAction(orderId: string, formData: FormData): Pro
   const field = (key: string) => ((formData.get(key) as string) || '').trim()
   try {
     const admin = createAdminClient()
-    const { data: order, error } = await admin.from('orders').select('pincode,payment_method,total_amount').eq('id', orderId).maybeSingle()
+    const { data: order, error } = await admin.from('orders').select('pincode,payment_method,total_amount,shipping_address,landmark').eq('id', orderId).maybeSingle()
     if (error) throw error
     if (!order?.pincode) return { error: 'This order has no delivery pincode on file.' }
+    // The rate API only needs pincodes, but iThink rejects the shipment itself if the address is too short.
+    // Catch that here so the admin doesn't pick a courier and only then hit the error.
+    const addressLength = `${order.shipping_address ?? ''}${order.landmark ?? ''}`.replace(/\s/g, '').length
+    if (addressLength < 10) {
+      return { error: 'The delivery address on this order is too short (iThink needs at least 10 characters). Ask the customer for a complete address before creating a shipment.' }
+    }
 
     const rates = await getIthinkRates({
       toPincode: order.pincode,

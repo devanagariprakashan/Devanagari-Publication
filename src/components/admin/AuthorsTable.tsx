@@ -3,7 +3,9 @@
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { deleteAuthors } from "@/actions/authors";
+import { PenLine } from "lucide-react";
 import { btnDanger, btnPrimary, card, tableTd, tableTh } from "./ui";
+import { EmptyRow, Pill } from "./PageHeader";
 
 type Author = {
   id: string;
@@ -48,9 +50,9 @@ export function AuthorsTable({ initial }: { initial: Author[] }) {
   }
 
   return (
-    <div className={card}>
+    <div className={card + " overflow-hidden"}>
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-6 py-4">
-        <h2 className="text-lg font-semibold text-gray-900">Authors</h2>
+        <h2 className="text-lg font-semibold text-gray-900">All Authors</h2>
         {dirty && (
           <button type="button" onClick={save} disabled={pending} className={btnPrimary}>
             {pending ? "Saving..." : "Save changes"}
@@ -66,7 +68,7 @@ export function AuthorsTable({ initial }: { initial: Author[] }) {
       {message.success && <div role="status" className="mx-6 mt-4 rounded-md bg-green-50 p-3 text-sm text-green-700">{message.success}</div>}
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+          <thead className="bg-gray-50/80">
             <tr>
               <th className={tableTh}>Name</th>
               <th className={tableTh}>Role</th>
@@ -77,14 +79,19 @@ export function AuthorsTable({ initial }: { initial: Author[] }) {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {authors.map(a => (
-              <tr key={a.id}>
-                <td className={tableTd}>{a.name}</td>
+              <tr key={a.id} className="transition hover:bg-rose-50/40">
+                <td className={tableTd}>
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-rose-100 text-sm font-semibold text-rose-600">
+                      {(a.name.trim()[0] ?? "?").toUpperCase()}
+                    </span>
+                    <span className="font-medium text-gray-900">{a.name}</span>
+                  </div>
+                </td>
                 <td className={tableTd}>{a.role ?? "—"}</td>
                 <td className={tableTd}>{a.short_role ?? "—"}</td>
                 <td className={tableTd}>
-                  <span className={a.is_active ? "text-green-600" : "text-red-600"}>
-                    {a.is_active ? "Yes" : "No"}
-                  </span>
+                  <Pill tone={a.is_active ? "green" : "gray"}>{a.is_active ? "Active" : "Hidden"}</Pill>
                 </td>
                 <td className={tableTd}>
                   <div className="flex items-center gap-2">
@@ -99,9 +106,7 @@ export function AuthorsTable({ initial }: { initial: Author[] }) {
               </tr>
             ))}
             {authors.length === 0 && (
-              <tr>
-                <td className={tableTd} colSpan={5}>No authors yet.</td>
-              </tr>
+              <EmptyRow colSpan={5} icon={PenLine} title="No authors yet" hint="Add an author above to feature them on the Authors page." />
             )}
           </tbody>
         </table>

@@ -39,13 +39,17 @@ export async function adminLogin(_prevState: AuthResult, formData: FormData): Pr
 
   let { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).maybeSingle()
   if (email.toLowerCase() === adminEmail.toLowerCase()) {
+    // RLS only lets existing admins write profiles, so promoting the env-configured admin
+    // for the first time has to go through the service role.
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const adminClient = createAdminClient()
     if (!profile) {
-      const { data: np, error: ie } = await supabase.from('profiles')
+      const { data: np, error: ie } = await adminClient.from('profiles')
         .insert({ id: data.user.id, email: email.toLowerCase(), full_name: 'Admin', role: 'admin' })
         .select('*').single()
       if (!ie) profile = np
     } else if (profile.role !== 'admin') {
-      const { data: up, error: ue } = await supabase.from('profiles')
+      const { data: up, error: ue } = await adminClient.from('profiles')
         .update({ role: 'admin' }).eq('id', data.user.id).select('*').single()
       if (!ue) profile = up
     }

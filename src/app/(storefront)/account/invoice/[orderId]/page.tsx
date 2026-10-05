@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getInvoiceOrder } from "@/actions/orders";
 import { SITE_DEFAULTS, type SiteSettings } from "@/lib/site-settings";
 import InvoiceActions from "./InvoiceActions";
 
@@ -15,12 +16,8 @@ export default async function InvoicePage({ params }: Props) {
   const { orderId } = await params;
   const supabase = await createClient();
 
-  const [{ data: order }, { data: settingsRow }] = await Promise.all([
-    supabase
-      .from("orders")
-      .select("*, order_items(id, product_name, quantity, unit_price)")
-      .eq("id", orderId)
-      .maybeSingle(),
+  const [order, { data: settingsRow }] = await Promise.all([
+    getInvoiceOrder(orderId),
     supabase.from("site_settings").select("*").eq("id", 1).maybeSingle(),
   ]);
 

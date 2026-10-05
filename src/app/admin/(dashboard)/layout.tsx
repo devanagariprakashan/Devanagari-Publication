@@ -29,13 +29,18 @@ export default async function AdminDashboardLayout({
     redirect("/admin/login");
   }
 
+  const { count: unreadInquiries } = await supabase
+    .from("inquiries")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "unread");
+
   return (
     <AdminSidebarProvider>
       <div className="min-h-screen bg-stone-50">
         <AdminSidebar />
         <div className="lg:pl-64">
-          <AdminHeader email={user.email ?? undefined} />
-          <main className="p-4 lg:p-8">{children}</main>
+          <AdminHeader email={user.email ?? undefined} unreadInquiries={unreadInquiries ?? 0} />
+          <main className="mx-auto w-full max-w-[1600px] p-4 lg:p-8">{children}</main>
         </div>
       </div>
     </AdminSidebarProvider>

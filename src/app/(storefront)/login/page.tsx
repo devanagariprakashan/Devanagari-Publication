@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
 import AuthLayout from "@/components/auth/AuthLayout";
+import { customerLogin } from "@/actions/customer-auth";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,12 +16,12 @@ export default function LoginPage() {
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
 
     if (!identifier.trim()) {
-      setErrorMessage("Please enter your email or phone number");
+      setErrorMessage("Please enter your email address");
       return;
     }
     if (!password) {
@@ -29,45 +30,28 @@ export default function LoginPage() {
     }
 
     setIsLoading(true);
-    // Simulate authentication & save user session. Everything below is wrapped in
-    // try/finally so a storage error (corrupted JSON, private-browsing restrictions,
-    // an extension blocking storage, etc.) can never leave the button stuck loading
-    // or skip the redirect — both always happen in the finally block, no matter what.
-    setTimeout(() => {
-      try {
-        if (typeof window !== "undefined") {
-          const isEmail = identifier.includes("@");
-          const existingSession = localStorage.getItem("devanagari_user");
-          let sessionData = {
-            name: "Rahul Sharma",
-            email: isEmail ? identifier : "rahulsharma@gmail.com",
-            phone: !isEmail ? identifier : "+91 98765 43210",
-          };
-          if (existingSession) {
-            try {
-              const parsed = JSON.parse(existingSession);
-              sessionData = {
-                ...sessionData,
-                ...parsed,
-                email: isEmail ? identifier : parsed.email || sessionData.email,
-                phone: !isEmail ? identifier : parsed.phone || sessionData.phone,
-              };
-            } catch (e) {
-              console.error(e);
-            }
-          }
-          localStorage.setItem("devanagari_user", JSON.stringify(sessionData));
-          localStorage.removeItem("devanagari_logged_out");
-          window.dispatchEvent(new Event("devanagari_user_updated"));
-        }
-      } catch (e) {
-        console.error("Failed to save session", e);
-      } finally {
-        setIsLoading(false);
-        setSuccessMessage("Login successful! Redirecting to your account...");
-        router.push("/account");
+    try {
+      // Real sign-in against the server; the details saved in the browser come from the account, not from what was typed.
+      const result = await customerLogin({ identifier, password });
+      if ("error" in result) {
+        setErrorMessage(result.error);
+        return;
       }
-    }, 900);
+      try {
+        localStorage.setItem("devanagari_user", JSON.stringify(result.user));
+        localStorage.removeItem("devanagari_logged_out");
+        window.dispatchEvent(new Event("devanagari_user_updated"));
+      } catch (storageError) {
+        console.error("Failed to save session", storageError);
+      }
+      setSuccessMessage("Login successful! Redirecting to your account...");
+      router.push("/account");
+    } catch (loginError) {
+      console.error(loginError);
+      setErrorMessage("Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -99,13 +83,13 @@ export default function LoginPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
-          {/* Field 1: Email or Phone number */}
+          {/* Field 1: Email */}
           <div className="space-y-1.5">
             <label
               htmlFor="identifier"
               className="block text-xs sm:text-[13px] font-semibold text-gray-800"
             >
-              Email or Phone number
+              Email address
             </label>
             <div className="relative flex items-center">
               <div className="absolute left-3.5 text-[#C61821] pointer-events-none">
@@ -116,7 +100,9 @@ export default function LoginPage() {
                 type="text"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="Enter your email or phone number"
+                placeholder="Enter your email address"
+                autoComplete="email"
+                inputMode="email"
                 className="w-full pl-10 pr-4 py-3 sm:py-3.5 bg-white border border-gray-200/90 rounded-[5px] text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#C61821] focus:ring-2 focus:ring-[#C61821]/15 transition-all duration-150"
               />
             </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -15,6 +15,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import AuthLayout from "@/components/auth/AuthLayout";
+import { customerRegister, requestSignupOtp } from "@/actions/customer-auth";
 import { useCartWishlist } from "@/components/providers/CartWishlistProvider";
 
 export default function RegisterPage() {
@@ -32,6 +33,35 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [step, setStep] = useState<"details" | "verify">("details");
+  const [code, setCode] = useState("");
+  const [resendIn, setResendIn] = useState(0);
+
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const timer = setTimeout(() => setResendIn((s) => s - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendIn]);
+
+  const handleResend = async () => {
+    setErrorMessage("");
+    setIsLoading(true);
+    try {
+      const sent = await requestSignupOtp({
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        password: formData.password,
+      });
+      if ("error" in sent) setErrorMessage(sent.error);
+      else setResendIn(45);
+    } catch (resendError) {
+      console.error(resendError);
+      setErrorMessage("Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -43,7 +73,7 @@ export default function RegisterPage() {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
 
@@ -72,40 +102,73 @@ export default function RegisterPage() {
       return;
     }
 
-    setIsLoading(true);
-    // Simulate registration & save user session. Everything below is wrapped in
-    // try/finally so a storage error (corrupted JSON, private-browsing restrictions,
-    // an extension blocking storage, etc.) can never leave the button stuck loading
-    // or skip the redirect — both always happen in the finally block, no matter what.
-    setTimeout(() => {
+    // Step 1: email a verification code. Nothing is created until the code comes back.
+    if (step === "details") {
+      setIsLoading(true);
       try {
-        if (typeof window !== "undefined") {
-          localStorage.setItem(
-            "devanagari_user",
-            JSON.stringify({
-              name: formData.fullName.trim(),
-              email: formData.email.trim(),
-              phone: formData.phone.trim(),
-            })
-          );
-          localStorage.removeItem("devanagari_logged_out");
-          // ponytail: wishlist is browser-global; reset it on new account so stale demo items don't carry over
-          localStorage.removeItem("devanagari_wishlist_v2");
-          window.dispatchEvent(new Event("devanagari_user_updated"));
+        const sent = await requestSignupOtp({
+          fullName: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+          password: formData.password,
+        });
+        if ("error" in sent) {
+          setErrorMessage(sent.error);
+          return;
         }
-      } catch (e) {
-        console.error("Failed to save session", e);
+        setCode("");
+        setResendIn(45);
+        setStep("verify");
+      } catch (otpError) {
+        console.error(otpError);
+        setErrorMessage("Something went wrong. Please try again.");
       } finally {
         setIsLoading(false);
-        setSuccessMessage("Account created successfully! Taking you to the shop...");
-        showToast({
-          type: "info",
-          title: "Welcome to Devanagari Publications!",
-          message: `You're logged in, ${formData.fullName.trim().split(" ")[0]}. Start reading — explore our books below.`,
-        });
-        router.push("/shop");
       }
-    }, 1000);
+      return;
+    }
+
+    if (!/^\d{6}$/.test(code.trim())) {
+      setErrorMessage("Please enter the 6-digit code from your email");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Step 2: the code proves the email is theirs; the server then creates the account and signs the customer in.
+      const result = await customerRegister({
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        password: formData.password,
+        code,
+      });
+      if ("error" in result) {
+        setErrorMessage(result.error);
+        return;
+      }
+      try {
+        localStorage.setItem("devanagari_user", JSON.stringify(result.user));
+        localStorage.removeItem("devanagari_logged_out");
+        // ponytail: wishlist is browser-global; reset it on new account so stale demo items don't carry over
+        localStorage.removeItem("devanagari_wishlist_v2");
+        window.dispatchEvent(new Event("devanagari_user_updated"));
+      } catch (storageError) {
+        console.error("Failed to save session", storageError);
+      }
+      setSuccessMessage("Account created successfully! Taking you to the shop...");
+      showToast({
+        type: "info",
+        title: "Welcome to Devanagari Publications!",
+        message: `You're logged in, ${result.user.name.split(" ")[0]}. Start reading — explore our books below.`,
+      });
+      router.push("/shop");
+    } catch (registerError) {
+      console.error(registerError);
+      setErrorMessage("Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -137,6 +200,8 @@ export default function RegisterPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4">
+          {step === "details" ? (
+          <>
           {/* Field 1: Full Name */}
           <div className="space-y-1.5">
             <label
@@ -276,6 +341,54 @@ export default function RegisterPage() {
             </label>
           </div>
 
+          </>
+          ) : (
+            <div className="space-y-4">
+              <div className="rounded-[5px] bg-rose-50/60 border border-rose-100 p-3.5 text-xs sm:text-sm text-gray-700 leading-relaxed">
+                We sent a 6-digit code to <strong className="text-gray-900">{formData.email.trim()}</strong>. Enter it below to verify your email.
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="otp" className="block text-xs sm:text-[13px] font-semibold text-gray-800">
+                  Verification code
+                </label>
+                <input
+                  id="otp"
+                  name="otp"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  autoFocus
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  placeholder="------"
+                  className="w-full py-3 bg-white border border-gray-200/90 rounded-[5px] text-center text-2xl font-bold tracking-[0.5em] text-gray-900 placeholder:text-gray-300 focus:outline-none focus:border-[#C61821] focus:ring-2 focus:ring-[#C61821]/15 transition-all duration-150"
+                />
+              </div>
+              <div className="flex items-center justify-between text-xs sm:text-[13px]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep("details");
+                    setCode("");
+                    setErrorMessage("");
+                  }}
+                  className="font-semibold text-gray-600 hover:text-[#C61821] cursor-pointer"
+                >
+                  Change email
+                </button>
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={resendIn > 0 || isLoading}
+                  className="font-semibold text-[#C61821] hover:underline disabled:text-gray-400 disabled:no-underline cursor-pointer disabled:cursor-not-allowed"
+                >
+                  {resendIn > 0 ? `Resend code in ${resendIn}s` : "Resend code"}
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Submit Button */}
           <button
             type="submit"
@@ -285,11 +398,11 @@ export default function RegisterPage() {
             {isLoading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Creating Account...</span>
+                <span>{step === "details" ? "Sending code..." : "Verifying..."}</span>
               </>
             ) : (
               <>
-                <span>Create Account</span>
+                <span>{step === "details" ? "Send verification code" : "Verify & Create Account"}</span>
                 <ArrowRight className="w-4 h-4" strokeWidth={2.2} />
               </>
             )}

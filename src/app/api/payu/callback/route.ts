@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
+import { sendOrderConfirmation, siteUrlFrom } from "@/lib/order-emails";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyPayuResponseHash } from "@/lib/payu";
-import { createIthinkShipment } from "@/lib/ithink";
 
 export async function POST(request: Request) {
   const form = await request.formData();
@@ -19,11 +19,15 @@ export async function POST(request: Request) {
   );
   const status = data.status?.toLowerCase() === "success" && valid ? "paid" : "failed";
   if (orderId) {
-    const { data: updatedOrder } = await admin.from("orders").update({
+    await admin.from("orders").update({
       payment_status: status, order_status: status === "paid" ? "confirmed" : "payment_failed",
       payment_id: data.mihpayid || null,
-    }).eq("id", orderId).eq("payment_status", "pending").select("id,payment_status").maybeSingle();
-    if (updatedOrder?.payment_status === "paid") await createIthinkShipment(orderId);
+    }).eq("id", orderId).eq("payment_status", "pending");
+    // Idempotent: the webhook can fire for the same payment, and only the first call actually sends.
+    if (status === "paid") {
+      const siteUrl = siteUrlFrom(request);
+      after(() => sendOrderConfirmation(orderId, siteUrl));
+    }
   }
   const origin = new URL(request.url).origin;
   const destination = new URL("/checkout", origin);

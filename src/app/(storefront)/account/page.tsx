@@ -28,6 +28,8 @@ import { useCartWishlist } from "@/components/providers/CartWishlistProvider";
 import { createClient } from "@/lib/supabase/client";
 import { getSiteSettings, SITE_DEFAULTS } from "@/lib/site-settings";
 import TrackShipmentInline from "@/components/TrackShipmentInline";
+import { getAccountOrders } from "@/actions/orders";
+import { customerLogout, getCustomerSession } from "@/actions/customer-auth";
 
 // Define Address Interface
 interface UserAddress {
@@ -122,12 +124,8 @@ const ORDER_STATUS_MAP: Record<string, AccountOrder["status"]> = {
 // mirrors every field the admin order-details view shows, so customers see the same a-to-z detail.
 async function fetchAccountOrders(email: string, standardDeliveryDays: string): Promise<AccountOrder[]> {
   if (!email) return [];
-  const { data, error } = await createClient()
-    .from("orders")
-    .select("*, order_items(id, book_id, quantity, product_name, product_sku, unit_price, books(image_url, author))")
-    .eq("customer_email", email.toLowerCase())
-    .order("created_at", { ascending: false });
-  if (error || !data) return [];
+  const data = await getAccountOrders();
+  if (!data.length) return [];
 
   return data.map((order) => {
     const rawItems = (order.order_items ?? []) as Array<{
@@ -253,6 +251,7 @@ function AccountPageContent() {
   const [editingAddress, setEditingAddress] = useState<UserAddress | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<AccountOrder | null>(null);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [sessionChecked, setSessionChecked] = useState(false);
   const [isNewAddressModalOpen, setIsNewAddressModalOpen] = useState(false);
   const [isWriteReviewOpen, setIsWriteReviewOpen] = useState(false);
   const [showSaveToast, setShowSaveToast] = useState<string | null>(null);
@@ -285,11 +284,9 @@ function AccountPageContent() {
 
     // 1. User session
     const storedUser = localStorage.getItem("devanagari_user");
-    let currentEmail = userProfile.email;
     if (storedUser) {
       try {
         const parsed = JSON.parse(storedUser);
-        currentEmail = parsed.email || currentEmail;
         setUserProfile((prev) => ({
           ...prev,
           name: parsed.name || parsed.fullName || prev.name,
@@ -314,11 +311,27 @@ function AccountPageContent() {
       }
     }
 
-    // 3. Orders — real orders placed via checkout, matched by email
-    getSiteSettings().then((settings) => {
+    // 3. Verify the login against the server session — browser storage alone proves nothing. No session means
+    //    the stored profile is stale, so clear it and send the visitor to log in.
+    getCustomerSession().then((session) => {
       if (cancelled) return;
-      fetchAccountOrders(currentEmail, settings.standard_delivery_days || SITE_DEFAULTS.standard_delivery_days).then((fetched) => {
-        if (!cancelled) setOrders(fetched);
+      if (!session) {
+        localStorage.removeItem("devanagari_user");
+        window.dispatchEvent(new Event("devanagari_user_updated"));
+        router.replace("/login");
+        return;
+      }
+      localStorage.setItem("devanagari_user", JSON.stringify(session));
+      window.dispatchEvent(new Event("devanagari_user_updated"));
+      setSessionChecked(true);
+      setUserProfile((prev) => ({ ...prev, name: session.name, email: session.email, phone: session.phone || prev.phone }));
+
+      // Orders — real orders placed via checkout, for the signed-in email
+      getSiteSettings().then((settings) => {
+        if (cancelled) return;
+        fetchAccountOrders(session.email, settings.standard_delivery_days || SITE_DEFAULTS.standard_delivery_days).then((fetched) => {
+          if (!cancelled) setOrders(fetched);
+        });
       });
     });
 
@@ -477,6 +490,7 @@ function AccountPageContent() {
 
   // Handle Logout
   const handleLogout = () => {
+    void customerLogout();
     if (typeof window !== "undefined") {
       localStorage.removeItem("devanagari_user");
       localStorage.setItem("devanagari_logged_out", "true");
@@ -500,6 +514,15 @@ function AccountPageContent() {
     }
     return true;
   });
+
+  // Nothing from the account is shown until the server confirms the login, so a stale browser session never flashes the dashboard.
+  if (!sessionChecked) {
+    return (
+      <div className="flex min-h-[calc(100vh-140px)] items-center justify-center bg-[#F8F9FA]">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-300 border-t-[#C61821]" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[calc(100vh-140px)] bg-[#F8F9FA] text-[#1D2129] py-6 sm:py-8 lg:py-10 selection:bg-red-100 selection:text-[#C61821]">
@@ -1102,7 +1125,10 @@ function AccountPageContent() {
                             )}
                           </div>
 
-                          <div className="flex items-center gap-2.5">
+                          <div className="flex flex-wrap items-center gap-2.5">
+                            {order.shipment.awbNumber && (
+                              <TrackShipmentInline awb={order.shipment.awbNumber} variant="button" />
+                            )}
                             <button
                               type="button"
                               onClick={() => setSelectedOrder(order)}
@@ -1886,14 +1912,37 @@ function AccountPageContent() {
                 )}
               </div>
 
-              <div className="p-3.5 rounded-xl border border-gray-100 bg-[#FBFBFC] text-xs space-y-1 sm:col-span-2">
-                <span className="font-bold text-gray-800 block mb-1">Shipment</span>
+              <div
+                className={`p-4 rounded-xl text-xs space-y-2 sm:col-span-2 ${
+                  selectedOrder.shipment.awbNumber
+                    ? "border border-[#C61821]/25 bg-gradient-to-br from-[#FFF3F3] to-white ring-1 ring-[#C61821]/10"
+                    : "border border-gray-100 bg-[#FBFBFC]"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="flex items-center gap-2 font-bold text-gray-900 text-sm">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#C61821]/10 text-[#C61821]">
+                      <Truck className="w-4 h-4" />
+                    </span>
+                    Shipment
+                  </span>
+                  <span className="rounded-full bg-[#C61821] px-2.5 py-0.5 text-[11px] font-semibold capitalize text-white">
+                    {selectedOrder.shipment.status}
+                  </span>
+                </div>
                 <p className="text-gray-600">
                   Delivery type: <span className="font-semibold text-gray-900 capitalize">{selectedOrder.shipment.method}</span>
-                  <span className="mx-1.5 text-gray-300">•</span>
-                  Status: <span className="font-semibold text-gray-900 capitalize">{selectedOrder.shipment.status}</span>
                 </p>
-                <p className="text-gray-600">AWB: {selectedOrder.shipment.awbNumber ?? "Not yet assigned"}</p>
+                <p className="text-gray-600">
+                  AWB:{" "}
+                  {selectedOrder.shipment.awbNumber ? (
+                    <span className="rounded-md bg-white px-2 py-0.5 font-mono text-[13px] font-bold tracking-wide text-gray-900 ring-1 ring-gray-200">
+                      {selectedOrder.shipment.awbNumber}
+                    </span>
+                  ) : (
+                    "Not yet assigned"
+                  )}
+                </p>
                 {selectedOrder.shipment.error && (
                   <p className="text-red-600">Error: {selectedOrder.shipment.error}</p>
                 )}

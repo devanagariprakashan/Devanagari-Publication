@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-import { btnPrimary, card, inputCls, labelCls, pageTitle } from "@/components/admin/ui";
+import { btnPrimary, card, inputCls, labelCls } from "@/components/admin/ui";
+import { PageHeader } from "@/components/admin/PageHeader";
 import { SITE_DEFAULTS } from "@/lib/site-settings";
 
 // ponytail: one upsert (id=1), no per-field actions/validation lib until admin needs it
@@ -69,7 +70,10 @@ export default async function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className={pageTitle}>Settings</h1>
+      <PageHeader
+        title="Settings"
+        description="Your contact details, shipping, payments and homepage options. Changes apply to the whole store once you save."
+      />
       <form action={saveSiteSettings} className="space-y-6">
         <div className={card + " border-2 border-brand-200 p-6"}>
           <h2 className="mb-1 text-lg font-semibold text-gray-900">Homepage Sections</h2>
@@ -259,7 +263,10 @@ export default async function SettingsPage() {
           </div>
         </div>
 
-        <button type="submit" className={btnPrimary}>Save</button>
+        <div className="sticky bottom-0 -mx-4 flex items-center justify-between gap-3 border-t border-gray-200 bg-white/90 px-4 py-3 backdrop-blur-md lg:-mx-8 lg:px-8">
+          <p className="text-sm text-gray-500">Remember to save after making changes.</p>
+          <button type="submit" className={btnPrimary}>Save settings</button>
+        </div>
       </form>
     </div>
   );

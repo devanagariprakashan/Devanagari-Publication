@@ -196,15 +196,26 @@ export async function trackIthinkShipment(awb: string): Promise<ShipmentTracking
     awb,
     courier: typeof entry.logistic === "string" ? entry.logistic : null,
     currentStatus: typeof entry.current_status === "string" ? entry.current_status : "Unknown",
-    expectedDeliveryDate: typeof entry.expected_delivery_date === "string" ? entry.expected_delivery_date : null,
-    lastLocation: typeof lastScan.scan_location === "string" ? lastScan.scan_location : null,
+    // iThink sends "0000-00-00" until the courier has picked the parcel up and set a date — treat that as "no date yet".
+    expectedDeliveryDate:
+      typeof entry.expected_delivery_date === "string" && /[1-9]/.test(entry.expected_delivery_date) ? entry.expected_delivery_date : null,
+    lastLocation:
+      typeof lastScan.scan_location === "string" && lastScan.scan_location.trim() && lastScan.scan_location.trim().toUpperCase() !== "NA"
+        ? lastScan.scan_location
+        : null,
     lastUpdate: typeof lastScan.status_date_time === "string" ? lastScan.status_date_time : null,
-    history: scans.map((scan) => ({
-      status: typeof scan.status === "string" ? scan.status : "",
-      location: typeof scan.scan_location === "string" ? scan.scan_location : "",
-      dateTime: typeof scan.scan_date_time === "string" ? scan.scan_date_time : "",
-      remark: typeof scan.remark === "string" ? scan.remark : undefined,
-    })).reverse(),
+    // scan_details rows use status_* keys (unlike last_scan_details, which uses scan_location / status_date_time).
+    history: scans.map((scan) => {
+      const str = (value: unknown) => (typeof value === "string" ? value.trim() : "");
+      const code = str(scan.status_code);
+      const location = str(scan.status_location) || str(scan.scan_location);
+      return {
+        status: str(scan.status) || (code === "new" ? "Order booked" : code),
+        location: location.toUpperCase() === "NA" ? "" : location,
+        dateTime: str(scan.status_date_time) || str(scan.scan_date_time),
+        remark: str(scan.status_remark) || str(scan.remark) || undefined,
+      };
+    }).reverse(),
   };
 }
 
@@ -226,6 +237,33 @@ export interface RateCheckParams {
   weight: string;
   paymentMethod: "cod" | "prepaid";
   productMrp: string;
+}
+
+// Which couriers deliver to a pincode for the given payment mode (courier name, normalised -> true/false).
+// Returns null if iThink can't be reached, so a lookup failure never blocks shipping.
+async function getServiceableCouriers(pincode: string, paymentMethod: "cod" | "prepaid", accessToken: string, secretKey: string) {
+  try {
+    const response = await fetch("https://my.ithinklogistics.com/api_v3/pincode/check.json", {
+      method: "POST",
+      headers: { "content-type": "application/json", "cache-control": "no-cache" },
+      body: JSON.stringify({ data: { pincode, access_token: accessToken, secret_key: secretKey } }),
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!response.ok) return null;
+    const json = (await response.json()) as { data?: Record<string, Record<string, unknown>> };
+    const entry = json.data?.[pincode];
+    if (!entry || typeof entry !== "object") return null;
+    const flag = paymentMethod === "cod" ? "cod" : "prepaid";
+    const result = new Map<string, boolean>();
+    for (const [name, info] of Object.entries(entry)) {
+      if (info && typeof info === "object" && "mode" in info) {
+        result.set(name.toLowerCase().replace(/[^a-z0-9]/g, ""), (info as Record<string, unknown>)[flag] === "Y");
+      }
+    }
+    return result.size ? result : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function getIthinkRates(params: RateCheckParams): Promise<CourierRate[]> {
@@ -263,10 +301,21 @@ export async function getIthinkRates(params: RateCheckParams): Promise<CourierRa
     throw new Error(typeof resultRecord.html_message === "string" ? resultRecord.html_message : "iThink could not calculate rates for this pincode/weight.");
   }
   const rows = Array.isArray(resultRecord.data) ? resultRecord.data as Record<string, unknown>[] : [];
+  // rate/check prices by zone only — it lists couriers that can't actually deliver to this pincode (or can't take
+  // COD there), and picking one fails with "Pincode Not Serviceable". Keep only couriers that serve the pincode.
+  const serviceable = await getServiceableCouriers(params.toPincode, params.paymentMethod, accessToken, secretKey);
+  const normalize = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const canDeliver = (name: string) => {
+    if (!serviceable) return true;
+    const key = normalize(name);
+    // A courier missing from the pincode data is left in rather than hidden on a naming mismatch.
+    const known = [...serviceable.entries()].find(([n]) => n === key || n.startsWith(key) || key.startsWith(n));
+    return known ? known[1] : true;
+  };
   // iThink's rate/check endpoint ignores the s_type request filter and always returns every courier
   // enabled on the account — "service_type" (e.g. "Surface"/"Air") on each row is the only real signal,
   // so speed filtering has to happen client-side against that field, not via the request.
-  return rows.map((row) => ({
+  return rows.filter((row) => canDeliver(typeof row.logistic_name === "string" ? row.logistic_name : "")).map((row) => ({
     courier: typeof row.logistic_name === "string" ? row.logistic_name : "Unknown",
     serviceType: typeof row.service_type === "string" && row.service_type ? row.service_type : null,
     rate: typeof row.rate === "number" ? row.rate : Number(row.rate) || 0,

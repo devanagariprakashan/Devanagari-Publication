@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo, useEffect, useTransition } from "react";
 import Link from "next/link";
@@ -24,6 +24,10 @@ import {
   BookOpen,
   X,
   IndianRupee,
+  ArrowUpRight,
+  ArrowDownRight,
+  SlidersHorizontal,
+  PackageSearch,
 } from "lucide-react";
 import { updateOrderStatus, deleteOrder } from "@/actions/orders";
 import { CreateShipmentButton } from "./CreateShipmentButton";
@@ -134,14 +138,16 @@ const STATUS_OPTIONS = [
   { value: "cancelled", label: "Cancelled" },
 ];
 
-export function OrdersManager({ orders: initialOrders }: { orders: Order[] }) {
+export function OrdersManager({ orders: initialOrders, initialQuery = "" }: { orders: Order[]; initialQuery?: string }) {
   const [orders, setOrders] = useState<Order[]>(initialOrders);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [selectedStatusTab, setSelectedStatusTab] = useState<string>("all");
   const [paymentFilter, setPaymentFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "highest" | "lowest">("newest");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [dateFilter, setDateFilter] = useState<"all" | "today" | "7d" | "30d" | "month">("all");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     setOrders(initialOrders);
@@ -165,6 +171,23 @@ export function OrdersManager({ orders: initialOrders }: { orders: Order[] }) {
     const aov = nonCancelled.length > 0 ? Math.round(grossRevenue / nonCancelled.length) : 0;
 
     return { totalOrders, grossRevenue, pendingOrders, shippedOrders, deliveredOrders, aov };
+  }, [orders]);
+
+  // Revenue vs the previous month, shown on the Total Revenue card.
+  const trends = useMemo(() => {
+    const now = new Date();
+    const live = (o: Order) => o.order_status !== "cancelled" && o.order_status !== "payment_failed";
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const sumBetween = (from: Date, to: Date) =>
+      orders
+        .filter((o) => live(o) && new Date(o.created_at) >= from && new Date(o.created_at) < to)
+        .reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
+    const thisMonth = sumBetween(startOfMonth, new Date(now.getFullYear(), now.getMonth() + 1, 1));
+    const lastMonth = sumBetween(startOfLastMonth, startOfMonth);
+    // No percentage when last month had no sales — "100%" there would be misleading.
+    const change = lastMonth > 0 ? ((thisMonth - lastMonth) / lastMonth) * 100 : null;
+    return { change };
   }, [orders]);
 
   const tabCounts = useMemo(() => {
@@ -203,6 +226,21 @@ export function OrdersManager({ orders: initialOrders }: { orders: Order[] }) {
         }
         if (paymentFilter === "pending" && order.payment_status?.toLowerCase() === "paid") {
           return false;
+        }
+
+        if (dateFilter !== "all") {
+          const now = new Date();
+          const placed = new Date(order.created_at);
+          const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          const from =
+            dateFilter === "today"
+              ? startOfToday
+              : dateFilter === "7d"
+                ? new Date(startOfToday.getTime() - 6 * 86400000)
+                : dateFilter === "30d"
+                  ? new Date(startOfToday.getTime() - 29 * 86400000)
+                  : new Date(now.getFullYear(), now.getMonth(), 1);
+          if (placed < from) return false;
         }
 
         if (searchQuery.trim()) {
@@ -247,9 +285,23 @@ export function OrdersManager({ orders: initialOrders }: { orders: Order[] }) {
         }
         return 0;
       });
-  }, [orders, selectedStatusTab, paymentFilter, searchQuery, sortBy]);
+  }, [orders, selectedStatusTab, paymentFilter, dateFilter, searchQuery, sortBy]);
+
+  const allVisibleSelected = filteredOrders.length > 0 && filteredOrders.every((o) => selectedIds.has(o.id));
+  const toggleAll = () => {
+    setSelectedIds(allVisibleSelected ? new Set() : new Set(filteredOrders.map((o) => o.id)));
+  };
+  const toggleOne = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const exportToCSV = () => {
+    const exportRows = selectedIds.size > 0 ? orders.filter((o) => selectedIds.has(o.id)) : filteredOrders;
     const headers = [
       "Order Number",
       "Date",
@@ -269,7 +321,7 @@ export function OrdersManager({ orders: initialOrders }: { orders: Order[] }) {
       "AWB Number",
     ];
 
-    const rows = filteredOrders.map((o) => [
+    const rows = exportRows.map((o) => [
       `"${o.order_number}"`,
       `"${new Date(o.created_at).toISOString()}"`,
       `"${(o.customer_name ?? "").replace(/"/g, '""')}"`,
@@ -303,69 +355,97 @@ export function OrdersManager({ orders: initialOrders }: { orders: Order[] }) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className={pageTitle}>Orders</h1>
-          <p className="mt-1 text-sm text-gray-500">Track orders, payments, and shipments.</p>
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-rose-50/80 via-white to-white px-6 py-6 ring-1 ring-rose-100/70">
+        <div className="pointer-events-none absolute -right-8 -top-14 h-48 w-48 rounded-full bg-rose-100/60 blur-2xl" />
+        <div className="relative flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className={pageTitle}>Orders</h1>
+            <p className="mt-1 text-sm text-gray-500">
+              Track orders, payments, and shipments. Manage your store orders with ease.
+            </p>
+          </div>
+          <button type="button" onClick={exportToCSV} className={btnSecondary}>
+            <Download className="mr-2 h-4 w-4" />
+            {selectedIds.size > 0 ? `Export selected (${selectedIds.size})` : "Export CSV"}
+          </button>
         </div>
-        <button type="button" onClick={exportToCSV} className={btnSecondary}>
-          <Download className="mr-2 h-4 w-4" />
-          Export CSV
-        </button>
       </div>
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-        <div className={card + " p-5"}>
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            <IndianRupee className="h-4 w-4" />
-            Revenue
-          </div>
-          <p className="mt-2 text-2xl font-bold text-gray-900">
-            ₹{stats.grossRevenue.toLocaleString("en-IN")}
-          </p>
-          <p className="mt-1 text-xs text-gray-400">Avg order ₹{stats.aov}</p>
-        </div>
-
-        <div className={card + " p-5"}>
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            <ShoppingBag className="h-4 w-4" />
-            Total Orders
-          </div>
-          <p className="mt-2 text-2xl font-bold text-gray-900">{stats.totalOrders}</p>
-          <p className="mt-1 text-xs text-gray-400">All time</p>
-        </div>
-
-        <div className={card + " p-5"}>
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            <Clock className="h-4 w-4" />
-            Pending
-          </div>
-          <p className="mt-2 text-2xl font-bold text-gray-900">{stats.pendingOrders}</p>
-          <p className="mt-1 text-xs text-gray-400">Needs dispatch</p>
-        </div>
-
-        <div className={card + " p-5"}>
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            <Truck className="h-4 w-4" />
-            Shipped
-          </div>
-          <p className="mt-2 text-2xl font-bold text-gray-900">{stats.shippedOrders}</p>
-          <p className="mt-1 text-xs text-gray-400">In transit</p>
-        </div>
-
-        <div className={card + " col-span-2 p-5 sm:col-span-1"}>
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            <CheckCircle2 className="h-4 w-4" />
-            Delivered
-          </div>
-          <p className="mt-2 text-2xl font-bold text-gray-900">{stats.deliveredOrders}</p>
-          <p className="mt-1 text-xs text-gray-400">
-            {stats.totalOrders > 0
-              ? `${Math.round((stats.deliveredOrders / stats.totalOrders) * 100)}% of all orders`
-              : "0%"}
-          </p>
-        </div>
+        {[
+          {
+            label: "Total Revenue",
+            value: `₹${stats.grossRevenue.toLocaleString("en-IN")}`,
+            icon: IndianRupee,
+            bg: "from-rose-50 to-white",
+            tile: "bg-rose-100 text-rose-600",
+            sub:
+              trends.change === null ? (
+                <span className="whitespace-nowrap text-gray-400">No sales last month</span>
+              ) : (
+                <span className={`inline-flex items-center gap-0.5 whitespace-nowrap font-medium ${trends.change < 0 ? "text-red-600" : "text-green-600"}`}>
+                  {trends.change < 0 ? <ArrowDownRight className="h-3.5 w-3.5 shrink-0" /> : <ArrowUpRight className="h-3.5 w-3.5 shrink-0" />}
+                  {Math.round(Math.abs(trends.change))}% vs last month
+                </span>
+              ),
+          },
+          {
+            label: "Total Orders",
+            value: String(stats.totalOrders),
+            icon: ShoppingBag,
+            bg: "from-blue-50 to-white",
+            tile: "bg-blue-100 text-blue-600",
+            sub: <span className="text-gray-400">All time</span>,
+          },
+          {
+            label: "Pending",
+            value: String(stats.pendingOrders),
+            icon: Clock,
+            bg: "from-amber-50 to-white",
+            tile: "bg-amber-100 text-amber-600",
+            sub: <span className="text-gray-400">Needs dispatch</span>,
+          },
+          {
+            label: "Shipped",
+            value: String(stats.shippedOrders),
+            icon: Truck,
+            bg: "from-emerald-50 to-white",
+            tile: "bg-emerald-100 text-emerald-600",
+            sub: <span className="text-gray-400">In transit</span>,
+          },
+          {
+            label: "Delivered",
+            value: String(stats.deliveredOrders),
+            icon: CheckCircle2,
+            bg: "from-violet-50 to-white",
+            tile: "bg-violet-100 text-violet-600",
+            sub: (
+              <span className="text-gray-400">
+                {stats.totalOrders > 0 ? `${Math.round((stats.deliveredOrders / stats.totalOrders) * 100)}% of all orders` : "0%"}
+              </span>
+            ),
+          },
+        ].map((kpi, index) => {
+          const Icon = kpi.icon;
+          return (
+            <div
+              key={kpi.label}
+              className={`${card} bg-gradient-to-br ${kpi.bg} ${index === 4 ? "col-span-2 sm:col-span-1" : ""} p-4`}
+            >
+              <div className="flex items-start gap-3">
+                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${kpi.tile}`}>
+                  <Icon className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-gray-600">{kpi.label}</p>
+                  <p className="truncate text-2xl font-bold text-gray-900">{kpi.value}</p>
+                </div>
+              </div>
+              <p className="mt-2 text-xs">{kpi.sub}</p>
+            </div>
+          );
+        })}
       </div>
 
       {/* Filters */}
@@ -428,6 +508,21 @@ export function OrdersManager({ orders: initialOrders }: { orders: Order[] }) {
 
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5">
+              <Calendar className="h-3.5 w-3.5 text-gray-400" />
+              <select
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value as typeof dateFilter)}
+                className="cursor-pointer bg-transparent text-xs font-medium text-gray-700 focus:outline-none"
+              >
+                <option value="all">All Time</option>
+                <option value="today">Today</option>
+                <option value="7d">Last 7 days</option>
+                <option value="30d">Last 30 days</option>
+                <option value="month">This month</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5">
               <CreditCard className="h-3.5 w-3.5 text-gray-400" />
               <select
                 value={paymentFilter}
@@ -461,16 +556,26 @@ export function OrdersManager({ orders: initialOrders }: { orders: Order[] }) {
       {/* Orders table */}
       <div className={card + " overflow-hidden"}>
         <div className="overflow-x-auto">
-          <table className="min-w-full border-collapse text-left">
+          <table className="w-full border-collapse text-left">
             <thead>
               <tr className="whitespace-nowrap border-b border-gray-200 bg-gray-50 text-xs font-semibold uppercase tracking-wider text-gray-500">
-                <th className="px-4 py-3">Order</th>
-                <th className="px-4 py-3">Customer</th>
-                <th className="px-4 py-3">Items</th>
-                <th className="px-4 py-3">Total & Payment</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Shipment</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+                <th className="w-10 px-3 py-3">
+                  <input
+                    type="checkbox"
+                    checked={allVisibleSelected}
+                    onChange={toggleAll}
+                    aria-label="Select all orders"
+                    className="h-4 w-4 cursor-pointer rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                  />
+                </th>
+                <th className="px-3 py-3">Order #</th>
+                <th className="px-3 py-3">Customer</th>
+                <th className="px-3 py-3">Items</th>
+                <th className="px-3 py-3">Total & Payment</th>
+                <th className="px-3 py-3">Status</th>
+                <th className="px-3 py-3">Shipment</th>
+                <th className="px-3 py-3">Date</th>
+                <th className="px-3 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm">
@@ -490,12 +595,21 @@ export function OrdersManager({ orders: initialOrders }: { orders: Order[] }) {
                   .toUpperCase();
 
                 return (
-                  <tr key={order.id} className="hover:bg-gray-50">
-                    {/* Order number & date */}
-                    <td className="px-4 py-3 align-top">
+                  <tr key={order.id} className={selectedIds.has(order.id) ? "bg-rose-50/50" : "transition hover:bg-rose-50/30"}>
+                    <td className="w-10 px-3 py-3 align-top">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(order.id)}
+                        onChange={() => toggleOne(order.id)}
+                        aria-label={`Select order ${order.order_number}`}
+                        className="mt-1 h-4 w-4 cursor-pointer rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                      />
+                    </td>
+                    {/* Order number */}
+                    <td className="px-3 py-3 align-top">
                       <div className="space-y-1">
                         <div className="flex items-center gap-1.5">
-                          <span className="rounded bg-gray-100 px-2 py-0.5 font-mono text-xs font-semibold text-gray-900">
+                          <span className="whitespace-nowrap rounded bg-gray-100 px-2 py-0.5 font-mono text-xs font-semibold text-gray-900">
                             {order.order_number}
                           </span>
                           <button
@@ -510,14 +624,6 @@ export function OrdersManager({ orders: initialOrders }: { orders: Order[] }) {
                               <Copy className="h-3 w-3" />
                             )}
                           </button>
-                        </div>
-                        <div className="flex items-center gap-1 text-xs text-gray-400">
-                          <Calendar className="h-3 w-3" />
-                          {new Date(order.created_at).toLocaleDateString("en-IN", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          })}
                         </div>
                         {isExpress && (
                           <span
@@ -535,12 +641,12 @@ export function OrdersManager({ orders: initialOrders }: { orders: Order[] }) {
                     </td>
 
                     {/* Customer */}
-                    <td className="px-4 py-3 align-top">
+                    <td className="px-3 py-3 align-top">
                       <div className="flex items-start gap-3">
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-200 text-xs font-semibold text-gray-600">
                           {initials}
                         </div>
-                        <div className="min-w-0 space-y-0.5">
+                        <div className="min-w-0 max-w-[200px] space-y-0.5">
                           <p className="truncate font-medium text-gray-900">
                             {order.customer_name ?? "Guest"}
                           </p>
@@ -551,7 +657,7 @@ export function OrdersManager({ orders: initialOrders }: { orders: Order[] }) {
                             {order.customer_phone && (
                               <a
                                 href={`tel:${order.customer_phone}`}
-                                className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-brand-600"
+                                className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-gray-500 hover:text-brand-600"
                               >
                                 <Phone className="h-3 w-3" />
                                 {order.customer_phone}
@@ -580,7 +686,7 @@ export function OrdersManager({ orders: initialOrders }: { orders: Order[] }) {
                     </td>
 
                     {/* Items */}
-                    <td className="px-4 py-3 align-top">
+                    <td className="px-3 py-3 align-top">
                       <div className="space-y-1.5">
                         <div className="flex items-center -space-x-2">
                           {(order.order_items ?? []).slice(0, 3).map((item, idx) => {
@@ -608,17 +714,20 @@ export function OrdersManager({ orders: initialOrders }: { orders: Order[] }) {
                             </span>
                           )}
                         </div>
-                        <p className="line-clamp-1 max-w-[180px] text-xs text-gray-600">
+                        <p className="line-clamp-2 max-w-[140px] text-xs font-medium text-gray-700" title={order.order_items?.[0]?.product_name}>
                           {order.order_items?.[0]?.product_name ?? "Book"}
                         </p>
                         <span className="block text-xs text-gray-400">
-                          {order.order_items?.reduce((s, i) => s + (i.quantity || 1), 0) || 1} units
+                          {(() => {
+                            const units = order.order_items?.reduce((s, i) => s + (i.quantity || 1), 0) || 1;
+                            return `${units} ${units === 1 ? "unit" : "units"}`;
+                          })()}
                         </span>
                       </div>
                     </td>
 
                     {/* Total & payment */}
-                    <td className="px-4 py-3 align-top">
+                    <td className="px-3 py-3 align-top">
                       <div className="space-y-1">
                         <span className="font-semibold text-gray-900">
                           ₹{order.total_amount?.toLocaleString("en-IN")}
@@ -645,7 +754,7 @@ export function OrdersManager({ orders: initialOrders }: { orders: Order[] }) {
                     </td>
 
                     {/* Status */}
-                    <td className="px-4 py-3 align-top">
+                    <td className="px-3 py-3 align-top">
                       <InlineOrderStatusSelect
                         orderId={order.id}
                         currentStatus={order.order_status}
@@ -660,7 +769,7 @@ export function OrdersManager({ orders: initialOrders }: { orders: Order[] }) {
                     </td>
 
                     {/* Shipment */}
-                    <td className="px-4 py-3 align-top">
+                    <td className="px-3 py-3 align-top">
                       <div className="space-y-1.5">
                         {order.awb_number ? (
                           <div>
@@ -687,8 +796,18 @@ export function OrdersManager({ orders: initialOrders }: { orders: Order[] }) {
                       </div>
                     </td>
 
+                    {/* Date */}
+                    <td className="whitespace-nowrap px-3 py-3 align-top text-xs text-gray-500">
+                      <div className="font-medium text-gray-700">
+                        {new Date(order.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                      </div>
+                      <div className="mt-0.5 text-gray-400">
+                        {new Date(order.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                      </div>
+                    </td>
+
                     {/* Actions */}
-                    <td className="px-4 py-3 align-top text-right">
+                    <td className="px-3 py-3 align-top text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
                           type="button"
@@ -701,7 +820,8 @@ export function OrdersManager({ orders: initialOrders }: { orders: Order[] }) {
                         <DeleteButton
                           action={deleteOrder}
                           id={order.id}
-                          confirmMessage={`Delete order ${order.order_number}? This cannot be undone.`}
+                          itemName={order.order_number}
+                          confirmMessage="The order and its items will be permanently removed, including the sales record. This cannot be undone."
                         />
                       </div>
                     </td>
@@ -711,13 +831,13 @@ export function OrdersManager({ orders: initialOrders }: { orders: Order[] }) {
 
               {filteredOrders.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-16 text-center">
-                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400">
-                      <Search className="h-5 w-5" />
+                  <td colSpan={9} className="px-6 py-16 text-center">
+                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 text-rose-400 ring-1 ring-rose-100">
+                      <PackageSearch className="h-8 w-8" />
                     </div>
-                    <h3 className="mt-3 text-sm font-semibold text-gray-900">No matching orders</h3>
-                    <p className="mx-auto mt-1 max-w-sm text-xs text-gray-500">
-                      Try adjusting your search, status, or payment filter.
+                    <h3 className="mt-4 text-base font-semibold text-gray-900">No orders found</h3>
+                    <p className="mx-auto mt-1 max-w-sm text-sm text-gray-500">
+                      Try adjusting your search, status, date or payment filter.
                     </p>
                     <button
                       type="button"
@@ -725,9 +845,11 @@ export function OrdersManager({ orders: initialOrders }: { orders: Order[] }) {
                         setSearchQuery("");
                         setSelectedStatusTab("all");
                         setPaymentFilter("all");
+                        setDateFilter("all");
                       }}
-                      className={btnSecondary + " mt-4"}
+                      className="mt-5 inline-flex items-center gap-2 rounded-lg border border-rose-200 bg-white px-4 py-2 text-sm font-semibold text-brand-600 shadow-sm transition hover:bg-rose-50"
                     >
+                      <SlidersHorizontal className="h-4 w-4" />
                       Reset Filters
                     </button>
                   </td>

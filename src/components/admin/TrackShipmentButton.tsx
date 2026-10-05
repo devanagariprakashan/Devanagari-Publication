@@ -4,14 +4,13 @@ import { useState, useTransition } from "react";
 import {
   ExternalLink,
   X,
-  MapPin,
-  Calendar,
   Copy,
   Check,
   AlertCircle,
 } from "lucide-react";
 import { trackShipmentAction } from "@/actions/shipments";
 import type { ShipmentTracking } from "@/lib/ithink";
+import ShipmentTimeline from "@/components/ShipmentTimeline";
 import { btnSecondary } from "./ui";
 
 export function TrackShipmentButton({ awb }: { awb: string }) {
@@ -100,65 +99,7 @@ export function TrackShipmentButton({ awb }: { awb: string }) {
                 </div>
               )}
 
-              {tracking && (
-                <div className="space-y-5">
-                  <div className="space-y-2 rounded-md border border-gray-200 bg-gray-50 p-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                        Current Status
-                      </span>
-                      {tracking.courier && (
-                        <span className="rounded border border-gray-200 bg-white px-2 py-0.5 text-xs font-medium text-gray-700">
-                          {tracking.courier}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-base font-semibold text-gray-900">{tracking.currentStatus}</p>
-
-                    {tracking.expectedDeliveryDate && (
-                      <p className="flex items-center gap-1.5 pt-1 text-xs text-gray-600">
-                        <Calendar className="h-3.5 w-3.5 text-gray-400" />
-                        Estimated delivery: <strong className="text-gray-900">{tracking.expectedDeliveryDate}</strong>
-                      </p>
-                    )}
-
-                    {tracking.lastLocation && (
-                      <p className="flex items-center gap-1.5 text-xs text-gray-600">
-                        <MapPin className="h-3.5 w-3.5 text-gray-400" />
-                        {tracking.lastLocation}
-                        {tracking.lastUpdate && (
-                          <span className="text-xs text-gray-400">· {tracking.lastUpdate}</span>
-                        )}
-                      </p>
-                    )}
-                  </div>
-
-                  {tracking.history && tracking.history.length > 0 && (
-                    <div className="space-y-3">
-                      <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-                        Scan History ({tracking.history.length})
-                      </h4>
-                      <div className="relative space-y-4 pl-5 before:absolute before:bottom-2 before:left-2 before:top-2 before:w-px before:bg-gray-200">
-                        {tracking.history.map((scan, idx) => (
-                          <div key={idx} className="relative">
-                            <div className="absolute -left-5 top-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-gray-400" />
-                            <div className="space-y-0.5">
-                              <p className="text-xs font-semibold text-gray-900">{scan.status}</p>
-                              <p className="flex items-center gap-1.5 text-xs text-gray-500">
-                                {scan.location}
-                                {scan.dateTime && <span>· {scan.dateTime}</span>}
-                              </p>
-                              {scan.remark && (
-                                <p className="text-xs italic text-gray-400">{scan.remark}</p>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+              {tracking && <ShipmentTimeline tracking={tracking} />}
             </div>
 
             {/* Footer */}

@@ -11,7 +11,9 @@ import {
 import { WhatsNewSlideForm, WhatsNewUpdateForm } from "@/components/admin/WhatsNewForms";
 import type { WhatsNewSlideRow, WhatsNewUpdateRow } from "@/components/admin/WhatsNewForms";
 import { DeleteButton } from "@/components/admin/DeleteButton";
-import { card, pageTitle, tableTd, tableTh } from "@/components/admin/ui";
+import { card, tableTd, tableTh } from "@/components/admin/ui";
+import { EmptyRow, PageHeader, Pill, StatCards } from "@/components/admin/PageHeader";
+import { Eye, Newspaper, Sparkles } from "lucide-react";
 
 export default async function WhatsNewAdminPage({
   searchParams,
@@ -34,7 +36,20 @@ export default async function WhatsNewAdminPage({
 
   return (
     <div className="space-y-6">
-      <h1 className={pageTitle}>What&apos;s New &amp; Latest Updates</h1>
+      <PageHeader
+        title="What's New & Latest Updates"
+        description="The featured carousel and the Latest Updates panel on the homepage. You can hide the whole section from Settings."
+      />
+
+      <StatCards
+        id="whatsnew"
+        items={[
+          { label: "Featured Slides", value: slides.length, icon: Sparkles, tone: "rose", sub: "Total slides" },
+          { label: "Active Slides", value: slides.filter((s) => s.is_active).length, icon: Eye, tone: "emerald", sub: "Max 4 shown" },
+          { label: "Latest Updates", value: updates.length, icon: Newspaper, tone: "blue", sub: "Total updates" },
+          { label: "Active Updates", value: updates.filter((u) => u.is_active).length, icon: Eye, tone: "violet", sub: "Max 8 shown" },
+        ]}
+      />
 
       {tablesMissing && (
         <div className="rounded-md bg-amber-50 p-3 text-sm text-amber-800">
@@ -87,9 +102,7 @@ export default async function WhatsNewAdminPage({
                     <td className={tableTd}>{s.subtitle ?? "—"}</td>
                     <td className={tableTd}>{s.sort}</td>
                     <td className={tableTd}>
-                      <span className={s.is_active ? "text-green-600" : "text-red-600"}>
-                        {s.is_active ? "Yes" : "No"}
-                      </span>
+                      <Pill tone={s.is_active ? "green" : "gray"}>{s.is_active ? "Active" : "Hidden"}</Pill>
                     </td>
                     <td className={tableTd}>
                       <div className="flex items-center gap-2">
@@ -99,17 +112,18 @@ export default async function WhatsNewAdminPage({
                         >
                           Edit
                         </Link>
-                        <DeleteButton action={deleteSlide} id={s.id} />
+                        <DeleteButton
+                          action={deleteSlide}
+                          id={s.id}
+                          itemName={s.title}
+                          confirmMessage="This slide will be removed from the homepage carousel. This cannot be undone."
+                        />
                       </div>
                     </td>
                   </tr>
                 ))}
                 {slides.length === 0 && (
-                  <tr>
-                    <td className={tableTd} colSpan={6}>
-                      No slides yet.
-                    </td>
-                  </tr>
+                  <EmptyRow colSpan={6} icon={Sparkles} title="No slides yet" hint="Add a slide above to feature it in the homepage carousel." />
                 )}
               </tbody>
             </table>
@@ -161,9 +175,7 @@ export default async function WhatsNewAdminPage({
                     <td className={tableTd}>{u.date_text ?? "—"}</td>
                     <td className={tableTd}>{u.sort}</td>
                     <td className={tableTd}>
-                      <span className={u.is_active ? "text-green-600" : "text-red-600"}>
-                        {u.is_active ? "Yes" : "No"}
-                      </span>
+                      <Pill tone={u.is_active ? "green" : "gray"}>{u.is_active ? "Active" : "Hidden"}</Pill>
                     </td>
                     <td className={tableTd}>
                       <div className="flex items-center gap-2">
@@ -173,17 +185,18 @@ export default async function WhatsNewAdminPage({
                         >
                           Edit
                         </Link>
-                        <DeleteButton action={deleteUpdate} id={u.id} />
+                        <DeleteButton
+                          action={deleteUpdate}
+                          id={u.id}
+                          itemName={u.title}
+                          confirmMessage="This update will be removed from the Latest Updates panel. This cannot be undone."
+                        />
                       </div>
                     </td>
                   </tr>
                 ))}
                 {updates.length === 0 && (
-                  <tr>
-                    <td className={tableTd} colSpan={6}>
-                      No updates yet.
-                    </td>
-                  </tr>
+                  <EmptyRow colSpan={6} icon={Newspaper} title="No updates yet" hint="Add an update above to show it in the Latest Updates panel." />
                 )}
               </tbody>
             </table>

@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
+import { sendOrderConfirmation, siteUrlFrom } from "@/lib/order-emails";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyPayuResponseHash } from "@/lib/payu";
-import { createIthinkShipment } from "@/lib/ithink";
 
 type PayuPayload = Record<string, string>;
 
@@ -48,7 +48,10 @@ export async function POST(request: Request) {
         payment_id: payload.mihpayid || null,
       }).eq("id", order.id).eq("payment_status", "pending");
       if (updateError) throw updateError;
-      if (nextStatus === "paid") await createIthinkShipment(order.id);
+      if (nextStatus === "paid") {
+        const siteUrl = siteUrlFrom(request);
+        after(() => sendOrderConfirmation(order.id, siteUrl));
+      }
     }
 
     return NextResponse.json({ received: true });

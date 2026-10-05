@@ -145,7 +145,7 @@ export function CreateShipmentButton({
           setRates(null);
           setSelectedIndex(null);
         }}
-        className="inline-flex items-center gap-1.5 rounded-md bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-700"
+        className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-700"
       >
         <Truck className="h-3.5 w-3.5" />
         <span>{shipmentStatus === "failed" ? "Retry Shipment" : "Create Shipment"}</span>

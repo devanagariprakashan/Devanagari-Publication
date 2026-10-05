@@ -5,7 +5,8 @@ import { AnnouncementForm } from "@/components/admin/AnnouncementForm";
 import { EditAnnouncementButton } from "@/components/admin/EditAnnouncementButton";
 import { DeleteButton } from "@/components/admin/DeleteButton";
 import { StatusSelect } from "@/components/admin/StatusSelect";
-import { card, pageTitle, tableTd, tableTh } from "@/components/admin/ui";
+import { card, tableTd, tableTh } from "@/components/admin/ui";
+import { PageHeader, StatCards } from "@/components/admin/PageHeader";
 
 const STATUSES = [
   { value: "active", label: "Active" },
@@ -31,12 +32,19 @@ export default async function AnnouncementsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className={pageTitle}>Announcements</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Site-wide banner messages shown in the notification bell for every visitor. Only active announcements are shown.
-        </p>
-      </div>
+      <PageHeader
+        title="Announcements"
+        description="Site-wide banner messages shown in the notification bell for every visitor. Only active announcements are shown."
+      />
+
+      <StatCards
+        id="announcements"
+        items={[
+          { label: "Total", value: rows.length, icon: Megaphone, tone: "rose", sub: "All announcements" },
+          { label: "Active", value: activeCount, icon: Inbox, tone: "emerald", sub: "Visible to visitors" },
+          { label: "Inactive", value: rows.length - activeCount, icon: Inbox, tone: "amber", sub: "Hidden from the site" },
+        ]}
+      />
 
       <div className={card + " p-6"}>
         <div className="mb-5 flex items-center gap-3">
@@ -83,7 +91,12 @@ export default async function AnnouncementsPage() {
                   <td className={tableTd}>
                     <div className="flex items-center gap-2 whitespace-nowrap">
                       <EditAnnouncementButton action={updateAnnouncement} announcement={a} />
-                      <DeleteButton action={deleteAnnouncement} id={a.id} />
+                      <DeleteButton
+                        action={deleteAnnouncement}
+                        id={a.id}
+                        itemName={a.text.length > 40 ? `${a.text.slice(0, 40)}...` : a.text}
+                        confirmMessage="This announcement will disappear from the site. This cannot be undone."
+                      />
                     </div>
                   </td>
                 </tr>
@@ -92,8 +105,8 @@ export default async function AnnouncementsPage() {
                 <tr>
                   <td className={tableTd} colSpan={4}>
                     <div className="flex flex-col items-center gap-2 py-10 text-center">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-50 text-gray-400">
-                        <Inbox className="h-6 w-6" />
+                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-400 ring-1 ring-rose-100">
+                        <Inbox className="h-7 w-7" />
                       </div>
                       <p className="text-sm text-gray-500">No announcements yet. Add one above.</p>
                     </div>

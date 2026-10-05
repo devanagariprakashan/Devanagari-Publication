@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
+import { customerLogout, getCustomerSession } from "@/actions/customer-auth";
 import {
   Menu,
   X,
@@ -125,6 +126,15 @@ export default function Navbar({
     setTimeout(() => {
       syncUser();
     }, 0);
+    // The browser copy of the login can be stale (old fake sessions, expired cookies) — drop it if the server disagrees.
+    getCustomerSession()
+      .then((session) => {
+        if (!session && localStorage.getItem("devanagari_user")) {
+          localStorage.removeItem("devanagari_user");
+          syncUser();
+        }
+      })
+      .catch(() => undefined);
     window.addEventListener("storage", syncUser);
     window.addEventListener("devanagari_user_updated", syncUser);
     return () => {
@@ -228,6 +238,7 @@ export default function Navbar({
   }, []);
 
   const handleLogout = () => {
+    void customerLogout();
     if (typeof window !== "undefined") {
       localStorage.removeItem("devanagari_user");
       localStorage.setItem("devanagari_logged_out", "true");

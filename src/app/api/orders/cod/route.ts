@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import crypto from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createIthinkShipment } from "@/lib/ithink";
+import { sendOrderConfirmation, siteUrlFrom } from "@/lib/order-emails";
 import { findCoupon } from "@/lib/coupons";
 import { couponDiscount } from "@/lib/coupon-shared";
 import { checkCodEligibility, computeShippingCharge, SITE_DEFAULTS, type SiteSettings } from "@/lib/site-settings";
@@ -44,7 +44,9 @@ export async function POST(request: Request) {
     if (orderError) throw orderError;
     const { error: itemsError } = await admin.from("order_items").insert(items.map((item) => ({ id: crypto.randomUUID(), order_id: order.id, book_id: item.id, product_name: byId.get(item.id)?.title, product_sku: item.id, quantity: item.quantity, unit_price: Number(byId.get(item.id)?.price) })));
     if (itemsError) { await admin.from("orders").delete().eq("id", order.id); throw itemsError; }
-    await createIthinkShipment(order.id);
+    // Email goes out after the response, so a slow mail service never delays the customer's confirmation screen.
+    const siteUrl = siteUrlFrom(request);
+    after(() => sendOrderConfirmation(order.id, siteUrl));
     return NextResponse.json({ orderId: order.id, orderNumber: order.order_number, totalAmount: order.total_amount });
   } catch (error) {
     console.error("COD order creation failed", error);

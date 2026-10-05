@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { CheckCircle2, MapPin, X } from "lucide-react";
+import { Route, X } from "lucide-react";
 import { trackShipmentAction } from "@/actions/shipments";
+import ShipmentTimeline from "@/components/ShipmentTimeline";
 import type { ShipmentTracking } from "@/lib/ithink";
 
-export default function TrackShipmentInline({ awb }: { awb: string }) {
+export default function TrackShipmentInline({ awb, variant = "link" }: { awb: string; variant?: "link" | "button" }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [tracking, setTracking] = useState<ShipmentTracking | null>(null);
@@ -27,9 +28,14 @@ export default function TrackShipmentInline({ awb }: { awb: string }) {
       <button
         type="button"
         onClick={load}
-        className="inline-flex items-center gap-1 mt-1.5 text-[#C61821] font-bold hover:underline cursor-pointer"
+        className={
+          variant === "button"
+            ? "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-[#C61821]/30 bg-[#FFF3F3] text-xs font-bold text-[#C61821] hover:bg-[#C61821] hover:text-white transition-all cursor-pointer"
+            : "inline-flex items-center gap-1.5 mt-1.5 text-[#C61821] font-bold hover:underline cursor-pointer"
+        }
       >
-        Track on iThink Logistics →
+        <Route className="w-3.5 h-3.5" />
+        {variant === "button" ? "Track Order" : "Track on iThink Logistics"}
       </button>
 
       {open && (
@@ -42,7 +48,10 @@ export default function TrackShipmentInline({ awb }: { awb: string }) {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
-              <h3 className="text-base font-bold text-gray-900">Shipment Tracking</h3>
+              <div>
+                <h3 className="text-base font-bold text-gray-900">Shipment Tracking</h3>
+                <p className="font-mono text-[11px] text-gray-500">AWB {awb}</p>
+              </div>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
@@ -55,43 +64,7 @@ export default function TrackShipmentInline({ awb }: { awb: string }) {
             {pending && <p className="text-sm text-gray-500">Fetching latest status...</p>}
             {error && <p className="text-sm text-red-600 bg-red-50 rounded-lg p-3">{error}</p>}
 
-            {tracking && (
-              <div className="space-y-4">
-                <div className="p-3.5 rounded-xl border border-gray-100 bg-[#FBFBFC]">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">AWB {tracking.awb}</p>
-                  <p className="mt-1 text-base font-bold text-gray-900">{tracking.currentStatus}</p>
-                  {tracking.courier && <p className="text-xs text-gray-500">Courier: {tracking.courier}</p>}
-                  {tracking.expectedDeliveryDate && (
-                    <p className="text-xs text-gray-500">Expected delivery: {tracking.expectedDeliveryDate}</p>
-                  )}
-                  {tracking.lastLocation && (
-                    <p className="mt-2 flex items-center gap-1.5 text-xs text-gray-600">
-                      <MapPin className="w-3.5 h-3.5 text-gray-400" />
-                      {tracking.lastLocation}
-                      {tracking.lastUpdate && <span className="text-gray-400">· {tracking.lastUpdate}</span>}
-                    </p>
-                  )}
-                </div>
-
-                {tracking.history.length > 0 && (
-                  <div>
-                    <h4 className="mb-2 text-[11px] font-bold uppercase tracking-wider text-gray-400">History</h4>
-                    <div className="space-y-3 pl-1">
-                      {tracking.history.map((scan, idx) => (
-                        <div key={idx} className="flex gap-2.5">
-                          <CheckCircle2 className="w-4 h-4 shrink-0 text-[#C61821]" />
-                          <div>
-                            <p className="text-xs font-bold text-gray-900">{scan.status}</p>
-                            <p className="text-[11px] text-gray-500">{scan.location} · {scan.dateTime}</p>
-                            {scan.remark && <p className="text-[11px] text-gray-400">{scan.remark}</p>}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+            {tracking && <ShipmentTimeline tracking={tracking} />}
           </div>
         </div>
       )}
