@@ -781,32 +781,27 @@ export default function Navbar({
               </div>
             </form>
 
-            {/* Quick Suggestions Chips */}
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-2 px-1">
-              <span className="text-[10px] font-bold uppercase text-gray-400 shrink-0">
-                Popular:
-              </span>
-              {[
-                { label: "MPPSC", query: "MPPSC" },
-                { label: "Civil Judge", query: "सिविल जज" },
-                { label: "Hindi Vyakaran", query: "हिंदी व्याकरण" },
-                { label: "BNS Law", query: "BNS" },
-                { label: "History", query: "इतिहास" },
-              ].map((chip) => (
-                <button
-                  key={chip.query}
-                  type="button"
-                  onClick={() => {
-                    setSearchQuery(chip.query);
-                    setIsMobileSearchOpen(false);
-                    router.push(`/shop?search=${encodeURIComponent(chip.query)}`);
-                  }}
-                  className="text-[11px] px-2.5 py-1 rounded-full bg-gray-100 hover:bg-red-50 text-gray-700 hover:text-[#C61821] border border-gray-200/60 shrink-0 whitespace-nowrap transition-colors"
-                >
-                  {chip.label}
-                </button>
-              ))}
-            </div>
+            {/* Quick Suggestions Chips — the store's own active categories (admin controls order/visibility) */}
+            {categories.length > 0 && (
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-2 px-1">
+                <span className="text-[10px] font-bold uppercase text-gray-400 shrink-0">
+                  Popular:
+                </span>
+                {categories.slice(0, 8).map((category) => (
+                  <button
+                    key={category.id}
+                    type="button"
+                    onClick={() => {
+                      setIsMobileSearchOpen(false);
+                      router.push(`/shop?category=${category.slug}`);
+                    }}
+                    className="text-[11px] px-2.5 py-1 rounded-full bg-gray-100 hover:bg-red-50 text-gray-700 hover:text-[#C61821] border border-gray-200/60 shrink-0 whitespace-nowrap transition-colors"
+                  >
+                    {category.name}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -27,6 +27,7 @@ import { SITE_DEFAULTS, heroStatsFromSettings, type HeroStat } from "@/lib/site-
 interface HomeContentProps {
   heroBooks?: BookData[];
   heroBannerImage?: string;
+  heroMobileBannerImage?: string;
   heroStats?: HeroStat[];
   heroText?: {
     badgeText?: string;
@@ -104,7 +105,8 @@ function TickerTrack({ items, ariaHidden = false }: { items: ReturnType<typeof b
 export default function HomeContent({
   heroBooks,
   heroBannerImage,
-  heroStats = heroStatsFromSettings(SITE_DEFAULTS),
+  heroMobileBannerImage,
+  heroStats =heroStatsFromSettings(SITE_DEFAULTS),
   heroText,
   categories,
   bestsellers,
@@ -158,6 +160,7 @@ export default function HomeContent({
       <HeroSection
         books={heroBooks}
         bannerImage={heroBannerImage}
+        mobileBannerImage={heroMobileBannerImage}
         stats={heroStats}
         {...heroText}
         onSelectBook={goToProduct}

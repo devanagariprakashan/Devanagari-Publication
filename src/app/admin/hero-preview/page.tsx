@@ -2,6 +2,7 @@ import HeroSection from "@/components/home/HeroSection";
 
 type PreviewParams = {
   image?: string;
+  mobileImage?: string;
   badgeText?: string;
   editionBadge?: string;
   headingLine1?: string;
@@ -19,6 +20,7 @@ export default async function HeroPreviewPage({
 }) {
   const {
     image,
+    mobileImage,
     badgeText,
     editionBadge,
     headingLine1,
@@ -32,6 +34,7 @@ export default async function HeroPreviewPage({
     <div className="h-screen overflow-hidden">
       <HeroSection
         bannerImage={image || undefined}
+        mobileBannerImage={mobileImage || undefined}
         badgeText={badgeText || undefined}
         editionBadge={editionBadge || undefined}
         headingLine1={headingLine1 || undefined}

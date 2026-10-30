@@ -179,6 +179,7 @@ export default async function Home() {
     <HomeContent
       heroBooks={heroBooks}
       heroBannerImage={hero.settings.bannerImage}
+      heroMobileBannerImage={hero.settings.mobileBannerImage}
       heroStats={heroStats}
       heroText={hero.settings}
       categories={categories}
